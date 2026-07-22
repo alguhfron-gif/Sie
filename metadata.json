@@ -1,0 +1,6 @@
+{
+  "name": "Sie Penganugerahan",
+  "description": "Aplikasi Manajemen Operations Sie Penganugerahan: Pengelolaan Nominasi, Administrasi Kegiatan, Koordinasi Panitia, dan Laporan Keuangan.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
