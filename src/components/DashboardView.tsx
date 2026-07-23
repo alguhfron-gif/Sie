@@ -1,7 +1,8 @@
 import React from 'react';
-import { Award, DollarSign, TrendingDown, Users, ArrowRight, PlusCircle } from 'lucide-react';
+import { Award, DollarSign, TrendingDown, Users, ArrowRight, PlusCircle, FileSpreadsheet, Link2, CheckCircle2 } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from 'recharts';
 import { ActiveTab, AwardCategory, Nomination, Transaction, CommitteeTask } from '../types';
+import { getWebhookUrl } from '../services/webhookService';
 
 interface DashboardViewProps {
   setActiveTab: (tab: ActiveTab) => void;
@@ -11,6 +12,7 @@ interface DashboardViewProps {
   tasks: CommitteeTask[];
   onOpenAddNomination: () => void;
   onOpenAddTransaction: () => void;
+  onOpenWebhookModal?: () => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
@@ -21,7 +23,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   tasks,
   onOpenAddNomination,
   onOpenAddTransaction,
+  onOpenWebhookModal,
 }) => {
+  const currentWebhookUrl = getWebhookUrl();
   // Financial Calculations
   const totalPemasukan = transactions
     .filter((t) => t.type === 'pemasukan')
@@ -84,7 +88,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {onOpenWebhookModal && (
+            <button
+              onClick={onOpenWebhookModal}
+              className="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold px-3.5 py-1.5 rounded-xl transition text-xs shadow-sm cursor-pointer"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-amber-300" />
+              <span>Set Webhook URL</span>
+            </button>
+          )}
+
           <button
             onClick={onOpenAddNomination}
             className="flex items-center space-x-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-3.5 py-1.5 rounded-xl transition text-xs shadow-sm cursor-pointer"
@@ -101,6 +115,46 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <span>Catat Kas</span>
           </button>
         </div>
+      </div>
+
+      {/* Google Sheets Webhook Banner Callout */}
+      <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-100 border border-emerald-200 p-4 rounded-2xl shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center space-x-3">
+          <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+            <FileSpreadsheet className="w-5 h-5 text-amber-300" />
+          </div>
+          <div>
+            <div className="flex items-center space-x-2">
+              <h3 className="text-xs font-black text-emerald-950">Integrasi Webhook Google Sheets</h3>
+              {currentWebhookUrl ? (
+                <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-800 font-bold text-[10px]">
+                  <CheckCircle2 className="w-3 h-3 text-emerald-700" />
+                  <span>Terhubung</span>
+                </span>
+              ) : (
+                <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 font-bold text-[10px]">
+                  <Link2 className="w-3 h-3 text-amber-700" />
+                  <span>Belum Diatur</span>
+                </span>
+              )}
+            </div>
+            <p className="text-[11px] text-emerald-800 mt-0.5">
+              {currentWebhookUrl
+                ? `URL Webhook Aktif: ${currentWebhookUrl.substring(0, 45)}...`
+                : 'Otomatiskan pengiriman data transaksi, nominasi, dan sertifikat ke spreadsheet Google Sheets.'}
+            </p>
+          </div>
+        </div>
+
+        {onOpenWebhookModal && (
+          <button
+            onClick={onOpenWebhookModal}
+            className="flex items-center justify-center space-x-1.5 bg-emerald-700 hover:bg-emerald-600 text-white font-extrabold px-4 py-2 rounded-xl text-xs transition shadow-sm cursor-pointer whitespace-nowrap"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-amber-300" />
+            <span>{currentWebhookUrl ? 'Ubah Webhook URL' : 'Set Webhook URL Sekarang'}</span>
+          </button>
+        )}
       </div>
 
       {/* Metric Cards - 4 Columns Compact Grid */}

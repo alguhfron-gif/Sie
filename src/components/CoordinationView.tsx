@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Users, CheckCircle2, Clock, Plus, PackageCheck, AlertCircle, Edit2, Trash2, ShieldCheck, UserCheck, FileText, Code, Box, Image, ChevronRight } from 'lucide-react';
+import { Users, CheckCircle2, Clock, Plus, PackageCheck, AlertCircle, Edit2, Trash2, ShieldCheck, UserCheck, FileText, Code, Box, Image, ChevronRight, FileSpreadsheet } from 'lucide-react';
 import { CommitteeTask, InventoryItem, RundownItem, TaskStatus } from '../types';
+import { sendWebhookPayload, exportToCSV } from '../services/webhookService';
 
 interface CoordinationViewProps {
   tasks: CommitteeTask[];
@@ -165,13 +166,16 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
     e.preventDefault();
     if (!taskTitle.trim()) return;
 
-    onAddTask({
+    const newTask = {
       title: taskTitle,
       assignee: assignee || 'Panitia Sie',
       status: taskStatus,
       priority,
       dueDate,
-    });
+    };
+
+    onAddTask(newTask);
+    sendWebhookPayload('committee_task', newTask);
 
     setTaskTitle('');
     setIsTaskModalOpen(false);
@@ -181,22 +185,55 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
     e.preventDefault();
     if (!itemName.trim()) return;
 
-    onAddInventory({
+    const newInv = {
       itemName,
       quantity,
       unit,
       status: invStatus,
       notes: invNotes,
-    });
+    };
+
+    onAddInventory(newInv);
+    sendWebhookPayload('committee_task', { type: 'INVENTORY_ITEM', ...newInv });
 
     setItemName('');
     setIsInvModalOpen(false);
   };
 
+  const handleExportCommittee = async () => {
+    const headers = ['NO', 'NAMA TUGAS / BARANG', 'PENANGGUNG JAWAB / KET', 'STATUS', 'PRIORITAS / JUMLAH', 'TENGAT WAKTU'];
+    const taskRows = tasks.map((t, i) => [
+      i + 1,
+      t.title,
+      t.assignee,
+      t.status,
+      `Prioritas: ${t.priority}`,
+      t.dueDate,
+    ]);
+    const invRows = inventory.map((inv, i) => [
+      tasks.length + i + 1,
+      `[LOGISTIK] ${inv.itemName}`,
+      inv.notes || '-',
+      inv.status,
+      `${inv.quantity} ${inv.unit}`,
+      '-',
+    ]);
+
+    exportToCSV('Data_Panitia_dan_Logistik_Sie_Penganugerahan.csv', headers, [...taskRows, ...invRows]);
+
+    await sendWebhookPayload('bulk_export', {
+      module: 'Panitia',
+      tasksCount: tasks.length,
+      inventoryCount: inventory.length,
+      tasks,
+      inventory,
+    });
+  };
+
   return (
     <div className="space-y-6 pb-12">
       {/* Top Header */}
-      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center space-x-2">
             <Users className="w-5 h-5 text-amber-600" />
@@ -207,40 +244,51 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
           </p>
         </div>
 
-        {/* SubTab Toggle */}
-        <div className="flex flex-wrap items-center bg-slate-100 p-1 rounded-2xl border border-slate-200 text-xs font-semibold gap-1">
+        <div className="flex flex-wrap items-center gap-2">
           <button
-            onClick={() => setSubTab('structure')}
-            className={`px-3 py-1.5 rounded-xl transition cursor-pointer ${
-              subTab === 'structure' ? 'bg-amber-500 text-slate-950 shadow-sm font-extrabold' : 'text-slate-600 hover:text-slate-900'
-            }`}
+            onClick={handleExportCommittee}
+            title="Ekspor Data Panitia, Tugas, dan Logistik ke CSV & Google Sheets"
+            className="flex items-center space-x-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold px-3.5 py-2 rounded-2xl border border-emerald-300 text-xs transition shadow-sm cursor-pointer"
           >
-            Struktur Panitia
+            <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+            <span>Ekspor ke Google Sheets / CSV</span>
           </button>
-          <button
-            onClick={() => setSubTab('tasks')}
-            className={`px-3 py-1.5 rounded-xl transition cursor-pointer ${
-              subTab === 'tasks' ? 'bg-amber-500 text-slate-950 shadow-sm font-extrabold' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Tugas Panitia
-          </button>
-          <button
-            onClick={() => setSubTab('inventory')}
-            className={`px-3 py-1.5 rounded-xl transition cursor-pointer ${
-              subTab === 'inventory' ? 'bg-amber-500 text-slate-950 shadow-sm font-extrabold' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Perlengkapan
-          </button>
-          <button
-            onClick={() => setSubTab('rundown')}
-            className={`px-3 py-1.5 rounded-xl transition cursor-pointer ${
-              subTab === 'rundown' ? 'bg-amber-500 text-slate-950 shadow-sm font-extrabold' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Rundown Acara
-          </button>
+
+          {/* SubTab Toggle */}
+          <div className="flex flex-wrap items-center bg-slate-100 p-1 rounded-2xl border border-slate-200 text-xs font-semibold gap-1">
+            <button
+              onClick={() => setSubTab('structure')}
+              className={`px-3 py-1.5 rounded-xl transition cursor-pointer ${
+                subTab === 'structure' ? 'bg-amber-500 text-slate-950 shadow-sm font-extrabold' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Struktur Panitia
+            </button>
+            <button
+              onClick={() => setSubTab('tasks')}
+              className={`px-3 py-1.5 rounded-xl transition cursor-pointer ${
+                subTab === 'tasks' ? 'bg-amber-500 text-slate-950 shadow-sm font-extrabold' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Tugas Panitia
+            </button>
+            <button
+              onClick={() => setSubTab('inventory')}
+              className={`px-3 py-1.5 rounded-xl transition cursor-pointer ${
+                subTab === 'inventory' ? 'bg-amber-500 text-slate-950 shadow-sm font-extrabold' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Perlengkapan
+            </button>
+            <button
+              onClick={() => setSubTab('rundown')}
+              className={`px-3 py-1.5 rounded-xl transition cursor-pointer ${
+                subTab === 'rundown' ? 'bg-amber-500 text-slate-950 shadow-sm font-extrabold' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Rundown Acara
+            </button>
+          </div>
         </div>
       </div>
 

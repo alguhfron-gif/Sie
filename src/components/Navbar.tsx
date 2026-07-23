@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Award, DollarSign, Users, FileCheck, LayoutDashboard, Menu, X, RotateCcw, LogOut, LogIn, User } from 'lucide-react';
+import { Award, DollarSign, Users, FileCheck, LayoutDashboard, Menu, X, RotateCcw, LogOut, LogIn, User, FileSpreadsheet, RefreshCw, Cloud } from 'lucide-react';
 import { ActiveTab, UserSession } from '../types';
 
 interface NavbarProps {
@@ -9,10 +9,34 @@ interface NavbarProps {
   currentUser?: UserSession | null;
   onLogout?: () => void;
   onLogin?: () => void;
+  onOpenWebhookModal?: () => void;
+  onRefreshData?: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onResetData, currentUser, onLogout, onLogin }) => {
+export const Navbar: React.FC<NavbarProps> = ({
+  activeTab,
+  setActiveTab,
+  onResetData,
+  currentUser,
+  onLogout,
+  onLogin,
+  onOpenWebhookModal,
+  onRefreshData,
+}) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    if (onRefreshData) {
+      onRefreshData();
+    } else {
+      window.location.reload();
+    }
+    setTimeout(() => {
+      setIsRefreshing(false);
+    }, 1000);
+  };
 
   const navItems: { id: ActiveTab; label: string; icon: React.ReactNode }[] = [
     { id: 'dashboard', label: 'Dasbor', icon: <LayoutDashboard className="w-4 h-4" /> },
@@ -67,6 +91,15 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onReset
 
           {/* Header Actions - Desktop */}
           <div className="hidden md:flex items-center space-x-2">
+            <button
+              onClick={handleRefresh}
+              title="Segarkan & Sinkronkan Data Cloud Firestore"
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border border-sky-300 bg-sky-50 hover:bg-sky-100 text-sky-800 text-xs font-extrabold transition shadow-sm cursor-pointer"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-sky-600 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span>Sync Cloud</span>
+            </button>
+
             {currentUser ? (
               <>
                 <div className="flex items-center space-x-2 bg-amber-50 border border-amber-200/80 text-amber-950 px-3 py-1 rounded-2xl text-xs">
@@ -78,6 +111,17 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onReset
                     <p className="text-[9px] text-amber-800 font-bold">{currentUser.role.split(' ')[0]}</p>
                   </div>
                 </div>
+
+                {onOpenWebhookModal && (
+                  <button
+                    onClick={onOpenWebhookModal}
+                    title="Pengaturan Google Sheets Webhook"
+                    className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition shadow-sm cursor-pointer"
+                  >
+                    <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Sheets Webhook</span>
+                  </button>
+                )}
 
                 <button
                   onClick={onResetData}
@@ -112,6 +156,15 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onReset
 
           {/* Header Actions - Mobile Header */}
           <div className="md:hidden flex items-center space-x-1.5">
+            <button
+              onClick={handleRefresh}
+              title="Segarkan & Sinkronkan Data Cloud"
+              className="flex items-center space-x-1 px-2.5 py-1 rounded-xl border border-sky-300 bg-sky-50 text-sky-800 font-extrabold text-[11px] shadow-sm cursor-pointer"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-sky-600 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span>Sync</span>
+            </button>
+
             {currentUser && (
               <div className="flex items-center space-x-1 bg-amber-100 text-amber-900 px-2 py-1 rounded-xl text-[11px] font-bold border border-amber-200/80">
                 <User className="w-3.5 h-3.5 text-amber-700" />

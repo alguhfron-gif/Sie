@@ -20,6 +20,15 @@ import {
   updateTransactionInFirestore,
   deleteTransactionFromFirestore,
 } from './services/financeService';
+import {
+  subscribeCommitteeTasks,
+  subscribeInventory,
+  subscribeRundown,
+  addCommitteeTaskToFirestore,
+  updateCommitteeTaskInFirestore,
+  deleteCommitteeTaskFromFirestore,
+  addInventoryToFirestore,
+} from './services/committeeService';
 import { subscribeToAuthChanges, logoutFirebase } from './services/authService';
 import { Navbar } from './components/Navbar';
 import { BottomNav } from './components/BottomNav';
@@ -29,6 +38,8 @@ import { FinanceView } from './components/FinanceView';
 import { CoordinationView } from './components/CoordinationView';
 import { CertificatesView } from './components/CertificatesView';
 import { LoginView } from './components/LoginView';
+import { WebhookModal } from './components/WebhookModal';
+import { fetchWebhookUrlFromFirestore } from './services/webhookService';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
@@ -101,7 +112,7 @@ export default function App() {
     return saved ? JSON.parse(saved) : INITIAL_INVENTORY;
   });
 
-  const [rundown] = useState<RundownItem[]>(() => {
+  const [rundown, setRundown] = useState<RundownItem[]>(() => {
     const saved = localStorage.getItem('sie_rundown');
     return saved ? JSON.parse(saved) : INITIAL_RUNDOWN;
   });
@@ -109,6 +120,7 @@ export default function App() {
   // Direct modal trigger states
   const [openAddNominationDirectly, setOpenAddNominationDirectly] = useState(false);
   const [openAddTransactionDirectly, setOpenAddTransactionDirectly] = useState(false);
+  const [isWebhookModalOpen, setIsWebhookModalOpen] = useState(false);
 
   // Subscribe to Cloud Firestore Nominations Real-time Updates
   useEffect(() => {
@@ -138,6 +150,56 @@ export default function App() {
       }
     );
     return () => unsubscribe();
+  }, []);
+
+  // Subscribe to Cloud Firestore Committee Tasks Real-time Updates
+  useEffect(() => {
+    const unsubscribe = subscribeCommitteeTasks(
+      (firestoreItems) => {
+        if (firestoreItems && firestoreItems.length >= 0) {
+          setTasks(firestoreItems);
+        }
+      },
+      (error) => {
+        console.warn('Realtime Firestore tasks notice:', error);
+      }
+    );
+    return () => unsubscribe();
+  }, []);
+
+  // Subscribe to Cloud Firestore Inventory Real-time Updates
+  useEffect(() => {
+    const unsubscribe = subscribeInventory(
+      (firestoreItems) => {
+        if (firestoreItems && firestoreItems.length >= 0) {
+          setInventory(firestoreItems);
+        }
+      },
+      (error) => {
+        console.warn('Realtime Firestore inventory notice:', error);
+      }
+    );
+    return () => unsubscribe();
+  }, []);
+
+  // Subscribe to Cloud Firestore Rundown Real-time Updates
+  useEffect(() => {
+    const unsubscribe = subscribeRundown(
+      (firestoreItems) => {
+        if (firestoreItems && firestoreItems.length >= 0) {
+          setRundown(firestoreItems);
+        }
+      },
+      (error) => {
+        console.warn('Realtime Firestore rundown notice:', error);
+      }
+    );
+    return () => unsubscribe();
+  }, []);
+
+  // Fetch Webhook URL from Firestore on mount
+  useEffect(() => {
+    fetchWebhookUrlFromFirestore();
   }, []);
 
   // Sync state to LocalStorage
@@ -248,29 +310,53 @@ export default function App() {
   };
 
   // Task Handlers
-  const handleAddTask = (newTask: Omit<CommitteeTask, 'id'>) => {
+  const handleAddTask = async (newTask: Omit<CommitteeTask, 'id'>) => {
     const created: CommitteeTask = {
       ...newTask,
       id: `task-${Date.now()}`,
     };
-    setTasks([...tasks, created]);
+    setTasks((prev) => [...prev, created]);
+
+    try {
+      await addCommitteeTaskToFirestore(newTask);
+    } catch (err) {
+      console.error('Firestore sync failed on add task:', err);
+    }
   };
 
-  const handleUpdateTaskStatus = (id: string, status: TaskStatus) => {
-    setTasks(tasks.map((t) => (t.id === id ? { ...t, status } : t)));
+  const handleUpdateTaskStatus = async (id: string, status: TaskStatus) => {
+    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, status } : t)));
+
+    try {
+      await updateCommitteeTaskInFirestore(id, { status });
+    } catch (err) {
+      console.error('Firestore sync failed on update task status:', err);
+    }
   };
 
-  const handleDeleteTask = (id: string) => {
-    setTasks(tasks.filter((t) => t.id !== id));
+  const handleDeleteTask = async (id: string) => {
+    setTasks((prev) => prev.filter((t) => t.id !== id));
+
+    try {
+      await deleteCommitteeTaskFromFirestore(id);
+    } catch (err) {
+      console.error('Firestore sync failed on delete task:', err);
+    }
   };
 
   // Inventory Handlers
-  const handleAddInventory = (newInv: Omit<InventoryItem, 'id'>) => {
+  const handleAddInventory = async (newInv: Omit<InventoryItem, 'id'>) => {
     const created: InventoryItem = {
       ...newInv,
       id: `inv-${Date.now()}`,
     };
-    setInventory([...inventory, created]);
+    setInventory((prev) => [...prev, created]);
+
+    try {
+      await addInventoryToFirestore(newInv);
+    } catch (err) {
+      console.error('Firestore sync failed on add inventory:', err);
+    }
   };
 
   // If user is not logged in, render Login Screen
@@ -292,6 +378,14 @@ export default function App() {
         currentUser={currentUser}
         onLogout={handleLogout}
         onLogin={() => setCurrentUser(null)}
+        onOpenWebhookModal={() => setIsWebhookModalOpen(true)}
+        onRefreshData={() => window.location.reload()}
+      />
+
+      {/* Google Sheets Webhook Configuration Modal */}
+      <WebhookModal
+        isOpen={isWebhookModalOpen}
+        onClose={() => setIsWebhookModalOpen(false)}
       />
 
       {/* Main Content Area */}
@@ -311,6 +405,7 @@ export default function App() {
               setActiveTab('keuangan');
               setOpenAddTransactionDirectly(true);
             }}
+            onOpenWebhookModal={() => setIsWebhookModalOpen(true)}
           />
         )}
 

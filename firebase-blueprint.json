@@ -44,6 +44,42 @@
         "proofUrl": { "type": "string" }
       },
       "required": ["title", "type", "category", "amount", "date"]
+    },
+    "CommitteeTask": {
+      "title": "Committee Task",
+      "description": "Task assigned to committee member",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "assignee": { "type": "string" },
+        "status": { "type": "string" },
+        "priority": { "type": "string" },
+        "dueDate": { "type": "string" }
+      }
+    },
+    "InventoryItem": {
+      "title": "Inventory Item",
+      "description": "Equipment or supply inventory item",
+      "type": "object",
+      "properties": {
+        "itemName": { "type": "string" },
+        "quantity": { "type": "number" },
+        "unit": { "type": "string" },
+        "status": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    },
+    "CertificateRecord": {
+      "title": "Certificate Record",
+      "description": "Generated certificate log",
+      "type": "object",
+      "properties": {
+        "recipientName": { "type": "string" },
+        "awardTitle": { "type": "string" },
+        "certNumber": { "type": "string" },
+        "issueDate": { "type": "string" },
+        "department": { "type": "string" }
+      }
     }
   },
   "firestore": {
@@ -54,6 +90,24 @@
     "/transactions/{transactionId}": {
       "schema": { "$ref": "#/entities/Transaction" },
       "description": "Collection storing all financial income and expense transactions"
+    },
+    "/committee_tasks/{taskId}": {
+      "schema": { "$ref": "#/entities/CommitteeTask" },
+      "description": "Collection storing all committee tasks"
+    },
+    "/committee_inventory/{inventoryId}": {
+      "schema": { "$ref": "#/entities/InventoryItem" },
+      "description": "Collection storing all inventory and logistics"
+    },
+    "/committee_rundown/{rundownId}": {
+      "description": "Collection storing event rundown items"
+    },
+    "/certificates/{certificateId}": {
+      "schema": { "$ref": "#/entities/CertificateRecord" },
+      "description": "Collection storing generated certificates"
+    },
+    "/settings/{settingId}": {
+      "description": "Collection storing app settings such as Google Apps Script webhook URL"
     }
   }
 }

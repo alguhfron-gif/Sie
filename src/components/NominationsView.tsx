@@ -3,6 +3,7 @@ import { Award, Plus, Search, Filter, CheckCircle2, Edit2, Trash2, Trophy, Star,
 import confetti from 'canvas-confetti';
 import ExcelJS from 'exceljs';
 import { AwardCategory, Nomination, NominationStatus } from '../types';
+import { sendWebhookPayload, exportToCSV } from '../services/webhookService';
 
 interface NominationsViewProps {
   nominations: Nomination[];
@@ -110,58 +111,49 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
     e.preventDefault();
     if (!candidateName.trim() || !justification.trim()) return;
 
+    const nomPayload = {
+      idPps: idPps || `PPS-2026-00${nominations.length + 1}`,
+      candidateName,
+      domisili,
+      kelas,
+      tingkat,
+      alamat,
+      nipNik: nipNik || idPps,
+      department,
+      position,
+      phone,
+      achievement,
+      categoryId,
+      justification,
+      status,
+      score,
+      nominatorName: nominatorName || 'Panitia Sie Penganugerahan',
+    };
+
     if (editingNomination) {
       onUpdateNomination({
         ...editingNomination,
-        idPps,
-        candidateName,
-        domisili,
-        kelas,
-        tingkat,
-        alamat,
-        nipNik: nipNik || idPps,
-        department,
-        position,
-        phone,
-        achievement,
-        categoryId,
-        justification,
-        status,
-        score,
-        nominatorName,
+        ...nomPayload,
       });
       if (status === 'Pemenang') {
         confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
       }
     } else {
-      onAddNomination({
-        idPps: idPps || `PPS-2026-00${nominations.length + 1}`,
-        candidateName,
-        domisili,
-        kelas,
-        tingkat,
-        alamat,
-        nipNik: nipNik || idPps,
-        department,
-        position,
-        phone,
-        achievement,
-        categoryId,
-        justification,
-        status,
-        score,
-        nominatorName: nominatorName || 'Panitia Sie Penganugerahan',
-      });
+      onAddNomination(nomPayload);
       if (status === 'Pemenang') {
         confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
       }
     }
 
+    sendWebhookPayload('nomination_update', nomPayload);
+
     closeModal();
   };
 
   const handleSetWinner = (nom: Nomination) => {
-    onUpdateNomination({ ...nom, status: 'Pemenang' });
+    const updated = { ...nom, status: 'Pemenang' as NominationStatus };
+    onUpdateNomination(updated);
+    sendWebhookPayload('nomination_update', updated);
     confetti({ particleCount: 150, spread: 90, origin: { y: 0.5 } });
   };
 
@@ -290,6 +282,30 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
+
+      // Trigger CSV export backup & Webhook sync
+      const csvHeaders = ['NO', 'ID PPS', 'NAMA PESERTA', 'NIP/NIK', 'KATEGORI', 'STATUS', 'SKOR', 'JABATAN', 'DEPARTEMEN', 'NO HP', 'PRESTASI', 'PENGUSUL'];
+      const csvRows = dataToExport.map((nom, idx) => [
+        idx + 1,
+        nom.idPps || '-',
+        nom.candidateName,
+        nom.nipNik || '-',
+        categories.find((c) => c.id === nom.categoryId)?.title || nom.categoryId,
+        nom.status,
+        nom.score,
+        nom.position || '-',
+        nom.department || '-',
+        nom.phone || '-',
+        nom.achievement || '-',
+        nom.nominatorName,
+      ]);
+      exportToCSV(`Data_Peserta_Nominasi_${dateStr}.csv`, csvHeaders, csvRows);
+
+      await sendWebhookPayload('bulk_export', {
+        module: 'Nominasi',
+        totalItems: dataToExport.length,
+        nominations: dataToExport,
+      });
     } catch (error) {
       console.error('Export Excel Error:', error);
       alert('Gagal mengekspor data ke Excel. Silakan coba lagi.');

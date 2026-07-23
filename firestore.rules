@@ -13,6 +13,26 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    match /committee_tasks/{taskId} {
+      allow read, write: if true;
+    }
+
+    match /committee_inventory/{inventoryId} {
+      allow read, write: if true;
+    }
+
+    match /committee_rundown/{rundownId} {
+      allow read, write: if true;
+    }
+
+    match /certificates/{certificateId} {
+      allow read, write: if true;
+    }
+
+    match /settings/{settingId} {
+      allow read, write: if true;
+    }
+
     match /tasks/{taskId} {
       allow read, write: if true;
     }

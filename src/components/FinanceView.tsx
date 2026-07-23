@@ -3,6 +3,7 @@ import { DollarSign, Plus, Search, Filter, TrendingUp, TrendingDown, Printer, Fi
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 import { Transaction, TransactionCategory, TransactionType } from '../types';
 import { uploadReceiptImage } from '../services/storageService';
+import { sendWebhookPayload, exportToCSV } from '../services/webhookService';
 
 interface FinanceViewProps {
   transactions: Transaction[];
@@ -138,32 +139,55 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
       uploadedProofUrl = undefined;
     }
 
+    const trxPayload = {
+      title,
+      type,
+      category,
+      amount,
+      date,
+      notes,
+      receiptNumber: receiptNumber || `TRX-${Date.now().toString().slice(-4)}`,
+      proofUrl: uploadedProofUrl,
+    };
+
     if (editingTransaction && onUpdateTransaction) {
       onUpdateTransaction({
         ...editingTransaction,
-        title,
-        type,
-        category,
-        amount,
-        date,
-        notes,
-        receiptNumber: receiptNumber || editingTransaction.receiptNumber,
-        proofUrl: uploadedProofUrl,
+        ...trxPayload,
       });
     } else {
-      onAddTransaction({
-        title,
-        type,
-        category,
-        amount,
-        date,
-        notes,
-        receiptNumber: receiptNumber || `TRX-${Date.now().toString().slice(-4)}`,
-        proofUrl: uploadedProofUrl,
-      });
+      onAddTransaction(trxPayload);
     }
 
+    // Trigger Google Sheets Webhook
+    sendWebhookPayload('financial_transaction', trxPayload);
+
     closeModal();
+  };
+
+  // Export to CSV & Google Sheets
+  const handleExportFinance = async () => {
+    const headers = ['Tanggal', 'No. Nota', 'Judul / Kebutuhan', 'Kategori', 'Jenis Arus Kas', 'Jumlah (Rp)', 'Keterangan'];
+    const rows = transactions.map((t) => [
+      t.date,
+      t.receiptNumber || '-',
+      t.title,
+      t.category,
+      t.type === 'pemasukan' ? 'Pemasukan (+)' : 'Pengeluaran (-)',
+      t.amount,
+      t.notes || '-',
+    ]);
+
+    exportToCSV('Laporan_Keuangan_Sie_Penganugerahan.csv', headers, rows);
+
+    await sendWebhookPayload('bulk_export', {
+      module: 'Keuangan',
+      totalPemasukan,
+      totalPengeluaran,
+      saldoSisa,
+      transactionCount: transactions.length,
+      transactions,
+    });
   };
 
   // Chart Data
@@ -310,7 +334,16 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
               </p>
             </div>
 
-            <div className="flex items-center space-x-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={handleExportFinance}
+                title="Ekspor Seluruh Data Keuangan ke CSV & Google Sheets"
+                className="flex items-center space-x-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold px-3.5 py-2.5 rounded-2xl border border-emerald-300 text-xs transition shadow-sm cursor-pointer"
+              >
+                <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                <span>Ekspor ke Google Sheets / CSV</span>
+              </button>
+
               <button
                 onClick={() => setShowPrintReport(true)}
                 className="flex items-center space-x-1.5 bg-slate-50 hover:bg-slate-100 text-slate-800 font-bold px-3.5 py-2.5 rounded-2xl border border-slate-200 text-xs transition cursor-pointer"

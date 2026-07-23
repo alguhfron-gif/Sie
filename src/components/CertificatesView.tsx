@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { FileCheck, Printer, Award, Shield, Sparkles, UserCheck } from 'lucide-react';
+import { FileCheck, Printer, Award, Shield, Sparkles, UserCheck, FileSpreadsheet } from 'lucide-react';
 import { AwardCategory, Nomination } from '../types';
+import { sendWebhookPayload, exportToCSV } from '../services/webhookService';
+import { addCertificateRecordToFirestore } from '../services/certificatesService';
 
 interface CertificatesViewProps {
   nominations: Nomination[];
@@ -36,6 +38,47 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
     }
   };
 
+  const handlePrintAndSync = async () => {
+    const certPayload = {
+      recipientName,
+      awardTitle,
+      certNumber,
+      issueDate,
+      department,
+      signatory1,
+      signatory2,
+    };
+
+    try {
+      await addCertificateRecordToFirestore(certPayload);
+      sendWebhookPayload('certificate_generated', certPayload);
+    } catch (e) {
+      console.warn('Certificate sync notice:', e);
+    }
+
+    window.print();
+  };
+
+  const handleExportCertificates = async () => {
+    const headers = ['NO', 'NAMA PENERIMA', 'GELAR / PENGHARGAAN', 'INSTANSI / DEPARTEMEN', 'NO SERTIFIKAT', 'TANGGAL PENERBITAN'];
+    const rows = winners.map((nom, idx) => [
+      idx + 1,
+      nom.candidateName,
+      categories.find((c) => c.id === nom.categoryId)?.title || nom.categoryId,
+      nom.department || '-',
+      `08${idx + 1}/SIE-ANUGERAH/2026`,
+      issueDate,
+    ]);
+
+    exportToCSV('Data_Penerima_Sertifikat_Penganugerahan.csv', headers, rows);
+
+    await sendWebhookPayload('bulk_export', {
+      module: 'Sertifikat',
+      totalWinners: winners.length,
+      winners,
+    });
+  };
+
   return (
     <div className="space-y-6 pb-12">
       {/* Header & Controls - Hidden on Print */}
@@ -50,13 +93,24 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
           </p>
         </div>
 
-        <button
-          onClick={() => window.print()}
-          className="flex items-center justify-center space-x-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-5 py-2.5 rounded-2xl shadow-sm transition text-xs cursor-pointer"
-        >
-          <Printer className="w-4 h-4" />
-          <span>Cetak / Simpan PDF</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={handleExportCertificates}
+            title="Ekspor Data Sertifikat & Pemenang ke CSV & Google Sheets"
+            className="flex items-center space-x-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold px-3.5 py-2.5 rounded-2xl border border-emerald-300 text-xs transition shadow-sm cursor-pointer"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+            <span>Ekspor ke Google Sheets / CSV</span>
+          </button>
+
+          <button
+            onClick={handlePrintAndSync}
+            className="flex items-center justify-center space-x-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-5 py-2.5 rounded-2xl shadow-sm transition text-xs cursor-pointer"
+          >
+            <Printer className="w-4 h-4" />
+            <span>Cetak / Simpan PDF</span>
+          </button>
+        </div>
       </div>
 
       {/* Editor Options Panel - Hidden on Print */}
