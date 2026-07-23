@@ -8,6 +8,13 @@ import {
   INITIAL_INVENTORY,
   INITIAL_RUNDOWN,
 } from './data/initialData';
+import {
+  subscribeNominations,
+  addNominationToFirestore,
+  updateNominationInFirestore,
+  deleteNominationFromFirestore,
+} from './services/nominationsService';
+import { subscribeToAuthChanges, logoutFirebase } from './services/authService';
 import { Navbar } from './components/Navbar';
 import { BottomNav } from './components/BottomNav';
 import { DashboardView } from './components/DashboardView';
@@ -33,12 +40,24 @@ export default function App() {
     return null;
   });
 
+  // Subscribe to Firebase Auth real-time state changes
+  useEffect(() => {
+    const unsubscribe = subscribeToAuthChanges((firebaseSession) => {
+      if (firebaseSession) {
+        setCurrentUser(firebaseSession);
+        localStorage.setItem('sie_user_session', JSON.stringify(firebaseSession));
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
   const handleLoginSuccess = (user: UserSession) => {
     setCurrentUser(user);
     localStorage.setItem('sie_user_session', JSON.stringify(user));
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await logoutFirebase();
     setCurrentUser(null);
     localStorage.removeItem('sie_user_session');
   };
@@ -87,6 +106,21 @@ export default function App() {
   const [openAddNominationDirectly, setOpenAddNominationDirectly] = useState(false);
   const [openAddTransactionDirectly, setOpenAddTransactionDirectly] = useState(false);
 
+  // Subscribe to Cloud Firestore Nominations Real-time Updates
+  useEffect(() => {
+    const unsubscribe = subscribeNominations(
+      (firestoreItems) => {
+        if (firestoreItems && firestoreItems.length > 0) {
+          setNominations(firestoreItems);
+        }
+      },
+      (error) => {
+        console.warn('Realtime Firestore synchronization notice:', error);
+      }
+    );
+    return () => unsubscribe();
+  }, []);
+
   // Sync state to LocalStorage
   useEffect(() => {
     localStorage.setItem('sie_transactions', JSON.stringify(transactions));
@@ -116,22 +150,47 @@ export default function App() {
     localStorage.removeItem('sie_inventory');
   };
 
-  // Nomination Handlers
-  const handleAddNomination = (newNom: Omit<Nomination, 'id' | 'createdAt'>) => {
-    const created: Nomination = {
+  // Nomination Handlers with Firestore Integration
+  const handleAddNomination = async (newNom: Omit<Nomination, 'id' | 'createdAt'>) => {
+    const localCreated: Nomination = {
       ...newNom,
       id: `nom-${Date.now()}`,
       createdAt: new Date().toISOString().split('T')[0],
     };
-    setNominations([created, ...nominations]);
+
+    // Optimistic UI update
+    setNominations((prev) => [localCreated, ...prev]);
+
+    // Save to Cloud Firestore
+    try {
+      await addNominationToFirestore(newNom);
+    } catch (err) {
+      console.error('Firestore sync failed on add nomination:', err);
+    }
   };
 
-  const handleUpdateNomination = (updatedNom: Nomination) => {
-    setNominations(nominations.map((n) => (n.id === updatedNom.id ? updatedNom : n)));
+  const handleUpdateNomination = async (updatedNom: Nomination) => {
+    // Optimistic UI update
+    setNominations((prev) => prev.map((n) => (n.id === updatedNom.id ? updatedNom : n)));
+
+    // Save to Cloud Firestore
+    try {
+      await updateNominationInFirestore(updatedNom);
+    } catch (err) {
+      console.error('Firestore sync failed on update nomination:', err);
+    }
   };
 
-  const handleDeleteNomination = (id: string) => {
-    setNominations(nominations.filter((n) => n.id !== id));
+  const handleDeleteNomination = async (id: string) => {
+    // Optimistic UI update
+    setNominations((prev) => prev.filter((n) => n.id !== id));
+
+    // Delete from Cloud Firestore
+    try {
+      await deleteNominationFromFirestore(id);
+    } catch (err) {
+      console.error('Firestore sync failed on delete nomination:', err);
+    }
   };
 
   // Transaction Handlers

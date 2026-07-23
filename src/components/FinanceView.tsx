@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { DollarSign, Plus, Search, Filter, TrendingUp, TrendingDown, Printer, FileSpreadsheet, Trash2, Calendar, FileText, CheckCircle2 } from 'lucide-react';
+import { DollarSign, Plus, Search, Filter, TrendingUp, TrendingDown, Printer, FileSpreadsheet, Trash2, Calendar, FileText, CheckCircle2, Receipt, Upload, Image as ImageIcon, X, Eye, Download, ExternalLink, Loader2 } from 'lucide-react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 import { Transaction, TransactionCategory, TransactionType } from '../types';
+import { uploadReceiptImage } from '../services/storageService';
 
 interface FinanceViewProps {
   transactions: Transaction[];
@@ -24,6 +25,9 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(isAddModalOpenDirectly);
   const [showPrintReport, setShowPrintReport] = useState(false);
 
+  // Proof Image Pop-up Preview State
+  const [selectedProofTrx, setSelectedProofTrx] = useState<Transaction | null>(null);
+
   // Modal Form State
   const [title, setTitle] = useState('');
   const [type, setType] = useState<TransactionType>('pengeluaran');
@@ -32,6 +36,11 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
   const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState('');
   const [receiptNumber, setReceiptNumber] = useState('');
+
+  // Image Upload State
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [proofPreviewUrl, setProofPreviewUrl] = useState<string | null>(null);
+  const [isUploadingProof, setIsUploadingProof] = useState(false);
 
   // Financial Calculations
   const totalPemasukan = transactions
@@ -60,17 +69,50 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
     setDate(new Date().toISOString().split('T')[0]);
     setNotes('');
     setReceiptNumber(`NOT-${Math.floor(100 + Math.random() * 900)}`);
+    setProofFile(null);
+    setProofPreviewUrl(null);
+    setIsUploadingProof(false);
     setIsModalOpen(true);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
+    setProofFile(null);
+    setProofPreviewUrl(null);
+    setIsUploadingProof(false);
     if (onCloseAddModalDirectly) onCloseAddModalDirectly();
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setProofFile(file);
+      const previewUrl = URL.createObjectURL(file);
+      setProofPreviewUrl(previewUrl);
+    }
+  };
+
+  const handleRemoveProof = () => {
+    setProofFile(null);
+    setProofPreviewUrl(null);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || amount <= 0) return;
+
+    let uploadedProofUrl: string | undefined = undefined;
+
+    if (proofFile) {
+      setIsUploadingProof(true);
+      try {
+        uploadedProofUrl = await uploadReceiptImage(proofFile);
+      } catch (err) {
+        console.error("Gagal mengunggah foto kuitansi:", err);
+      } finally {
+        setIsUploadingProof(false);
+      }
+    }
 
     onAddTransaction({
       title,
@@ -80,6 +122,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
       date,
       notes,
       receiptNumber: receiptNumber || `TRX-${Date.now().toString().slice(-4)}`,
+      proofUrl: uploadedProofUrl,
     });
 
     closeModal();
@@ -387,9 +430,21 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                   {t.notes && <p className="text-[11px] text-slate-500 bg-slate-50 p-2 rounded-xl italic">{t.notes}</p>}
 
                   <div className="flex items-center justify-between text-[11px] pt-1">
-                    <span className="bg-amber-100 text-amber-900 border border-amber-200 px-2 py-0.5 rounded-lg text-[10px] font-bold">
-                      {t.category}
-                    </span>
+                    <div className="flex items-center space-x-2">
+                      <span className="bg-amber-100 text-amber-900 border border-amber-200 px-2 py-0.5 rounded-lg text-[10px] font-bold">
+                        {t.category}
+                      </span>
+                      {t.proofUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedProofTrx(t)}
+                          className="px-2 py-0.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-[10px] font-extrabold flex items-center space-x-1 cursor-pointer transition"
+                        >
+                          <Receipt className="w-3 h-3 text-emerald-600" />
+                          <span>Lihat Bukti</span>
+                        </button>
+                      )}
+                    </div>
                     <button
                       onClick={() => onDeleteTransaction(t.id)}
                       className="p-1 text-rose-600 hover:text-rose-700 font-bold text-[11px] cursor-pointer"
@@ -415,6 +470,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                     <th className="p-3.5">Tanggal / No. Bukti</th>
                     <th className="p-3.5">Judul Transaksi</th>
                     <th className="p-3.5">Kategori</th>
+                    <th className="p-3.5 text-center">Bukti Kuitansi</th>
                     <th className="p-3.5 text-right">Jumlah (Rp)</th>
                     <th className="p-3.5 text-center">Aksi</th>
                   </tr>
@@ -435,6 +491,20 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                           {t.category}
                         </span>
                       </td>
+                      <td className="p-3.5 text-center">
+                        {t.proofUrl ? (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedProofTrx(t)}
+                            className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl font-bold text-xs shadow-2xs transition cursor-pointer"
+                          >
+                            <Receipt className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>Lihat Bukti</span>
+                          </button>
+                        ) : (
+                          <span className="text-slate-400 italic text-[11px]">Tidak Ada</span>
+                        )}
+                      </td>
                       <td className="p-3.5 text-right font-black text-sm">
                         <span className={t.type === 'pemasukan' ? 'text-emerald-700' : 'text-rose-700'}>
                           {t.type === 'pemasukan' ? '+' : '-'} {formatIDR(t.amount)}
@@ -454,7 +524,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
 
                   {filteredTransactions.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="p-8 text-center text-slate-400 italic">
+                      <td colSpan={6} className="p-8 text-center text-slate-400 italic">
                         Belum ada data transaksi yang sesuai filter.
                       </td>
                     </tr>
@@ -464,6 +534,96 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
             </div>
           </div>
         </>
+      )}
+
+      {/* Pop-up Modal View Receipt / Proof Image */}
+      {selectedProofTrx && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl border border-slate-200 overflow-hidden text-slate-800 my-auto animate-in fade-in zoom-in duration-200">
+            {/* Modal Header */}
+            <div className="bg-slate-900 text-white p-4 sm:p-5 flex items-center justify-between border-b border-slate-800">
+              <div className="flex items-center space-x-2.5 min-w-0">
+                <div className="w-9 h-9 rounded-2xl bg-amber-500 text-slate-950 flex items-center justify-center font-bold shrink-0">
+                  <Receipt className="w-5 h-5" />
+                </div>
+                <div className="truncate">
+                  <h3 className="font-extrabold text-sm sm:text-base text-white truncate">
+                    {selectedProofTrx.title}
+                  </h3>
+                  <p className="text-[11px] text-amber-400 font-mono font-bold">
+                    No. Bukti: {selectedProofTrx.receiptNumber || '-'} • {selectedProofTrx.date}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSelectedProofTrx(null)}
+                className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition cursor-pointer shrink-0 ml-2"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Body: Image Preview */}
+            <div className="p-5 space-y-4">
+              <div className="flex items-center justify-between text-xs bg-slate-50 p-3 rounded-2xl border border-slate-200">
+                <div>
+                  <span className="text-slate-500">Nominal: </span>
+                  <span className={`font-black ${selectedProofTrx.type === 'pemasukan' ? 'text-emerald-700' : 'text-rose-700'}`}>
+                    {selectedProofTrx.type === 'pemasukan' ? '+' : '-'} {formatIDR(selectedProofTrx.amount)}
+                  </span>
+                </div>
+                <span className="bg-amber-100 text-amber-900 border border-amber-200 px-2.5 py-0.5 rounded-lg text-[10px] font-bold">
+                  {selectedProofTrx.category}
+                </span>
+              </div>
+
+              {selectedProofTrx.proofUrl ? (
+                <div className="relative rounded-2xl overflow-hidden bg-slate-950 border border-slate-200 max-h-96 flex items-center justify-center p-2 group">
+                  <img
+                    src={selectedProofTrx.proofUrl}
+                    alt={`Bukti ${selectedProofTrx.title}`}
+                    className="max-h-80 w-auto object-contain rounded-xl shadow-md transition transform group-hover:scale-[1.02]"
+                  />
+                </div>
+              ) : (
+                <div className="p-8 bg-slate-50 rounded-2xl text-center text-slate-400 text-xs italic border border-dashed border-slate-200">
+                  Tidak ada foto kuitansi terlampir.
+                </div>
+              )}
+
+              {selectedProofTrx.notes && (
+                <p className="text-xs text-slate-600 bg-amber-50/50 border border-amber-200 p-3 rounded-xl italic">
+                  <strong>Catatan:</strong> {selectedProofTrx.notes}
+                </p>
+              )}
+
+              {/* Action Buttons */}
+              <div className="pt-2 flex items-center justify-between gap-2 border-t border-slate-100">
+                {selectedProofTrx.proofUrl && (
+                  <a
+                    href={selectedProofTrx.proofUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs flex items-center space-x-1.5 transition cursor-pointer"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>Buka Gambar Asli</span>
+                  </a>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedProofTrx(null)}
+                  className="ml-auto px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold rounded-xl text-xs transition cursor-pointer"
+                >
+                  Tutup Preview
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Modal Add Transaction */}
@@ -559,6 +719,51 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                 />
               </div>
 
+              {/* Unggah Foto Bukti Transaksi / Kuitansi (Firebase Storage) */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Unggah Foto Bukti Transaksi / Kuitansi (Firebase Storage)
+                </label>
+                {proofPreviewUrl ? (
+                  <div className="relative rounded-2xl border border-emerald-300 bg-emerald-50/50 p-2 flex items-center justify-between">
+                    <div className="flex items-center space-x-3 min-w-0">
+                      <img
+                        src={proofPreviewUrl}
+                        alt="Preview Bukti"
+                        className="w-12 h-12 object-cover rounded-xl border border-emerald-200 shrink-0"
+                      />
+                      <div className="truncate">
+                        <p className="text-xs font-bold text-emerald-900 truncate">
+                          {proofFile ? proofFile.name : 'Berkas Terpilih'}
+                        </p>
+                        <p className="text-[10px] text-emerald-700">Tersimpan untuk diunggah</p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleRemoveProof}
+                      className="p-1.5 text-rose-600 hover:bg-rose-100 rounded-xl transition cursor-pointer"
+                      title="Hapus Bukti"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-300 hover:border-amber-500 bg-slate-50 hover:bg-amber-50/30 rounded-2xl cursor-pointer transition text-center group">
+                    <Upload className="w-5 h-5 text-slate-400 group-hover:text-amber-500 mb-1" />
+                    <span className="text-xs font-bold text-slate-700">Klik untuk Pilih Foto Kuitansi/Nota</span>
+                    <span className="text-[10px] text-slate-400">Format: JPG, PNG, WEBP (Otomatis ke Firebase Storage)</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+              </div>
+
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">Keterangan Tambahan</label>
                 <input
@@ -574,15 +779,24 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="px-4 py-2 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl hover:bg-slate-100 transition cursor-pointer"
+                  disabled={isUploadingProof}
+                  className="px-4 py-2 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl hover:bg-slate-100 transition cursor-pointer disabled:opacity-50"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold rounded-xl shadow-sm transition cursor-pointer"
+                  disabled={isUploadingProof}
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold rounded-xl shadow-sm transition flex items-center space-x-2 cursor-pointer disabled:opacity-50"
                 >
-                  Simpan Transaksi
+                  {isUploadingProof ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Mengunggah Foto...</span>
+                    </>
+                  ) : (
+                    <span>Simpan Transaksi</span>
+                  )}
                 </button>
               </div>
             </form>

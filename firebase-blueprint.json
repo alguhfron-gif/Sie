@@ -1,0 +1,39 @@
+{
+  "entities": {
+    "Nomination": {
+      "title": "Nomination",
+      "description": "Participant nomination and details data",
+      "type": "object",
+      "properties": {
+        "idPps": { "type": "string" },
+        "candidateName": { "type": "string" },
+        "domisili": { "type": "string" },
+        "kelas": { "type": "string" },
+        "tingkat": { "type": "string" },
+        "alamat": { "type": "string" },
+        "department": { "type": "string" },
+        "position": { "type": "string" },
+        "nipNik": { "type": "string" },
+        "phone": { "type": "string" },
+        "achievement": { "type": "string" },
+        "categoryId": { "type": "string" },
+        "justification": { "type": "string" },
+        "status": {
+          "type": "string",
+          "enum": ["Draf", "Penilaian", "Disetujui", "Pemenang"]
+        },
+        "score": { "type": "number" },
+        "photoUrl": { "type": "string" },
+        "nominatorName": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["candidateName", "categoryId", "justification", "status"]
+    }
+  },
+  "firestore": {
+    "/nominations/{nominationId}": {
+      "schema": { "$ref": "#/entities/Nomination" },
+      "description": "Collection storing all event participants and nominations"
+    }
+  }
+}

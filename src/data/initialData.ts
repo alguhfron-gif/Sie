@@ -64,6 +64,7 @@ export const INITIAL_TRANSACTIONS: Transaction[] = [
     amount: 7500000,
     notes: 'Transfer dari Bendahara Umum Panitia',
     receiptNumber: 'KAS-001',
+    proofUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=600&q=80',
   },
   {
     id: 'trx-2',
@@ -74,6 +75,7 @@ export const INITIAL_TRANSACTIONS: Transaction[] = [
     amount: 3500000,
     notes: 'Paket Sponsorship Emas',
     receiptNumber: 'SPON-002',
+    proofUrl: 'https://images.unsplash.com/photo-1554224154-26032ffc0d07?auto=format&fit=crop&w=600&q=80',
   },
   {
     id: 'trx-3',
@@ -84,6 +86,7 @@ export const INITIAL_TRANSACTIONS: Transaction[] = [
     amount: 3200000,
     notes: 'DP 50% ke Pengrajin Trofi Surabaya',
     receiptNumber: 'NOT-102',
+    proofUrl: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=600&q=80',
   },
   {
     id: 'trx-4',

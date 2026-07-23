@@ -19,6 +19,7 @@ export interface Transaction {
   amount: number;
   notes?: string;
   receiptNumber?: string;
+  proofUrl?: string;
 }
 
 export type NominationStatus = 'Draf' | 'Penilaian' | 'Disetujui' | 'Pemenang';

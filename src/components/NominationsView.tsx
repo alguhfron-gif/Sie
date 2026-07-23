@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Award, Plus, Search, Filter, CheckCircle2, Edit2, Trash2, Trophy, Star, UserCheck, ShieldCheck, LayoutGrid, List, Phone, Briefcase, IdCard, Sparkles } from 'lucide-react';
+import { Award, Plus, Search, Filter, CheckCircle2, Edit2, Trash2, Trophy, Star, UserCheck, ShieldCheck, LayoutGrid, List, Phone, Briefcase, IdCard, Sparkles, FileSpreadsheet, Download, Loader2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import ExcelJS from 'exceljs';
 import { AwardCategory, Nomination, NominationStatus } from '../types';
 
 interface NominationsViewProps {
@@ -46,6 +47,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
   const [status, setStatus] = useState<NominationStatus>('Penilaian');
   const [score, setScore] = useState<number>(85);
   const [nominatorName, setNominatorName] = useState('');
+  const [isExporting, setIsExporting] = useState(false);
 
   // Handle Modal Open
   const handleOpenAdd = () => {
@@ -185,27 +187,160 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
+  // Handle Export Data to Excel (.xlsx)
+  const handleExportExcel = async () => {
+    try {
+      setIsExporting(true);
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = 'Sie Penganugerahan App';
+      workbook.created = new Date();
+
+      const worksheet = workbook.addWorksheet('Daftar Peserta');
+
+      // Define Columns
+      worksheet.columns = [
+        { header: 'NO', key: 'no', width: 6 },
+        { header: 'ID PPS', key: 'idPps', width: 14 },
+        { header: 'NAMA PESERTA', key: 'candidateName', width: 28 },
+        { header: 'NIP / NIK', key: 'nipNik', width: 18 },
+        { header: 'KATEGORI PENGANUGERAHAN', key: 'categoryTitle', width: 30 },
+        { header: 'STATUS', key: 'status', width: 14 },
+        { header: 'SKOR / NILAI', key: 'score', width: 14 },
+        { header: 'JABATAN / POSISI', key: 'position', width: 22 },
+        { header: 'INSTANSI / DEPARTEMEN', key: 'department', width: 24 },
+        { header: 'DOMISILI', key: 'domisili', width: 18 },
+        { header: 'KELAS', key: 'kelas', width: 12 },
+        { header: 'TINGKAT', key: 'tingkat', width: 12 },
+        { header: 'NO. HANDPHONE / WA', key: 'phone', width: 18 },
+        { header: 'ALAMAT LENGKAP', key: 'alamat', width: 32 },
+        { header: 'KARYA / PRESTASI UTAMA', key: 'achievement', width: 32 },
+        { header: 'ALASAN / JUSTIFIKASI', key: 'justification', width: 32 },
+        { header: 'PENGUSUL / PANITIA', key: 'nominatorName', width: 22 },
+        { header: 'TANGGAL INPUT', key: 'createdAt', width: 16 },
+      ];
+
+      // Styling Header Row
+      const headerRow = worksheet.getRow(1);
+      headerRow.height = 28;
+      headerRow.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+      headerRow.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF0F172A' }, // Dark navy slate
+      };
+      headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+
+      // Determine items to export (use filtered list if filters active, otherwise full list)
+      const dataToExport = filteredNominations.length > 0 ? filteredNominations : nominations;
+
+      dataToExport.forEach((nom, index) => {
+        const categoryObj = categories.find((c) => c.id === nom.categoryId);
+        const catTitle = categoryObj ? categoryObj.title : nom.categoryId;
+
+        const row = worksheet.addRow({
+          no: index + 1,
+          idPps: nom.idPps || '-',
+          candidateName: nom.candidateName || '-',
+          nipNik: nom.nipNik || '-',
+          categoryTitle: catTitle,
+          status: nom.status || '-',
+          score: nom.score || 0,
+          position: nom.position || '-',
+          department: nom.department || '-',
+          domisili: nom.domisili || '-',
+          kelas: nom.kelas || '-',
+          tingkat: nom.tingkat || '-',
+          phone: nom.phone || '-',
+          alamat: nom.alamat || '-',
+          achievement: nom.achievement || '-',
+          justification: nom.justification || '-',
+          nominatorName: nom.nominatorName || '-',
+          createdAt: nom.createdAt || '-',
+        });
+
+        row.height = 22;
+        row.alignment = { vertical: 'middle', horizontal: 'left' };
+
+        // Alignments for specific columns
+        row.getCell('no').alignment = { vertical: 'middle', horizontal: 'center' };
+        row.getCell('idPps').alignment = { vertical: 'middle', horizontal: 'center' };
+        row.getCell('status').alignment = { vertical: 'middle', horizontal: 'center' };
+        row.getCell('score').alignment = { vertical: 'middle', horizontal: 'center' };
+        row.getCell('createdAt').alignment = { vertical: 'middle', horizontal: 'center' };
+
+        // Alternating row background
+        if (index % 2 === 1) {
+          row.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFF8FAFC' },
+          };
+        }
+      });
+
+      // Write Buffer and trigger browser download
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const dateStr = new Date().toISOString().split('T')[0];
+      link.download = `Data_Peserta_Penganugerahan_${dateStr}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Export Excel Error:', error);
+      alert('Gagal mengekspor data ke Excel. Silakan coba lagi.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="space-y-6 pb-12">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
         <div>
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Trophy className="w-5 h-5 text-amber-500" />
             <h1 className="text-xl font-extrabold text-slate-900">Pengelolaan Nominasi & Peserta Penganugerahan</h1>
+            <span className="flex items-center space-x-1 text-[10px] font-extrabold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-0.5 rounded-full shadow-2xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>Firestore Sync Active</span>
+            </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
             Manajemen data lengkap peserta, penambahan atribut identitas (NIP/NIK, Jabatan, Kontak, Karya), penilaian, hingga penetapan pemenang.
           </p>
         </div>
 
-        <button
-          onClick={handleOpenAdd}
-          className="flex items-center justify-center space-x-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-4 py-2.5 rounded-2xl shadow-sm transition text-xs sm:text-sm cursor-pointer shrink-0"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Tambah Peserta Baru</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          <button
+            type="button"
+            onClick={handleExportExcel}
+            disabled={isExporting}
+            className="flex items-center justify-center space-x-2 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold px-4 py-2.5 rounded-2xl shadow-sm transition text-xs sm:text-sm cursor-pointer disabled:opacity-50"
+            title="Ekspor seluruh data peserta ke file Excel (.xlsx)"
+          >
+            {isExporting ? (
+              <Loader2 className="w-4 h-4 animate-spin text-white" />
+            ) : (
+              <FileSpreadsheet className="w-4 h-4 text-emerald-200" />
+            )}
+            <span>{isExporting ? 'Mengekspor...' : 'Ekspor Excel'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleOpenAdd}
+            className="flex items-center justify-center space-x-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-4 py-2.5 rounded-2xl shadow-sm transition text-xs sm:text-sm cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Tambah Peserta Baru</span>
+          </button>
+        </div>
       </div>
 
       {/* Kategori Overview Badges (Bento Tiles) */}
