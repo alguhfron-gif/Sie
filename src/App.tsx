@@ -14,6 +14,12 @@ import {
   updateNominationInFirestore,
   deleteNominationFromFirestore,
 } from './services/nominationsService';
+import {
+  subscribeTransactions,
+  addTransactionToFirestore,
+  updateTransactionInFirestore,
+  deleteTransactionFromFirestore,
+} from './services/financeService';
 import { subscribeToAuthChanges, logoutFirebase } from './services/authService';
 import { Navbar } from './components/Navbar';
 import { BottomNav } from './components/BottomNav';
@@ -72,9 +78,7 @@ export default function App() {
     const saved = localStorage.getItem('sie_nominations');
     if (saved) {
       try {
-        const parsed: Nomination[] = JSON.parse(saved);
-        const filtered = parsed.filter((n) => n.candidateName.toLowerCase().includes('ghufron'));
-        if (filtered.length > 0) return filtered;
+        return JSON.parse(saved);
       } catch (e) {
         console.error('Failed to parse saved nominations', e);
       }
@@ -110,12 +114,27 @@ export default function App() {
   useEffect(() => {
     const unsubscribe = subscribeNominations(
       (firestoreItems) => {
-        if (firestoreItems && firestoreItems.length > 0) {
+        if (firestoreItems && firestoreItems.length >= 0) {
           setNominations(firestoreItems);
         }
       },
       (error) => {
-        console.warn('Realtime Firestore synchronization notice:', error);
+        console.warn('Realtime Firestore nominations synchronization notice:', error);
+      }
+    );
+    return () => unsubscribe();
+  }, []);
+
+  // Subscribe to Cloud Firestore Transactions Real-time Updates
+  useEffect(() => {
+    const unsubscribe = subscribeTransactions(
+      (firestoreItems) => {
+        if (firestoreItems && firestoreItems.length >= 0) {
+          setTransactions(firestoreItems);
+        }
+      },
+      (error) => {
+        console.warn('Realtime Firestore transactions synchronization notice:', error);
       }
     );
     return () => unsubscribe();
@@ -193,21 +212,39 @@ export default function App() {
     }
   };
 
-  // Transaction Handlers
-  const handleAddTransaction = (newTrx: Omit<Transaction, 'id'>) => {
+  // Transaction Handlers with Firestore Integration
+  const handleAddTransaction = async (newTrx: Omit<Transaction, 'id'>) => {
     const created: Transaction = {
       ...newTrx,
       id: `trx-${Date.now()}`,
     };
-    setTransactions([created, ...transactions]);
+    setTransactions((prev) => [created, ...prev]);
+
+    try {
+      await addTransactionToFirestore(newTrx);
+    } catch (err) {
+      console.error('Firestore sync failed on add transaction:', err);
+    }
   };
 
-  const handleUpdateTransaction = (updatedTrx: Transaction) => {
+  const handleUpdateTransaction = async (updatedTrx: Transaction) => {
     setTransactions((prev) => prev.map((t) => (t.id === updatedTrx.id ? updatedTrx : t)));
+
+    try {
+      await updateTransactionInFirestore(updatedTrx);
+    } catch (err) {
+      console.error('Firestore sync failed on update transaction:', err);
+    }
   };
 
-  const handleDeleteTransaction = (id: string) => {
-    setTransactions(transactions.filter((t) => t.id !== id));
+  const handleDeleteTransaction = async (id: string) => {
+    setTransactions((prev) => prev.filter((t) => t.id !== id));
+
+    try {
+      await deleteTransactionFromFirestore(id);
+    } catch (err) {
+      console.error('Firestore sync failed on delete transaction:', err);
+    }
   };
 
   // Task Handlers

@@ -28,12 +28,32 @@
         "createdAt": { "type": "string" }
       },
       "required": ["candidateName", "categoryId", "justification", "status"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Financial transaction cashflow record",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "type": { "type": "string", "enum": ["pemasukan", "pengeluaran"] },
+        "category": { "type": "string" },
+        "amount": { "type": "number" },
+        "date": { "type": "string" },
+        "notes": { "type": "string" },
+        "receiptNumber": { "type": "string" },
+        "proofUrl": { "type": "string" }
+      },
+      "required": ["title", "type", "category", "amount", "date"]
     }
   },
   "firestore": {
     "/nominations/{nominationId}": {
       "schema": { "$ref": "#/entities/Nomination" },
       "description": "Collection storing all event participants and nominations"
+    },
+    "/transactions/{transactionId}": {
+      "schema": { "$ref": "#/entities/Transaction" },
+      "description": "Collection storing all financial income and expense transactions"
     }
   }
 }

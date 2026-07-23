@@ -3,6 +3,7 @@ import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
+import firebaseConfigJson from '../firebase-applet-config.json';
 
 // Helper to sanitize env values and fallback if invalid or placeholder
 const getEnvValue = (val: string | undefined, fallback: string): string => {
@@ -14,12 +15,12 @@ const getEnvValue = (val: string | undefined, fallback: string): string => {
 
 // Default Firebase Client Configuration
 export const firebaseConfig = {
-  apiKey: getEnvValue(import.meta.env.VITE_FIREBASE_API_KEY, "AIzaSyAUDZGvUNhWAd_sk8loWDkgHEtUiRj5ESA"),
-  authDomain: getEnvValue(import.meta.env.VITE_FIREBASE_AUTH_DOMAIN, "sie-penganugrahan.firebaseapp.com"),
-  projectId: getEnvValue(import.meta.env.VITE_FIREBASE_PROJECT_ID, "sie-penganugrahan"),
-  storageBucket: getEnvValue(import.meta.env.VITE_FIREBASE_STORAGE_BUCKET, "sie-penganugrahan.firebasestorage.app"),
-  messagingSenderId: getEnvValue(import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID, "794946122065"),
-  appId: getEnvValue(import.meta.env.VITE_FIREBASE_APP_ID, "1:794946122065:web:a59afe46edaa6938e96370")
+  apiKey: getEnvValue(import.meta.env.VITE_FIREBASE_API_KEY, firebaseConfigJson.apiKey),
+  authDomain: getEnvValue(import.meta.env.VITE_FIREBASE_AUTH_DOMAIN, firebaseConfigJson.authDomain),
+  projectId: getEnvValue(import.meta.env.VITE_FIREBASE_PROJECT_ID, firebaseConfigJson.projectId),
+  storageBucket: getEnvValue(import.meta.env.VITE_FIREBASE_STORAGE_BUCKET, firebaseConfigJson.storageBucket),
+  messagingSenderId: getEnvValue(import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID, firebaseConfigJson.messagingSenderId),
+  appId: getEnvValue(import.meta.env.VITE_FIREBASE_APP_ID, firebaseConfigJson.appId)
 };
 
 // Initialize Firebase App safely
@@ -45,7 +46,12 @@ export const auth = authService;
 
 let dbService: Firestore;
 try {
-  dbService = getFirestore(app);
+  const customDbId = firebaseConfigJson.firestoreDatabaseId;
+  if (customDbId && customDbId !== '(default)') {
+    dbService = getFirestore(app, customDbId);
+  } else {
+    dbService = getFirestore(app);
+  }
 } catch (error) {
   console.warn("Firestore initialization error:", error);
   dbService = getFirestore(app);
@@ -110,4 +116,3 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
 }
 
 export default app;
-

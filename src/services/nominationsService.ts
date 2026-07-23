@@ -4,11 +4,11 @@ import {
   setDoc,
   deleteDoc,
   onSnapshot,
-  getDocs,
   getDocFromServer
 } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Nomination } from '../types';
+import { INITIAL_NOMINATIONS } from '../data/initialData';
 
 const COLLECTION_NAME = 'nominations';
 
@@ -29,6 +29,7 @@ export async function testConnection(): Promise<boolean> {
 
 /**
  * Subscribe to real-time changes in the 'nominations' collection in Firestore.
+ * If empty, seeds default INITIAL_NOMINATIONS to Firestore.
  */
 export function subscribeNominations(
   onSuccess: (data: Nomination[]) => void,
@@ -38,7 +39,20 @@ export function subscribeNominations(
   
   return onSnapshot(
     colRef,
-    (snapshot) => {
+    async (snapshot) => {
+      if (snapshot.empty) {
+        try {
+          for (const initNom of INITIAL_NOMINATIONS) {
+            const docRef = doc(db, COLLECTION_NAME, initNom.id);
+            await setDoc(docRef, initNom);
+          }
+        } catch (e) {
+          console.warn('Failed to seed initial nominations to Firestore:', e);
+        }
+        onSuccess(INITIAL_NOMINATIONS);
+        return;
+      }
+
       const items: Nomination[] = [];
       snapshot.forEach((docSnap) => {
         const data = docSnap.data() as Omit<Nomination, 'id'>;
@@ -78,9 +92,10 @@ export async function addNominationToFirestore(
     createdAt,
   };
 
+  const firestoreData = JSON.parse(JSON.stringify(created));
   const docRef = doc(db, COLLECTION_NAME, docId);
   try {
-    await setDoc(docRef, created);
+    await setDoc(docRef, firestoreData);
     return created;
   } catch (error) {
     console.error("Failed to add nomination to Firestore:", error);
@@ -98,8 +113,9 @@ export async function addNominationToFirestore(
  */
 export async function updateNominationInFirestore(updatedNom: Nomination): Promise<void> {
   const docRef = doc(db, COLLECTION_NAME, updatedNom.id);
+  const firestoreData = JSON.parse(JSON.stringify(updatedNom));
   try {
-    await setDoc(docRef, updatedNom, { merge: true });
+    await setDoc(docRef, firestoreData, { merge: true });
   } catch (error) {
     console.error("Failed to update nomination in Firestore:", error);
     try {
