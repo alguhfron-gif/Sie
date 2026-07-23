@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DollarSign, Plus, Search, Filter, TrendingUp, TrendingDown, Printer, FileSpreadsheet, Trash2, Calendar, FileText, CheckCircle2, Receipt, Upload, Image as ImageIcon, X, Eye, Download, ExternalLink, Loader2 } from 'lucide-react';
+import { DollarSign, Plus, Search, Filter, TrendingUp, TrendingDown, Printer, FileSpreadsheet, Trash2, Calendar, FileText, CheckCircle2, Receipt, Upload, Image as ImageIcon, X, Eye, Download, ExternalLink, Loader2, Pencil } from 'lucide-react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 import { Transaction, TransactionCategory, TransactionType } from '../types';
 import { uploadReceiptImage } from '../services/storageService';
@@ -7,6 +7,7 @@ import { uploadReceiptImage } from '../services/storageService';
 interface FinanceViewProps {
   transactions: Transaction[];
   onAddTransaction: (trx: Omit<Transaction, 'id'>) => void;
+  onUpdateTransaction?: (trx: Transaction) => void;
   onDeleteTransaction: (id: string) => void;
   isAddModalOpenDirectly?: boolean;
   onCloseAddModalDirectly?: () => void;
@@ -15,6 +16,7 @@ interface FinanceViewProps {
 export const FinanceView: React.FC<FinanceViewProps> = ({
   transactions,
   onAddTransaction,
+  onUpdateTransaction,
   onDeleteTransaction,
   isAddModalOpenDirectly = false,
   onCloseAddModalDirectly,
@@ -24,6 +26,9 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
   const [isModalOpen, setIsModalOpen] = useState(isAddModalOpenDirectly);
   const [showPrintReport, setShowPrintReport] = useState(false);
+
+  // Edit Transaction State
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
   // Proof Image Pop-up Preview State
   const [selectedProofTrx, setSelectedProofTrx] = useState<Transaction | null>(null);
@@ -62,6 +67,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
   };
 
   const handleOpenAdd = () => {
+    setEditingTransaction(null);
     setTitle('');
     setType('pengeluaran');
     setCategory('Trofi & Plakat');
@@ -75,8 +81,24 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
     setIsModalOpen(true);
   };
 
+  const handleOpenEdit = (trx: Transaction) => {
+    setEditingTransaction(trx);
+    setTitle(trx.title);
+    setType(trx.type);
+    setCategory(trx.category);
+    setAmount(trx.amount);
+    setDate(trx.date);
+    setNotes(trx.notes || '');
+    setReceiptNumber(trx.receiptNumber || '');
+    setProofFile(null);
+    setProofPreviewUrl(trx.proofUrl || null);
+    setIsUploadingProof(false);
+    setIsModalOpen(true);
+  };
+
   const closeModal = () => {
     setIsModalOpen(false);
+    setEditingTransaction(null);
     setProofFile(null);
     setProofPreviewUrl(null);
     setIsUploadingProof(false);
@@ -101,7 +123,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
     e.preventDefault();
     if (!title.trim() || amount <= 0) return;
 
-    let uploadedProofUrl: string | undefined = undefined;
+    let uploadedProofUrl: string | undefined = editingTransaction?.proofUrl;
 
     if (proofFile) {
       setIsUploadingProof(true);
@@ -112,18 +134,34 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
       } finally {
         setIsUploadingProof(false);
       }
+    } else if (proofPreviewUrl === null) {
+      uploadedProofUrl = undefined;
     }
 
-    onAddTransaction({
-      title,
-      type,
-      category,
-      amount,
-      date,
-      notes,
-      receiptNumber: receiptNumber || `TRX-${Date.now().toString().slice(-4)}`,
-      proofUrl: uploadedProofUrl,
-    });
+    if (editingTransaction && onUpdateTransaction) {
+      onUpdateTransaction({
+        ...editingTransaction,
+        title,
+        type,
+        category,
+        amount,
+        date,
+        notes,
+        receiptNumber: receiptNumber || editingTransaction.receiptNumber,
+        proofUrl: uploadedProofUrl,
+      });
+    } else {
+      onAddTransaction({
+        title,
+        type,
+        category,
+        amount,
+        date,
+        notes,
+        receiptNumber: receiptNumber || `TRX-${Date.now().toString().slice(-4)}`,
+        proofUrl: uploadedProofUrl,
+      });
+    }
 
     closeModal();
   };
@@ -445,12 +483,23 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                         </button>
                       )}
                     </div>
-                    <button
-                      onClick={() => onDeleteTransaction(t.id)}
-                      className="p-1 text-rose-600 hover:text-rose-700 font-bold text-[11px] cursor-pointer"
-                    >
-                      Hapus
-                    </button>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => handleOpenEdit(t)}
+                        className="px-2 py-0.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-lg text-[10px] font-bold flex items-center space-x-1 cursor-pointer transition"
+                        title="Edit Transaksi"
+                      >
+                        <Pencil className="w-3 h-3 text-amber-700" />
+                        <span>Edit</span>
+                      </button>
+                      <button
+                        onClick={() => onDeleteTransaction(t.id)}
+                        className="p-1 text-rose-600 hover:text-rose-700 font-bold text-[11px] cursor-pointer"
+                        title="Hapus Transaksi"
+                      >
+                        Hapus
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -511,13 +560,22 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                         </span>
                       </td>
                       <td className="p-3.5 text-center">
-                        <button
-                          onClick={() => onDeleteTransaction(t.id)}
-                          className="p-1.5 text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl transition cursor-pointer"
-                          title="Hapus Transaksi"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center justify-center space-x-1">
+                          <button
+                            onClick={() => handleOpenEdit(t)}
+                            className="p-1.5 text-amber-700 hover:text-amber-800 hover:bg-amber-50 rounded-xl transition cursor-pointer"
+                            title="Edit Transaksi"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => onDeleteTransaction(t.id)}
+                            className="p-1.5 text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl transition cursor-pointer"
+                            title="Hapus Transaksi"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -633,7 +691,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
             <div className="bg-slate-50 px-5 py-3.5 border-b border-slate-200 text-slate-900 flex items-center justify-between shrink-0">
               <h3 className="font-bold text-sm sm:text-base flex items-center space-x-2">
                 <DollarSign className="w-5 h-5 text-emerald-600" />
-                <span>Catat Transaksi Keuangan</span>
+                <span>{editingTransaction ? 'Edit Transaksi Keuangan' : 'Catat Transaksi Keuangan'}</span>
               </h3>
               <button onClick={closeModal} className="text-slate-400 hover:text-slate-700 font-bold p-1 cursor-pointer">
                 ✕
@@ -646,7 +704,13 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                   <label className="block text-xs font-bold text-slate-700 mb-1">Jenis Arus Kas *</label>
                   <select
                     value={type}
-                    onChange={(e) => setType(e.target.value as TransactionType)}
+                    onChange={(e) => {
+                      const newType = e.target.value as TransactionType;
+                      setType(newType);
+                      if (newType === 'pemasukan') {
+                        setCategory('Kas Organisasi');
+                      }
+                    }}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500/50 focus:outline-none font-bold"
                   >
                     <option value="pengeluaran">Pengeluaran (-)</option>
@@ -667,35 +731,56 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Judul Transaksi / Kebutuhan *</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  {type === 'pemasukan' ? 'Sumber Pemasukan / Judul *' : 'Judul Transaksi / Kebutuhan *'}
+                </label>
                 <input
                   type="text"
                   required
-                  placeholder="Contoh: Pembelian Trofi Kristal 10 Unit"
+                  placeholder={
+                    type === 'pemasukan'
+                      ? 'Contoh: Sponsorship Bank BCD / Kas Tambahan'
+                      : 'Contoh: Pembelian Trofi Kristal 10 Unit'
+                  }
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Kategori *</label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value as TransactionCategory)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500/50 focus:outline-none"
-                  >
-                    {categoriesList.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              {type === 'pengeluaran' ? (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Kategori *</label>
+                    <select
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value as TransactionCategory)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500/50 focus:outline-none"
+                    >
+                      {categoriesList.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Jumlah Pengeluaran (Rp) *</label>
+                    <input
+                      type="number"
+                      required
+                      min="1000"
+                      step="1000"
+                      value={amount}
+                      onChange={(e) => setAmount(Number(e.target.value))}
+                      className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none font-bold"
+                    />
+                  </div>
+                </div>
+              ) : (
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Jumlah (Rp) *</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Jumlah Pemasukan (Rp) *</label>
                   <input
                     type="number"
                     required
@@ -706,63 +791,68 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                     className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none font-bold"
                   />
                 </div>
-              </div>
+              )}
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Nomor Kuitansi / Bukti Nota</label>
-                <input
-                  type="text"
-                  placeholder="Contoh: NOT-2026-005"
-                  value={receiptNumber}
-                  onChange={(e) => setReceiptNumber(e.target.value)}
-                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-amber-800 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none font-mono"
-                />
-              </div>
-
-              {/* Unggah Foto Bukti Transaksi / Kuitansi (Firebase Storage) */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Unggah Foto Bukti Transaksi / Kuitansi (Firebase Storage)
-                </label>
-                {proofPreviewUrl ? (
-                  <div className="relative rounded-2xl border border-emerald-300 bg-emerald-50/50 p-2 flex items-center justify-between">
-                    <div className="flex items-center space-x-3 min-w-0">
-                      <img
-                        src={proofPreviewUrl}
-                        alt="Preview Bukti"
-                        className="w-12 h-12 object-cover rounded-xl border border-emerald-200 shrink-0"
-                      />
-                      <div className="truncate">
-                        <p className="text-xs font-bold text-emerald-900 truncate">
-                          {proofFile ? proofFile.name : 'Berkas Terpilih'}
-                        </p>
-                        <p className="text-[10px] text-emerald-700">Tersimpan untuk diunggah</p>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={handleRemoveProof}
-                      className="p-1.5 text-rose-600 hover:bg-rose-100 rounded-xl transition cursor-pointer"
-                      title="Hapus Bukti"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-300 hover:border-amber-500 bg-slate-50 hover:bg-amber-50/30 rounded-2xl cursor-pointer transition text-center group">
-                    <Upload className="w-5 h-5 text-slate-400 group-hover:text-amber-500 mb-1" />
-                    <span className="text-xs font-bold text-slate-700">Klik untuk Pilih Foto Kuitansi/Nota</span>
-                    <span className="text-[10px] text-slate-400">Format: JPG, PNG, WEBP (Otomatis ke Firebase Storage)</span>
+              {/* Tampilkan Nota & Foto Bukti HANYA untuk Pengeluaran */}
+              {type === 'pengeluaran' && (
+                <>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Nomor Kuitansi / Bukti Nota</label>
                     <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                      className="hidden"
+                      type="text"
+                      placeholder="Contoh: NOT-2026-005"
+                      value={receiptNumber}
+                      onChange={(e) => setReceiptNumber(e.target.value)}
+                      className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-amber-800 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none font-mono"
                     />
-                  </label>
-                )}
-              </div>
+                  </div>
+
+                  {/* Unggah Foto Bukti Transaksi / Kuitansi (Firebase Storage) */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Unggah Foto Bukti Transaksi / Kuitansi (Firebase Storage)
+                    </label>
+                    {proofPreviewUrl ? (
+                      <div className="relative rounded-2xl border border-emerald-300 bg-emerald-50/50 p-2 flex items-center justify-between">
+                        <div className="flex items-center space-x-3 min-w-0">
+                          <img
+                            src={proofPreviewUrl}
+                            alt="Preview Bukti"
+                            className="w-12 h-12 object-cover rounded-xl border border-emerald-200 shrink-0"
+                          />
+                          <div className="truncate">
+                            <p className="text-xs font-bold text-emerald-900 truncate">
+                              {proofFile ? proofFile.name : 'Berkas Terpilih'}
+                            </p>
+                            <p className="text-[10px] text-emerald-700">Tersimpan untuk diunggah</p>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={handleRemoveProof}
+                          className="p-1.5 text-rose-600 hover:bg-rose-100 rounded-xl transition cursor-pointer"
+                          title="Hapus Bukti"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-300 hover:border-amber-500 bg-slate-50 hover:bg-amber-50/30 rounded-2xl cursor-pointer transition text-center group">
+                        <Upload className="w-5 h-5 text-slate-400 group-hover:text-amber-500 mb-1" />
+                        <span className="text-xs font-bold text-slate-700">Klik untuk Pilih Foto Kuitansi/Nota</span>
+                        <span className="text-[10px] text-slate-400">Format: JPG, PNG, WEBP (Otomatis ke Firebase Storage)</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileChange}
+                          className="hidden"
+                        />
+                      </label>
+                    )}
+                  </div>
+                </>
+              )}
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">Keterangan Tambahan</label>
@@ -795,7 +885,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                       <span>Mengunggah Foto...</span>
                     </>
                   ) : (
-                    <span>Simpan Transaksi</span>
+                    <span>{editingTransaction ? 'Simpan Perubahan' : 'Simpan Transaksi'}</span>
                   )}
                 </button>
               </div>

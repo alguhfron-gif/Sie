@@ -202,6 +202,10 @@ export default function App() {
     setTransactions([created, ...transactions]);
   };
 
+  const handleUpdateTransaction = (updatedTrx: Transaction) => {
+    setTransactions((prev) => prev.map((t) => (t.id === updatedTrx.id ? updatedTrx : t)));
+  };
+
   const handleDeleteTransaction = (id: string) => {
     setTransactions(transactions.filter((t) => t.id !== id));
   };
@@ -289,6 +293,7 @@ export default function App() {
           <FinanceView
             transactions={transactions}
             onAddTransaction={handleAddTransaction}
+            onUpdateTransaction={handleUpdateTransaction}
             onDeleteTransaction={handleDeleteTransaction}
             isAddModalOpenDirectly={openAddTransactionDirectly}
             onCloseAddModalDirectly={() => setOpenAddTransactionDirectly(false)}
