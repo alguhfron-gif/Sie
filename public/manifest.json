@@ -1,37 +1,19 @@
 {
   "short_name": "Sie Penganugerahan",
   "name": "Sie Penganugerahan - Portal Panitia & Operasional",
-  "description": "Aplikasi Manajemen Operations Sie Penganugerahan: Pengelolaan Nominasi, Administrasi Kegiatan, Koordinasi Panitia, dan Laporan Keuangan.",
+  "description": "Aplikasi Manajemen Operations Sie Penganugerahan",
   "icons": [
-    {
-      "src": "/icon-192.png",
-      "type": "image/png",
-      "sizes": "192x192",
-      "purpose": "any"
-    },
-    {
-      "src": "/icon-192.png",
-      "type": "image/png",
-      "sizes": "192x192",
-      "purpose": "maskable"
-    },
-    {
-      "src": "/icon-512.png",
-      "type": "image/png",
-      "sizes": "512x512",
-      "purpose": "any"
-    },
-    {
-      "src": "/icon-512.png",
-      "type": "image/png",
-      "sizes": "512x512",
-      "purpose": "maskable"
-    },
     {
       "src": "/icon.svg",
       "type": "image/svg+xml",
       "sizes": "512x512",
       "purpose": "any"
+    },
+    {
+      "src": "/icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512",
+      "purpose": "maskable"
     }
   ],
   "start_url": "/",
@@ -40,13 +22,5 @@
   "display": "standalone",
   "orientation": "portrait",
   "scope": "/",
-  "id": "/",
-  "categories": [
-    "productivity",
-    "business",
-    "utilities"
-  ],
-  "lang": "id",
-  "dir": "ltr",
-  "prefer_related_applications": false
+  "id": "/"
 }
