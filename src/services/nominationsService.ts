@@ -6,7 +6,7 @@ import {
   onSnapshot,
   getDocFromServer
 } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from '../firebase';
+import { db, logFirestoreError, handleFirestoreError, OperationType } from '../firebase';
 import { Nomination } from '../types';
 import { INITIAL_NOMINATIONS } from '../data/initialData';
 
@@ -66,13 +66,9 @@ export function subscribeNominations(
       onSuccess(items);
     },
     (error) => {
-      console.error("Firestore onSnapshot error for nominations:", error);
+      console.warn("Firestore onSnapshot notice for nominations:", error);
       if (onError) onError(error);
-      try {
-        handleFirestoreError(error, OperationType.GET, COLLECTION_NAME);
-      } catch (e) {
-        // Logged structured error
-      }
+      logFirestoreError(error, OperationType.GET, COLLECTION_NAME);
     }
   );
 }

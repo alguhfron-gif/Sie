@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
-import { getFirestore, Firestore } from 'firebase/firestore';
+import { getFirestore, initializeFirestore, Firestore } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 import firebaseConfigJson from '../firebase-applet-config.json';
 
@@ -47,14 +47,22 @@ export const auth = authService;
 let dbService: Firestore;
 try {
   const customDbId = firebaseConfigJson.firestoreDatabaseId;
+  const firestoreSettings = {
+    experimentalAutoDetectLongPolling: true,
+  };
   if (customDbId && customDbId !== '(default)') {
-    dbService = getFirestore(app, customDbId);
+    dbService = initializeFirestore(app, firestoreSettings, customDbId);
   } else {
-    dbService = getFirestore(app);
+    dbService = initializeFirestore(app, firestoreSettings);
   }
 } catch (error) {
-  console.warn("Firestore initialization error:", error);
-  dbService = getFirestore(app);
+  console.warn("Firestore initialization with settings fallback, using getFirestore:", error);
+  try {
+    const customDbId = firebaseConfigJson.firestoreDatabaseId;
+    dbService = customDbId && customDbId !== '(default)' ? getFirestore(app, customDbId) : getFirestore(app);
+  } catch (e) {
+    dbService = getFirestore(app);
+  }
 }
 export const db = dbService;
 
@@ -92,6 +100,26 @@ export interface FirestoreErrorInfo {
       email?: string | null;
     }[];
   };
+}
+
+export function logFirestoreError(error: unknown, operationType: OperationType, path: string | null): void {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth?.currentUser?.uid,
+      email: auth?.currentUser?.email,
+      emailVerified: auth?.currentUser?.emailVerified,
+      isAnonymous: auth?.currentUser?.isAnonymous,
+      tenantId: auth?.currentUser?.tenantId,
+      providerInfo: auth?.currentUser?.providerData?.map(provider => ({
+        providerId: provider.providerId,
+        email: provider.email,
+      })) || []
+    },
+    operationType,
+    path
+  };
+  console.warn('Firestore Warning/Notice: ', JSON.stringify(errInfo));
 }
 
 export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null): never {

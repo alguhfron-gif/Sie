@@ -5,7 +5,7 @@ import {
   deleteDoc,
   onSnapshot,
 } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from '../firebase';
+import { db, logFirestoreError, handleFirestoreError, OperationType } from '../firebase';
 import { Transaction } from '../types';
 import { INITIAL_TRANSACTIONS } from '../data/initialData';
 
@@ -52,13 +52,9 @@ export function subscribeTransactions(
       onSuccess(items);
     },
     (error) => {
-      console.error('Firestore onSnapshot error for transactions:', error);
+      console.warn('Firestore onSnapshot notice for transactions:', error);
       if (onError) onError(error);
-      try {
-        handleFirestoreError(error, OperationType.GET, COLLECTION_NAME);
-      } catch (e) {
-        // Handled or logged
-      }
+      logFirestoreError(error, OperationType.GET, COLLECTION_NAME);
     }
   );
 }
