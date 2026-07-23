@@ -16,12 +16,12 @@
     </filter>
   </defs>
 
-  <!-- Background Circle -->
-  <rect width="512" height="512" rx="128" fill="url(#bgGrad)"/>
-  <circle cx="256" cy="256" r="230" fill="none" stroke="#f59e0b" stroke-width="4" stroke-opacity="0.3"/>
+  <!-- Background Full Square (Full Opaque for Maskable PWA) -->
+  <rect width="512" height="512" fill="url(#bgGrad)"/>
+  <circle cx="256" cy="256" r="200" fill="none" stroke="#f59e0b" stroke-width="4" stroke-opacity="0.3"/>
 
-  <!-- Golden Trophy & Crown Visual -->
-  <g transform="translate(106, 80) scale(1.18)" filter="url(#glow)">
+  <!-- Golden Trophy & Crown Visual (Scaled to fit within 80% safe zone) -->
+  <g transform="translate(126, 95) scale(1.02)" filter="url(#glow)">
     <!-- Base -->
     <path d="M 90 230 L 160 230 L 150 200 L 100 200 Z" fill="url(#goldGrad)" />
     <rect x="70" y="230" width="110" height="20" rx="6" fill="#f59e0b" />
