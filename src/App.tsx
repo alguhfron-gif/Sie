@@ -822,6 +822,7 @@ export default function App() {
           setCollapsed={setIsSidebarCollapsed}
           mobileOpen={isMobileSidebarOpen}
           onCloseMobile={() => setIsMobileSidebarOpen(false)}
+          onOpenWebhookModal={() => setIsWebhookModalOpen(true)}
         />
 
         {/* Main Content Area wrapped in ErrorBoundary */}
