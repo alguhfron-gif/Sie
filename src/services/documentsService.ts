@@ -39,9 +39,17 @@ export function subscribeOfficialDocuments(
 
       const items: OfficialDocument[] = [];
       snapshot.forEach((docSnap) => {
+        const data = docSnap.data() || {};
         items.push({
-          ...(docSnap.data() as Omit<OfficialDocument, 'id'>),
           id: docSnap.id,
+          docNumber: data.docNumber || '000/PENG/2026',
+          title: data.title || 'Dokumen Resmi',
+          category: data.category || 'Surat Edaran',
+          date: data.date || new Date().toISOString().split('T')[0],
+          sender: data.sender || 'Panitia Sie Penganugerahan',
+          content: data.content || '',
+          status: data.status || 'Diterbitkan',
+          fileUrl: data.fileUrl,
         });
       });
 
@@ -134,9 +142,20 @@ export function subscribeRegulations(
 
       const items: RegulationRule[] = [];
       snapshot.forEach((docSnap) => {
+        const data = docSnap.data() || {};
+        const points = Array.isArray(data.points)
+          ? data.points
+          : typeof data.points === 'string'
+          ? data.points.split('\n')
+          : [];
+
         items.push({
-          ...(docSnap.data() as Omit<RegulationRule, 'id'>),
           id: docSnap.id,
+          section: data.section || 'Ketentuan Umum',
+          title: data.title || 'Ketentuan',
+          description: data.description || '',
+          points: points.map((p: any) => String(p || '')).filter((p: string) => p.trim().length > 0),
+          lastUpdated: data.lastUpdated || new Date().toISOString().split('T')[0],
         });
       });
 

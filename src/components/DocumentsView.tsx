@@ -3,8 +3,12 @@ import * as mammoth from 'mammoth';
 import * as pdfjsLib from 'pdfjs-dist';
 
 // Set pdfjs worker URL for client side pdf text extraction
-if (typeof window !== 'undefined' && pdfjsLib.GlobalWorkerOptions) {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
+if (typeof window !== 'undefined' && pdfjsLib && pdfjsLib.GlobalWorkerOptions) {
+  try {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
+  } catch (e) {
+    console.warn('Failed to set pdfjs workerSrc:', e);
+  }
 }
 import {
   FileText,
@@ -31,8 +35,12 @@ import {
 import { OfficialDocument, RegulationRule, UserSession } from '../types';
 import { ContentHeader } from './ContentHeader';
 
-export const stripHtml = (str: string) => {
-  if (!str) return '';
+export const stripHtml = (str: any) => {
+  if (str === null || str === undefined) return '';
+  if (typeof str !== 'string') {
+    if (Array.isArray(str)) return str.map((s) => stripHtml(s)).join(', ');
+    return String(str);
+  }
   return str.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
 };
 
@@ -284,30 +292,36 @@ export const exportOfficialDocToWord = (
   `;
 
   const header = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-  <head><meta charset='utf-8'><title>${doc.title}</title></head><body>`;
+  <head><meta charset='utf-8'><title>${doc.title || 'Surat'}</title></head><body>`;
   const footer = "</body></html>";
-  const source = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(header + contentHtml + footer);
+  const htmlContent = header + contentHtml + footer;
+
+  const blob = new Blob([htmlContent], { type: 'application/msword;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
 
   const link = document.createElement('a');
+  link.href = url;
+  const safeTitle = (doc.title || 'Surat').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 30);
+  link.download = `Surat_${safeTitle}_${doc.id || 'doc'}.doc`;
   document.body.appendChild(link);
-  link.href = source;
-  const safeTitle = doc.title.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 30);
-  link.download = `Surat_${safeTitle}_${doc.id}.doc`;
   link.click();
   document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 
 export const exportRegulationsToWord = (regulations: RegulationRule[]) => {
+  if (!regulations || regulations.length === 0) return;
+
   const regsHtml = regulations
     .map(
       (r, i) => `
     <div style="margin-bottom: 25px; border: 1px solid #005a2b; padding: 15px; border-radius: 8px;">
-      <h3 style="color: #005a2b; margin-top: 0; font-size: 14pt;">${i + 1}. [${r.section}] ${r.title}</h3>
-      <p style="font-size: 10pt; color: #555; margin-bottom: 10px;"><b>Diperbarui:</b> ${r.lastUpdated}</p>
-      <p style="font-size: 11pt; line-height: 1.5; margin-bottom: 10px;">${r.description}</p>
+      <h3 style="color: #005a2b; margin-top: 0; font-size: 14pt;">${i + 1}. [${r.section || 'Ketentuan'}] ${r.title || ''}</h3>
+      <p style="font-size: 10pt; color: #555; margin-bottom: 10px;"><b>Diperbarui:</b> ${r.lastUpdated || '-'}</p>
+      <p style="font-size: 11pt; line-height: 1.5; margin-bottom: 10px;">${r.description || ''}</p>
       <h4 style="font-size: 11pt; margin-bottom: 5px; color: #222;">Ketentuan Utama:</h4>
       <ol style="margin-top: 5px; font-size: 11pt; line-height: 1.5;">
-        ${r.points.map((pt) => `<li style="margin-bottom: 4px;">${pt}</li>`).join('')}
+        ${(Array.isArray(r.points) ? r.points : []).map((pt) => `<li style="margin-bottom: 4px;">${pt || ''}</li>`).join('')}
       </ol>
     </div>
   `
@@ -327,14 +341,18 @@ export const exportRegulationsToWord = (regulations: RegulationRule[]) => {
 
   const header = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'></head><body>`;
   const footer = "</body></html>";
-  const source = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(header + contentHtml + footer);
+  const htmlContent = header + contentHtml + footer;
+
+  const blob = new Blob([htmlContent], { type: 'application/msword;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
 
   const link = document.createElement('a');
-  document.body.appendChild(link);
-  link.href = source;
+  link.href = url;
   link.download = `Ketentuan_dan_Kriteria_Penganugerahan_Sidogiri.doc`;
+  document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 
 interface OfficialLetterPaperProps {
@@ -1070,15 +1088,21 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
   };
 
   const handlePrint = () => {
-    window.print();
+    try {
+      window.print();
+    } catch (err) {
+      console.warn('Print fail/unsupported:', err);
+      alert('Fitur cetak otomatis tidak didukung di peramban ini. Silakan gunakan tombol Download Word.');
+    }
   };
 
   // Filtered documents
-  const filteredDocs = documents.filter((doc) => {
+  const filteredDocs = (documents || []).filter((doc) => {
+    if (!doc) return false;
     const matchesSearch =
-      doc.title.toLowerCase().includes(searchDocQuery.toLowerCase()) ||
-      doc.docNumber.toLowerCase().includes(searchDocQuery.toLowerCase()) ||
-      doc.content.toLowerCase().includes(searchDocQuery.toLowerCase());
+      (doc.title || '').toLowerCase().includes(searchDocQuery.toLowerCase()) ||
+      (doc.docNumber || '').toLowerCase().includes(searchDocQuery.toLowerCase()) ||
+      (doc.content || '').toLowerCase().includes(searchDocQuery.toLowerCase());
     const matchesCat = categoryFilter === 'Semua' || doc.category === categoryFilter;
     return matchesSearch && matchesCat;
   });
@@ -1090,7 +1114,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
         <ContentHeader
           title="Dokumen SK & Ketentuan Resmi"
           subtitle="Arsip Surat Keputusan, Edaran, serta Regulasi Penganugerahan Sidogiri"
-          activeTab="dokumen"
+          activeTab="surat"
         />
       </div>
 
@@ -1402,92 +1426,113 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
       {activeSubTab === 'ketentuan' && (
         <div className="space-y-4 print:hidden">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {regulations.map((reg) => (
-              <div
-                key={reg.id}
-                className="bg-white rounded-xl border border-slate-200 p-4 shadow-2xs space-y-3 flex flex-col justify-between"
-              >
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-200 px-2 py-0.5 rounded">
-                      {reg.section}
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-medium">
-                      Update: {reg.lastUpdated}
-                    </span>
-                  </div>
+            {(regulations || []).map((reg) => {
+              if (!reg) return null;
+              const safePoints = Array.isArray(reg.points)
+                ? reg.points
+                : typeof reg.points === 'string'
+                ? [reg.points]
+                : [];
 
-                  <h3 className="font-extrabold text-slate-900 text-sm">{stripHtml(reg.title)}</h3>
+              return (
+                <div
+                  key={reg.id || Math.random().toString()}
+                  className="bg-white rounded-xl border border-slate-200 p-4 shadow-2xs space-y-3 flex flex-col justify-between"
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-200 px-2 py-0.5 rounded">
+                        {reg.section || 'Ketentuan'}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-medium">
+                        Update: {reg.lastUpdated || '-'}
+                      </span>
+                    </div>
 
-                  <p className="text-xs text-slate-600 leading-relaxed font-normal">{stripHtml(reg.description)}</p>
+                    <h3 className="font-extrabold text-slate-900 text-sm">{stripHtml(reg.title)}</h3>
 
-                  <div className="space-y-1.5 pt-1">
-                    {reg.points.map((pt, idx) => (
-                      <div key={idx} className="flex items-start space-x-2 text-xs text-slate-800 font-medium">
-                        <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                        <span>{stripHtml(pt)}</span>
+                    <p className="text-xs text-slate-600 leading-relaxed font-normal">{stripHtml(reg.description)}</p>
+
+                    <div className="space-y-1.5 pt-1">
+                      {safePoints.map((pt, idx) => (
+                        <div key={idx} className="flex items-start space-x-2 text-xs text-slate-800 font-medium">
+                          <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                          <span>{stripHtml(pt)}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Direct Action: Jump to nominations for this category */}
+                    {onNavigateToNominees && (
+                      <div className="pt-2">
+                        <button
+                          type="button"
+                          onClick={onNavigateToNominees}
+                          className="w-full py-2 px-3 bg-[#005a2b] hover:bg-[#004220] text-white font-black text-xs rounded-lg shadow-xs flex items-center justify-center space-x-1.5 transition cursor-pointer"
+                        >
+                          <UserCheck className="w-4 h-4 text-amber-300" />
+                          <span>Pahami & Tambah Peserta di Kolom Nominasi ➡️</span>
+                        </button>
                       </div>
-                    ))}
+                    )}
                   </div>
 
-                  {/* Direct Action: Jump to nominations for this category */}
-                  {onNavigateToNominees && (
-                    <div className="pt-2">
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-1 flex-wrap">
+                    <div className="flex items-center space-x-1 flex-wrap gap-y-1">
                       <button
-                        onClick={onNavigateToNominees}
-                        className="w-full py-2 px-3 bg-[#005a2b] hover:bg-[#004220] text-white font-black text-xs rounded-lg shadow-xs flex items-center justify-center space-x-1.5 transition cursor-pointer"
+                        type="button"
+                        onClick={() => setSelectedRegForPreview(reg)}
+                        className="text-xs font-extrabold text-[#005a2b] bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded flex items-center space-x-1 cursor-pointer"
+                        title="Pratinjau Dokumen Ber-Kop Resmi & Cetak PDF"
                       >
-                        <UserCheck className="w-4 h-4 text-amber-300" />
-                        <span>Pahami & Tambah Peserta di Kolom Nominasi ➡️</span>
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>Cetak Ber-Kop / PDF</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => exportRegulationsToWord([reg])}
+                        className="text-xs font-bold text-amber-800 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-1 rounded flex items-center space-x-1 cursor-pointer"
+                        title="Unduh File Word (.doc)"
+                      >
+                        <FileType className="w-3.5 h-3.5 text-amber-600" />
+                        <span>Word</span>
                       </button>
                     </div>
-                  )}
-                </div>
 
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-1">
-                  <div className="flex items-center space-x-1">
-                    <button
-                      onClick={() => setSelectedRegForPreview(reg)}
-                      className="text-xs font-extrabold text-[#005a2b] bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded flex items-center space-x-1 cursor-pointer"
-                      title="Pratinjau Dokumen Ber-Kop Resmi & Cetak PDF"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>Cetak Ber-Kop / PDF</span>
-                    </button>
-
-                    <button
-                      onClick={() => exportRegulationsToWord([reg])}
-                      className="text-xs font-bold text-amber-800 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-1 rounded flex items-center space-x-1 cursor-pointer"
-                      title="Unduh File Word (.doc)"
-                    >
-                      <FileType className="w-3.5 h-3.5 text-amber-600" />
-                      <span>Word</span>
-                    </button>
+                    {isAdmin && (
+                      <div className="flex items-center space-x-1">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditReg(reg)}
+                          className="p-1.5 text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 rounded transition flex items-center space-x-1 text-xs font-bold px-2 py-1 bg-slate-50 border border-slate-200 cursor-pointer"
+                          title="Ubah / Edit Tulisan Ketentuan"
+                        >
+                          <Edit className="w-3.5 h-3.5 text-[#005a2b]" />
+                          <span>Edit</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onDeleteRegulation(reg.id)}
+                          className="p-1.5 text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded transition flex items-center space-x-1 text-xs font-bold px-2 py-1 bg-slate-50 border border-slate-200 cursor-pointer"
+                          title="Hapus Ketentuan"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                          <span>Hapus</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
-
-                  {isAdmin && (
-                    <div className="flex items-center space-x-1">
-                      <button
-                        onClick={() => handleOpenEditReg(reg)}
-                        className="p-1.5 text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 rounded transition flex items-center space-x-1 text-xs font-bold px-2 py-1 bg-slate-50 border border-slate-200 cursor-pointer"
-                        title="Ubah / Edit Tulisan Ketentuan"
-                      >
-                        <Edit className="w-3.5 h-3.5 text-[#005a2b]" />
-                        <span>Edit</span>
-                      </button>
-                      <button
-                        onClick={() => onDeleteRegulation(reg.id)}
-                        className="p-1.5 text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded transition flex items-center space-x-1 text-xs font-bold px-2 py-1 bg-slate-50 border border-slate-200 cursor-pointer"
-                        title="Hapus Ketentuan"
-                      >
-                        <Trash2 className="w-3.5 h-3.5 text-rose-500" />
-                        <span>Hapus</span>
-                      </button>
-                    </div>
-                  )}
                 </div>
+              );
+            })}
+
+            {(!regulations || regulations.length === 0) && (
+              <div className="col-span-full py-8 text-center bg-white rounded-xl border border-slate-200 p-6">
+                <BookOpen className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                <p className="text-xs font-bold text-slate-600">Belum ada data ketentuan & kriteria.</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
       )}
