@@ -82,6 +82,27 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
     defaultPin: string;
   } | null>(null);
 
+  // Safe toast dismissals with cleanup
+  React.useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (addedAccountToast) {
+      timer = setTimeout(() => setAddedAccountToast(null), 8000);
+    }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [addedAccountToast]);
+
+  React.useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (successMsg) {
+      timer = setTimeout(() => setSuccessMsg(null), 5000);
+    }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [successMsg]);
+
   // Filter accounts
   const filteredAccounts = accounts.filter((acc) => {
     const matchesCategory = activeTab === 'all' || acc.category === activeTab;
@@ -183,11 +204,9 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
           category: newAccData.category,
           defaultPin: newAccData.defaultPin,
         });
-        setTimeout(() => setAddedAccountToast(null), 8000);
       }
 
       setIsAddModalOpen(false);
-      setTimeout(() => setSuccessMsg(null), 6000);
     } catch (err) {
       console.error(err);
       setErrorMsg('Gagal menyimpan data akun. Pastikan koneksi internet terhubung.');
@@ -201,7 +220,6 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
       try {
         await onDeleteAccount(id);
         setSuccessMsg(`Akun ${name} berhasil dihapus.`);
-        setTimeout(() => setSuccessMsg(null), 4000);
       } catch (err) {
         console.error(err);
         alert('Gagal menghapus akun.');

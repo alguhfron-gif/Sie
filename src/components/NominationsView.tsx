@@ -5,6 +5,7 @@ import ExcelJS from 'exceljs';
 import { AwardCategory, Nomination, NominationStatus, UserSession } from '../types';
 import { sendWebhookPayload, exportToCSV } from '../services/webhookService';
 import { ContentHeader } from './ContentHeader';
+import { CollapsibleSection } from './CollapsibleSection';
 
 interface NominationsViewProps {
   nominations: Nomination[];
@@ -372,48 +373,73 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
       </div>
 
       {/* Kategori Overview Badges (Bento Tiles) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        {categories.map((cat) => {
-          const count = nominations.filter((n) => n.categoryId === cat.id).length;
-          const winners = nominations.filter((n) => n.categoryId === cat.id && n.status === 'Pemenang').length;
-          return (
-            <div
-              key={cat.id}
-              onClick={() => setSelectedCategory(selectedCategory === cat.id ? 'ALL' : cat.id)}
-              className={`p-4 rounded-3xl border cursor-pointer transition-all ${
-                selectedCategory === cat.id
-                  ? 'border-amber-500 bg-amber-50/80 shadow-sm ring-1 ring-amber-500/30'
-                  : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <span className={`text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border bg-amber-100 text-amber-800 border-amber-200`}>
-                  {cat.title}
-                </span>
-                <span className="text-xs font-semibold text-slate-500">Kuota: {cat.quota}</span>
+      <CollapsibleSection
+        sectionId="nomination_categories_summary"
+        title="Ringkasan Kategori & Kuota Anugerah"
+        subtitle="Klik kategori untuk memfilter daftar peserta berdasarkan kategori tertentu"
+        icon={<Trophy className="w-4 h-4 text-amber-600" />}
+        badge={
+          <span className="text-[10px] font-extrabold bg-amber-100 text-amber-900 border border-amber-200 px-2 py-0.5 rounded-full">
+            {categories.length} Kategori
+          </span>
+        }
+      >
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {categories.map((cat) => {
+            const count = nominations.filter((n) => n.categoryId === cat.id).length;
+            const winners = nominations.filter((n) => n.categoryId === cat.id && n.status === 'Pemenang').length;
+            return (
+              <div
+                key={cat.id}
+                onClick={() => setSelectedCategory(selectedCategory === cat.id ? 'ALL' : cat.id)}
+                className={`p-4 rounded-2xl border cursor-pointer transition-all ${
+                  selectedCategory === cat.id
+                    ? 'border-amber-500 bg-amber-50/80 shadow-sm ring-1 ring-amber-500/30'
+                    : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className={`text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border bg-amber-100 text-amber-800 border-amber-200`}>
+                    {cat.title}
+                  </span>
+                  <span className="text-xs font-semibold text-slate-500">Kuota: {cat.quota}</span>
+                </div>
+                <p className="text-xs text-slate-600 mt-2.5 line-clamp-2 leading-relaxed">{cat.description}</p>
+                <div className="mt-3 flex items-center justify-between text-xs pt-2 border-t border-slate-100">
+                  <span className="text-slate-700 font-medium">{count} Peserta Total</span>
+                  <span className="text-amber-700 font-bold">{winners} Pemenang</span>
+                </div>
               </div>
-              <p className="text-xs text-slate-600 mt-2.5 line-clamp-2 leading-relaxed">{cat.description}</p>
-              <div className="mt-3 flex items-center justify-between text-xs pt-2 border-t border-slate-100">
-                <span className="text-slate-700 font-medium">{count} Peserta Total</span>
-                <span className="text-amber-700 font-bold">{winners} Pemenang</span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Search & Filter Bar + View Toggle */}
-      <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
-        <div className="relative flex-1">
-          <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Cari ID PPS, nama, domisili, kelas, tingkat, alamat, atau unit kerja..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:bg-white text-slate-900 placeholder-slate-400 font-medium"
-          />
+            );
+          })}
         </div>
+      </CollapsibleSection>
+
+      {/* Main Participants List Section */}
+      <CollapsibleSection
+        sectionId="nomination_list_section"
+        title="Daftar Peserta Nominasi & Penganugerahan"
+        subtitle="Kelola data pendaftaran, pencarian, filter, serta penetapan skor dan pemenang"
+        icon={<UserCheck className="w-4 h-4 text-emerald-600" />}
+        badge={
+          <span className="text-[10px] font-extrabold bg-emerald-100 text-emerald-900 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+            {filteredNominations.length} Peserta
+          </span>
+        }
+      >
+        <div className="space-y-4">
+          {/* Search & Filter Bar + View Toggle */}
+          <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Cari ID PPS, nama, domisili, kelas, tingkat, alamat, atau unit kerja..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:bg-white text-slate-900 placeholder-slate-400 font-medium"
+              />
+            </div>
 
         <div className="flex flex-wrap items-center gap-2">
           {/* View Mode Toggle Buttons */}
@@ -710,6 +736,8 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
           </div>
         </div>
       )}
+      </div>
+    </CollapsibleSection>
 
       {/* Modal Add / Edit Nomination (Form LENGKAP Data Peserta) */}
       {isModalOpen && (

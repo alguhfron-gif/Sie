@@ -5,6 +5,7 @@ import { Transaction, TransactionCategory, TransactionType } from '../types';
 import { uploadReceiptImage } from '../services/storageService';
 import { sendWebhookPayload, exportToCSV } from '../services/webhookService';
 import { ContentHeader } from './ContentHeader';
+import { CollapsibleSection } from './CollapsibleSection';
 
 interface FinanceViewProps {
   transactions: Transaction[];
@@ -370,117 +371,146 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
             </div>
           </div>
 
-          {/* Financial Metrics Cards (Bento Grid) */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Total Pemasukan</span>
-                <div className="w-9 h-9 rounded-2xl bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center justify-center font-bold">
-                  <TrendingUp className="w-4 h-4" />
+          {/* Financial Metrics & Chart Collapsible Section */}
+          <CollapsibleSection
+            sectionId="finance_summary_cards"
+            title="Ringkasan Saldo & Grafik Alokasi Keuangan"
+            subtitle="Ringkasan arus kas masuk, pengeluaran, saldo akhir, serta statistik proporsi anggaran"
+            icon={<DollarSign className="w-4 h-4 text-emerald-600" />}
+            badge={
+              <span className="text-[10px] font-extrabold bg-emerald-100 text-emerald-900 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+                Saldo: {formatIDR(saldoSisa)}
+              </span>
+            }
+          >
+            <div className="space-y-4">
+              {/* Financial Metrics Cards (Bento Grid) */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Total Pemasukan</span>
+                    <div className="w-9 h-9 rounded-2xl bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center justify-center font-bold">
+                      <TrendingUp className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <h2 className="text-2xl font-black text-slate-900 mt-2">{formatIDR(totalPemasukan)}</h2>
+                  <p className="text-[11px] text-slate-500 mt-1">Kas Organisasi & Sponsor Donasi</p>
+                </div>
+
+                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Total Pengeluaran</span>
+                    <div className="w-9 h-9 rounded-2xl bg-rose-100 text-rose-800 border border-rose-200 flex items-center justify-center font-bold">
+                      <TrendingDown className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <h2 className="text-2xl font-black text-slate-900 mt-2">{formatIDR(totalPengeluaran)}</h2>
+                  <p className="text-[11px] text-slate-500 mt-1">Trofi, Cetakan, Konsumsi & Perlengkapan</p>
+                </div>
+
+                <div className="bg-amber-50 p-5 rounded-2xl border border-amber-200 shadow-xs text-slate-900">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-amber-900">Saldo Akhir Tersedia</span>
+                    <div className="w-9 h-9 rounded-2xl bg-amber-200 text-amber-900 border border-amber-300 flex items-center justify-center font-bold">
+                      <DollarSign className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <h2 className="text-2xl font-black text-amber-900 mt-2">{formatIDR(saldoSisa)}</h2>
+                  <p className="text-[11px] text-slate-600 mt-1">Siap dialokasikan untuk sisa kebutuhan acara</p>
                 </div>
               </div>
-              <h2 className="text-2xl font-black text-slate-900 mt-2">{formatIDR(totalPemasukan)}</h2>
-              <p className="text-[11px] text-slate-500 mt-1">Kas Organisasi & Sponsor Donasi</p>
-            </div>
 
-            <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Total Pengeluaran</span>
-                <div className="w-9 h-9 rounded-2xl bg-rose-100 text-rose-800 border border-rose-200 flex items-center justify-center font-bold">
-                  <TrendingDown className="w-4 h-4" />
+              {/* Chart & Category Distribution */}
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+                <div className="md:col-span-1 space-y-2">
+                  <h3 className="font-bold text-slate-900 text-base">Proporsi Alokasi Anggaran</h3>
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    Persentase pengeluaran Sie Penganugerahan berdasarkan kategori kebutuhan logistik & acara.
+                  </p>
+                  <div className="pt-2 text-xs text-slate-600 space-y-1">
+                    <p>• <strong className="text-amber-800">Trofi & Plakat:</strong> Biaya pengrajin utama</p>
+                    <p>• <strong className="text-amber-800">Cetak Sertifikat:</strong> Kertas Linen Gold Foil</p>
+                  </div>
+                </div>
+
+                <div className="md:col-span-2 h-52 w-full flex items-center justify-center">
+                  {pieData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie data={pieData} cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={4} dataKey="value">
+                          {pieData.map((_, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(v: number) => [formatIDR(v), 'Jumlah']} contentStyle={{ backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #cbd5e1', color: '#0f172a', fontSize: '12px' }} />
+                        <Legend wrapperStyle={{ fontSize: '11px', color: '#64748b' }} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <p className="text-xs text-slate-400 italic">Belum ada data pengeluaran</p>
+                  )}
                 </div>
               </div>
-              <h2 className="text-2xl font-black text-slate-900 mt-2">{formatIDR(totalPengeluaran)}</h2>
-              <p className="text-[11px] text-slate-500 mt-1">Trofi, Cetakan, Konsumsi & Perlengkapan</p>
             </div>
+          </CollapsibleSection>
 
-            <div className="bg-amber-50 p-5 rounded-3xl border border-amber-200 shadow-sm text-slate-900">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-extrabold uppercase tracking-wider text-amber-900">Saldo Akhir Tersedia</span>
-                <div className="w-9 h-9 rounded-2xl bg-amber-200 text-amber-900 border border-amber-300 flex items-center justify-center font-bold">
-                  <DollarSign className="w-4 h-4" />
+          {/* Transactions List Collapsible Section */}
+          <CollapsibleSection
+            sectionId="finance_transactions_list"
+            title="Riwayat & Pencatatan Transaksi Keuangan"
+            subtitle="Pencarian, filter, serta tabel pencatatan pemasukan dan pengeluaran beserta bukti fisik kuitansi"
+            icon={<Receipt className="w-4 h-4 text-emerald-600" />}
+            badge={
+              <span className="text-[10px] font-extrabold bg-emerald-100 text-emerald-900 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+                {filteredTransactions.length} Transaksi
+              </span>
+            }
+          >
+            <div className="space-y-4">
+              {/* Search & Filter Toolbar */}
+              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row gap-3">
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Cari transaksi, kuitansi, atau keterangan..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-slate-900 placeholder-slate-400 font-medium"
+                  />
                 </div>
-              </div>
-              <h2 className="text-2xl font-black text-amber-900 mt-2">{formatIDR(saldoSisa)}</h2>
-              <p className="text-[11px] text-slate-600 mt-1">Siap dialokasikan untuk sisa kebutuhan acara</p>
-            </div>
-          </div>
 
-          {/* Chart & Category Distribution */}
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
-            <div className="md:col-span-1 space-y-2">
-              <h3 className="font-bold text-slate-900 text-base">Proporsi Alokasi Anggaran</h3>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                Persentase pengeluaran Sie Penganugerahan berdasarkan kategori kebutuhan logistik & acara.
-              </p>
-              <div className="pt-2 text-xs text-slate-600 space-y-1">
-                <p>• <strong className="text-amber-800">Trofi & Plakat:</strong> Biaya pengrajin utama</p>
-                <p>• <strong className="text-amber-800">Cetak Sertifikat:</strong> Kertas Linen Gold Foil</p>
-              </div>
-            </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center space-x-1 bg-slate-50 border border-slate-200 rounded-2xl px-3 py-1.5 text-xs text-slate-700">
+                    <Filter className="w-3.5 h-3.5 text-slate-400" />
+                    <select
+                      value={typeFilter}
+                      onChange={(e) => setTypeFilter(e.target.value)}
+                      className="bg-transparent focus:outline-none font-semibold text-slate-800 cursor-pointer"
+                    >
+                      <option value="ALL">Semua Jenis</option>
+                      <option value="pemasukan">Pemasukan (+)</option>
+                      <option value="pengeluaran">Pengeluaran (-)</option>
+                    </select>
+                  </div>
 
-            <div className="md:col-span-2 h-52 w-full flex items-center justify-center">
-              {pieData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={pieData} cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={4} dataKey="value">
-                      {pieData.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  <div className="flex items-center space-x-1 bg-slate-50 border border-slate-200 rounded-2xl px-3 py-1.5 text-xs text-slate-700">
+                    <select
+                      value={categoryFilter}
+                      onChange={(e) => setCategoryFilter(e.target.value)}
+                      className="bg-transparent focus:outline-none font-semibold text-slate-800 cursor-pointer"
+                    >
+                      <option value="ALL">Semua Kategori</option>
+                      {categoriesList.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
                       ))}
-                    </Pie>
-                    <Tooltip formatter={(v: number) => [formatIDR(v), 'Jumlah']} contentStyle={{ backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #cbd5e1', color: '#0f172a', fontSize: '12px' }} />
-                    <Legend wrapperStyle={{ fontSize: '11px', color: '#64748b' }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <p className="text-xs text-slate-400 italic">Belum ada data pengeluaran</p>
-              )}
-            </div>
-          </div>
-
-          {/* Search & Filter Toolbar */}
-          <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-3">
-            <div className="relative flex-1">
-              <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Cari transaksi, kuitansi, atau keterangan..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-slate-900 placeholder-slate-400"
-              />
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center space-x-1 bg-slate-50 border border-slate-200 rounded-2xl px-3 py-1.5 text-xs text-slate-700">
-                <Filter className="w-3.5 h-3.5 text-slate-400" />
-                <select
-                  value={typeFilter}
-                  onChange={(e) => setTypeFilter(e.target.value)}
-                  className="bg-transparent focus:outline-none font-semibold text-slate-800 cursor-pointer"
-                >
-                  <option value="ALL">Semua Jenis</option>
-                  <option value="pemasukan">Pemasukan (+)</option>
-                  <option value="pengeluaran">Pengeluaran (-)</option>
-                </select>
-              </div>
-
-              <div className="flex items-center space-x-1 bg-slate-50 border border-slate-200 rounded-2xl px-3 py-1.5 text-xs text-slate-700">
-                <select
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="bg-transparent focus:outline-none font-semibold text-slate-800 cursor-pointer"
-                >
-                  <option value="ALL">Semua Kategori</option>
-                  {categoriesList.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
+                    </select>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
 
           {/* Transactions List */}
           <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
@@ -632,7 +662,8 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
               </table>
             </div>
           </div>
-        </>
+        </CollapsibleSection>
+      </>
       )}
 
       {/* Pop-up Modal View Receipt / Proof Image */}

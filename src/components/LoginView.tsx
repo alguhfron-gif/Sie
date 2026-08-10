@@ -53,6 +53,27 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
   const [regSuccessMsg, setRegSuccessMsg] = useState<string | null>(null);
   const [addedToast, setAddedToast] = useState<CommitteeAccount | null>(null);
 
+  // Auto dismiss toasts safely with cleanup
+  useEffect(() => {
+    let t1: NodeJS.Timeout;
+    if (regSuccessMsg) {
+      t1 = setTimeout(() => setRegSuccessMsg(null), 8000);
+    }
+    return () => {
+      if (t1) clearTimeout(t1);
+    };
+  }, [regSuccessMsg]);
+
+  useEffect(() => {
+    let t2: NodeJS.Timeout;
+    if (addedToast) {
+      t2 = setTimeout(() => setAddedToast(null), 10000);
+    }
+    return () => {
+      if (t2) clearTimeout(t2);
+    };
+  }, [addedToast]);
+
   // Subscribe to realtime presence
   useEffect(() => {
     const unsubscribe = subscribeUserPresence((presences) => {
@@ -194,9 +215,6 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
       setAddedToast(createdAcc);
       setUsername(createdAcc.name);
       setIsRegisterModalOpen(false);
-
-      setTimeout(() => setRegSuccessMsg(null), 8000);
-      setTimeout(() => setAddedToast(null), 10000);
     } catch (err) {
       console.error(err);
       setErrorMsg('Gagal mendaftarkan akun baru. Pastikan koneksi internet aktif.');

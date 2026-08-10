@@ -3,6 +3,7 @@ import { Users, CheckCircle2, Clock, Plus, PackageCheck, AlertCircle, Edit2, Tra
 import { CommitteeTask, InventoryItem, RundownItem, TaskStatus } from '../types';
 import { sendWebhookPayload, exportToCSV } from '../services/webhookService';
 import { ContentHeader } from './ContentHeader';
+import { CollapsibleSection } from './CollapsibleSection';
 
 interface CoordinationViewProps {
   tasks: CommitteeTask[];
@@ -302,249 +303,297 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
 
       {/* SubTab 0: Structure */}
       {subTab === 'structure' && (
-        <div className="space-y-6">
-          <div className="bg-amber-50 border border-amber-200 p-5 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <span className="text-[10px] font-black uppercase tracking-wider text-amber-800 bg-amber-200/60 px-2.5 py-1 rounded-lg">
-                Struktur Organisasi Resmi
-              </span>
-              <h2 className="text-base font-extrabold text-slate-900 mt-2">
-                Pembagian Tugas & Tanggung Jawab Sie Penganugerahan
-              </h2>
-              <p className="text-xs text-slate-600 mt-0.5">
-                Panduan tugas dan lingkup kerja seluruh pengurus dan anggota Sie Penganugerahan.
-              </p>
+        <CollapsibleSection
+          sectionId="coordination_structure_section"
+          title="Struktur Organisasi & Pembagian Tugas Panitia"
+          subtitle="Rincian wewenang, penanggung jawab (PIC), dan lingkup kerja panitia Sie Penganugerahan"
+          icon={<Users className="w-4 h-4 text-amber-600" />}
+          badge={
+            <span className="text-[10px] font-extrabold bg-amber-100 text-amber-900 border border-amber-200 px-2.5 py-0.5 rounded-full">
+              {COMMITTEE_STRUCTURE.length} Jabatan
+            </span>
+          }
+        >
+          <div className="space-y-6">
+            <div className="bg-amber-50 border border-amber-200 p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-amber-800 bg-amber-200/60 px-2.5 py-1 rounded-lg">
+                  Struktur Organisasi Resmi
+                </span>
+                <h2 className="text-base font-extrabold text-slate-900 mt-2">
+                  Pembagian Tugas & Tanggung Jawab Sie Penganugerahan
+                </h2>
+                <p className="text-xs text-slate-600 mt-0.5">
+                  Panduan tugas dan lingkup kerja seluruh pengurus dan anggota Sie Penganugerahan.
+                </p>
+              </div>
+
+              <button
+                onClick={() => setSubTab('tasks')}
+                className="inline-flex items-center space-x-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 px-4 py-2 rounded-2xl text-xs font-extrabold transition shadow-sm shrink-0 cursor-pointer"
+              >
+                <span>Lihat Papan Tugas</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
 
-            <button
-              onClick={() => setSubTab('tasks')}
-              className="inline-flex items-center space-x-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 px-4 py-2 rounded-2xl text-xs font-extrabold transition shadow-sm shrink-0 cursor-pointer"
-            >
-              <span>Lihat Papan Tugas</span>
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {COMMITTEE_STRUCTURE.map((role, idx) => (
+                <div
+                  key={role.id}
+                  className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:shadow-sm transition flex flex-col justify-between space-y-4"
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-3">
+                      <div>
+                        <span className="text-[10px] font-bold text-slate-400">#{idx + 1} SIE PENGANUGERAHAN</span>
+                        <h3 className="text-base font-black text-slate-900 tracking-tight leading-tight mt-0.5">
+                          {role.name}
+                        </h3>
+                        <p className="text-xs font-bold text-amber-700 mt-0.5">
+                          {role.title} {role.field ? `— ${role.field}` : ''}
+                        </p>
+                      </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {COMMITTEE_STRUCTURE.map((role, idx) => (
-              <div
-                key={role.id}
-                className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition flex flex-col justify-between space-y-4"
-              >
-                <div>
-                  <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-3">
-                    <div>
-                      <span className="text-[10px] font-bold text-slate-400">#{idx + 1} SIE PENGANUGERAHAN</span>
-                      <h3 className="text-base font-black text-slate-900 tracking-tight leading-tight mt-0.5">
-                        {role.name}
-                      </h3>
-                      <p className="text-xs font-bold text-amber-700 mt-0.5">
-                        {role.title} {role.field ? `— ${role.field}` : ''}
-                      </p>
+                      <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full border shrink-0 ${role.color}`}>
+                        {role.badge}
+                      </span>
                     </div>
 
-                    <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full border shrink-0 ${role.color}`}>
-                      {role.badge}
-                    </span>
+                    <div className="mt-3 space-y-2">
+                      <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Rincian Tugas & Wewenang:</p>
+                      <ul className="space-y-1.5">
+                        {role.responsibilities.map((resp, rIdx) => (
+                          <li key={rIdx} className="text-xs text-slate-700 flex items-start space-x-2">
+                            <span className="text-amber-500 font-bold shrink-0">•</span>
+                            <span>{resp}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
 
-                  <div className="mt-3 space-y-2">
-                    <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Rincian Tugas & Wewenang:</p>
-                    <ul className="space-y-1.5">
-                      {role.responsibilities.map((resp, rIdx) => (
-                        <li key={rIdx} className="text-xs text-slate-700 flex items-start space-x-2">
-                          <span className="text-amber-500 font-bold shrink-0">•</span>
-                          <span>{resp}</span>
-                        </li>
-                      ))}
-                    </ul>
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                    <span>Panitia Sie Penganugerahan</span>
+                    <button
+                      onClick={() => {
+                        setAssignee(role.name);
+                        setSubTab('tasks');
+                        setIsTaskModalOpen(true);
+                      }}
+                      className="text-amber-700 font-extrabold hover:underline cursor-pointer"
+                    >
+                      + Tambah Tugas PIC
+                    </button>
                   </div>
                 </div>
-
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-                  <span>Panitia Sie Penganugerahan</span>
-                  <button
-                    onClick={() => {
-                      setAssignee(role.name);
-                      setSubTab('tasks');
-                      setIsTaskModalOpen(true);
-                    }}
-                    className="text-amber-700 font-extrabold hover:underline cursor-pointer"
-                  >
-                    + Tambah Tugas PIC
-                  </button>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        </CollapsibleSection>
       )}
 
       {/* SubTab 1: Tasks Board */}
       {subTab === 'tasks' && (
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-sm font-bold text-slate-900">Daftar Tugas Panitia Sie Penganugerahan</h3>
-            <button
-              onClick={() => setIsTaskModalOpen(true)}
-              className="flex items-center space-x-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 px-4 py-2 rounded-2xl text-xs font-extrabold transition shadow-sm cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Tambah Tugas</span>
-            </button>
-          </div>
+        <CollapsibleSection
+          sectionId="coordination_tasks_section"
+          title="Papan Tugas & Operasional Panitia"
+          subtitle="Pemantauan progres pengerjaan tugas per kriteria status (Terencana, Berjalan, Selesai)"
+          icon={<CheckCircle2 className="w-4 h-4 text-emerald-600" />}
+          badge={
+            <span className="text-[10px] font-extrabold bg-emerald-100 text-emerald-900 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+              {tasks.length} Tugas
+            </span>
+          }
+        >
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-sm font-bold text-slate-900">Daftar Tugas Panitia Sie Penganugerahan</h3>
+              <button
+                onClick={() => setIsTaskModalOpen(true)}
+                className="flex items-center space-x-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 px-4 py-2 rounded-2xl text-xs font-extrabold transition shadow-sm cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Tambah Tugas</span>
+              </button>
+            </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {(['Terencana', 'Berjalan', 'Selesai'] as TaskStatus[]).map((colStatus) => {
-              const columnTasks = tasks.filter((t) => t.status === colStatus);
-              return (
-                <div key={colStatus} className="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm space-y-3">
-                  <div className="flex items-center justify-between pb-2 border-b border-slate-200">
-                    <span className="font-extrabold text-slate-900 text-xs flex items-center space-x-1.5">
-                      <span
-                        className={`w-2.5 h-2.5 rounded-full ${
-                          colStatus === 'Selesai'
-                            ? 'bg-emerald-500'
-                            : colStatus === 'Berjalan'
-                            ? 'bg-amber-500'
-                            : 'bg-slate-400'
-                        }`}
-                      ></span>
-                      <span>{colStatus}</span>
-                    </span>
-                    <span className="bg-amber-100 border border-amber-200 text-amber-900 text-[10px] font-extrabold px-2 py-0.5 rounded-full">
-                      {columnTasks.length}
-                    </span>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {(['Terencana', 'Berjalan', 'Selesai'] as TaskStatus[]).map((colStatus) => {
+                const columnTasks = tasks.filter((t) => t.status === colStatus);
+                return (
+                  <div key={colStatus} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+                      <span className="font-extrabold text-slate-900 text-xs flex items-center space-x-1.5">
+                        <span
+                          className={`w-2.5 h-2.5 rounded-full ${
+                            colStatus === 'Selesai'
+                              ? 'bg-emerald-500'
+                              : colStatus === 'Berjalan'
+                              ? 'bg-amber-500'
+                              : 'bg-slate-400'
+                          }`}
+                        ></span>
+                        <span>{colStatus}</span>
+                      </span>
+                      <span className="bg-amber-100 border border-amber-200 text-amber-900 text-[10px] font-extrabold px-2 py-0.5 rounded-full">
+                        {columnTasks.length}
+                      </span>
+                    </div>
+
+                    <div className="space-y-2.5">
+                      {columnTasks.map((t) => (
+                        <div key={t.id} className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 shadow-xs space-y-2">
+                          <div className="flex items-start justify-between">
+                            <h4 className="text-xs font-bold text-slate-900">{t.title}</h4>
+                            <span
+                              className={`text-[9px] font-black px-2 py-0.5 rounded-md border ${
+                                t.priority === 'Tinggi'
+                                  ? 'bg-rose-100 text-rose-800 border-rose-200'
+                                  : t.priority === 'Sedang'
+                                  ? 'bg-amber-100 text-amber-800 border-amber-200'
+                                  : 'bg-slate-200 text-slate-700 border-slate-300'
+                              }`}
+                            >
+                              {t.priority}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
+                            <span>PIC: <strong className="text-slate-800">{t.assignee}</strong></span>
+                            <span>Tenggat: {t.dueDate}</span>
+                          </div>
+
+                          {/* Status Quick Switcher */}
+                          <div className="pt-2 border-t border-slate-200 flex items-center justify-between">
+                            <select
+                              value={t.status}
+                              onChange={(e) => onUpdateTaskStatus(t.id, e.target.value as TaskStatus)}
+                              className="text-[10px] bg-white border border-slate-200 rounded-lg px-2 py-1 font-semibold text-slate-800 cursor-pointer"
+                            >
+                              <option value="Terencana">Terencana</option>
+                              <option value="Berjalan">Berjalan</option>
+                              <option value="Selesai">Selesai ✓</option>
+                            </select>
+
+                            <button
+                              onClick={() => onDeleteTask(t.id)}
+                              className="text-rose-600 hover:text-rose-700 text-[10px] font-semibold underline cursor-pointer"
+                            >
+                              Hapus
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+
+                      {columnTasks.length === 0 && (
+                        <div className="p-4 text-center text-xs text-slate-400 italic">Kosong</div>
+                      )}
+                    </div>
                   </div>
-
-                  <div className="space-y-2.5">
-                    {columnTasks.map((t) => (
-                      <div key={t.id} className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 shadow-sm space-y-2">
-                        <div className="flex items-start justify-between">
-                          <h4 className="text-xs font-bold text-slate-900">{t.title}</h4>
-                          <span
-                            className={`text-[9px] font-black px-2 py-0.5 rounded-md border ${
-                              t.priority === 'Tinggi'
-                                ? 'bg-rose-100 text-rose-800 border-rose-200'
-                                : t.priority === 'Sedang'
-                                ? 'bg-amber-100 text-amber-800 border-amber-200'
-                                : 'bg-slate-200 text-slate-700 border-slate-300'
-                            }`}
-                          >
-                            {t.priority}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
-                          <span>PIC: <strong className="text-slate-800">{t.assignee}</strong></span>
-                          <span>Tenggat: {t.dueDate}</span>
-                        </div>
-
-                        {/* Status Quick Switcher */}
-                        <div className="pt-2 border-t border-slate-200 flex items-center justify-between">
-                          <select
-                            value={t.status}
-                            onChange={(e) => onUpdateTaskStatus(t.id, e.target.value as TaskStatus)}
-                            className="text-[10px] bg-white border border-slate-200 rounded-lg px-2 py-1 font-semibold text-slate-800 cursor-pointer"
-                          >
-                            <option value="Terencana">Terencana</option>
-                            <option value="Berjalan">Berjalan</option>
-                            <option value="Selesai">Selesai ✓</option>
-                          </select>
-
-                          <button
-                            onClick={() => onDeleteTask(t.id)}
-                            className="text-rose-600 hover:text-rose-700 text-[10px] font-semibold underline cursor-pointer"
-                          >
-                            Hapus
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-
-                    {columnTasks.length === 0 && (
-                      <div className="p-4 text-center text-xs text-slate-400 italic">Kosong</div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
+        </CollapsibleSection>
       )}
 
       {/* SubTab 2: Inventory */}
       {subTab === 'inventory' && (
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-sm font-bold text-slate-900">Inventaris & Logistik Sie Penganugerahan</h3>
-            <button
-              onClick={() => setIsInvModalOpen(true)}
-              className="flex items-center space-x-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 px-4 py-2 rounded-2xl text-xs font-extrabold transition shadow-sm cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Tambah Perlengkapan</span>
-            </button>
-          </div>
+        <CollapsibleSection
+          sectionId="coordination_inventory_section"
+          title="Inventaris & Logistik Perlengkapan"
+          subtitle="Pencatatan trofi, plakat, kertas sertifikat, stempel, dan peralatan pendukung penganugerahan"
+          icon={<PackageCheck className="w-4 h-4 text-emerald-600" />}
+          badge={
+            <span className="text-[10px] font-extrabold bg-emerald-100 text-emerald-900 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+              {inventory.length} Barang
+            </span>
+          }
+        >
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-sm font-bold text-slate-900">Inventaris & Logistik Sie Penganugerahan</h3>
+              <button
+                onClick={() => setIsInvModalOpen(true)}
+                className="flex items-center space-x-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 px-4 py-2 rounded-2xl text-xs font-extrabold transition shadow-sm cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Tambah Perlengkapan</span>
+              </button>
+            </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {inventory.map((inv) => (
-              <div key={inv.id} className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-3">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h4 className="font-extrabold text-slate-900 text-sm">{inv.itemName}</h4>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      Jumlah: <strong className="text-amber-800 font-bold">{inv.quantity} {inv.unit}</strong>
-                    </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {inventory.map((inv) => (
+                <div key={inv.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h4 className="font-extrabold text-slate-900 text-sm">{inv.itemName}</h4>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Jumlah: <strong className="text-amber-800 font-bold">{inv.quantity} {inv.unit}</strong>
+                      </p>
+                    </div>
+                    <span
+                      className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full border ${
+                        inv.status === 'Tersedia'
+                          ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                          : inv.status === 'Menunggu Pesanan'
+                          ? 'bg-amber-100 text-amber-800 border-amber-200'
+                          : 'bg-rose-100 text-rose-800 border-rose-200'
+                      }`}
+                    >
+                      {inv.status}
+                    </span>
                   </div>
-                  <span
-                    className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full border ${
-                      inv.status === 'Tersedia'
-                        ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
-                        : inv.status === 'Menunggu Pesanan'
-                        ? 'bg-amber-100 text-amber-800 border-amber-200'
-                        : 'bg-rose-100 text-rose-800 border-rose-200'
-                    }`}
-                  >
-                    {inv.status}
-                  </span>
-                </div>
 
-                {inv.notes && (
-                  <p className="text-xs text-slate-700 bg-slate-50 p-3 rounded-2xl border border-slate-200">
-                    "{inv.notes}"
-                  </p>
-                )}
-              </div>
-            ))}
+                  {inv.notes && (
+                    <p className="text-xs text-slate-700 bg-slate-50 p-3 rounded-2xl border border-slate-200">
+                      "{inv.notes}"
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        </CollapsibleSection>
       )}
 
       {/* SubTab 3: Rundown */}
       {subTab === 'rundown' && (
-        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-          <h3 className="font-bold text-slate-900 text-sm">Susunan Acara (Rundown) Malam Penganugerahan</h3>
-          <div className="space-y-3">
-            {rundown.map((rd, idx) => (
-              <div key={rd.id} className="flex items-start space-x-4 p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
-                <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 border border-amber-200 flex items-center justify-center font-bold text-xs shrink-0">
-                  {idx + 1}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs font-extrabold text-amber-900 bg-amber-100 px-2.5 py-0.5 rounded-lg border border-amber-200">
-                      {rd.timeSlot}
-                    </span>
-                    <span className="text-xs font-semibold text-slate-500">PIC: <strong className="text-slate-800">{rd.pic}</strong></span>
+        <CollapsibleSection
+          sectionId="coordination_rundown_section"
+          title="Rundown & Susunan Acara Malam Penganugerahan"
+          subtitle="Jadwal waktu, alur acara, dan pembagian tugas PIC saat gelaran Malam Penganugerahan"
+          icon={<Clock className="w-4 h-4 text-amber-600" />}
+          badge={
+            <span className="text-[10px] font-extrabold bg-amber-100 text-amber-900 border border-amber-200 px-2.5 py-0.5 rounded-full">
+              {rundown.length} Sesi
+            </span>
+          }
+        >
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+            <h3 className="font-bold text-slate-900 text-sm">Susunan Acara (Rundown) Malam Penganugerahan</h3>
+            <div className="space-y-3">
+              {rundown.map((rd, idx) => (
+                <div key={rd.id} className="flex items-start space-x-4 p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
+                  <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 border border-amber-200 flex items-center justify-center font-bold text-xs shrink-0">
+                    {idx + 1}
                   </div>
-                  <h4 className="font-bold text-slate-900 text-sm mt-1">{rd.activity}</h4>
-                  {rd.notes && <p className="text-xs text-slate-500 mt-0.5">{rd.notes}</p>}
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-xs font-extrabold text-amber-900 bg-amber-100 px-2.5 py-0.5 rounded-lg border border-amber-200">
+                        {rd.timeSlot}
+                      </span>
+                      <span className="text-xs font-semibold text-slate-500">PIC: <strong className="text-slate-800">{rd.pic}</strong></span>
+                    </div>
+                    <h4 className="font-bold text-slate-900 text-sm mt-1">{rd.activity}</h4>
+                    {rd.notes && <p className="text-xs text-slate-500 mt-0.5">{rd.notes}</p>}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        </CollapsibleSection>
       )}
 
       {/* Modal Add Task */}

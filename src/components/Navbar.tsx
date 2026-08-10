@@ -54,6 +54,18 @@ export const Navbar: React.FC<NavbarProps> = ({
     };
   }, [userDropdownOpen]);
 
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (isRefreshing) {
+      timer = setTimeout(() => {
+        setIsRefreshing(false);
+      }, 1000);
+    }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [isRefreshing]);
+
   const handleRefresh = () => {
     setIsRefreshing(true);
     if (onRefreshData) {
@@ -61,9 +73,6 @@ export const Navbar: React.FC<NavbarProps> = ({
     } else {
       window.location.reload();
     }
-    setTimeout(() => {
-      setIsRefreshing(false);
-    }, 1000);
   };
 
   const getHijriDate = (dateSource?: string) => {

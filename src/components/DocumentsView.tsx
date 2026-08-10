@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import { OfficialDocument, RegulationRule, UserSession } from '../types';
 import { ContentHeader } from './ContentHeader';
+import { CollapsibleSection } from './CollapsibleSection';
 
 export const stripHtml = (str: any) => {
   if (str === null || str === undefined) return '';
@@ -54,7 +55,6 @@ export const readPdfFile = async (file: File): Promise<string> => {
     const loadingTask = pdfjsLib.getDocument({
       data: new Uint8Array(arrayBuffer),
       useSystemFonts: true,
-      isEvalSupported: false,
     });
 
     const pdf = await loadingTask.promise;
@@ -1286,236 +1286,131 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
 
       {/* TAB 1: SURAT & SK RESMI */}
       {activeSubTab === 'surat' && (
-        <div className="space-y-4">
-          {/* Controls: Search & Category Filter */}
-          <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex flex-col md:flex-row gap-3 items-center justify-between print:hidden">
-            <div className="relative w-full md:w-80">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-              <input
-                type="text"
-                placeholder="Cari nomor, judul, atau perihal surat..."
-                value={searchDocQuery}
-                onChange={(e) => setSearchDocQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3c8dbc]"
-              />
+        <CollapsibleSection
+          sectionId="documents_surat_section"
+          title="Surat & SK Resmi Sie Penganugerahan"
+          subtitle="Daftar arsip Surat Edaran, SK Panitia, Undangan, dan Permohonan resmi PPS Sidogiri"
+          icon={<FileText className="w-4 h-4 text-[#3c8dbc]" />}
+          badge={
+            <span className="text-[10px] font-extrabold bg-sky-100 text-sky-900 border border-sky-200 px-2.5 py-0.5 rounded-full">
+              {filteredDocs.length} Dokumen
+            </span>
+          }
+        >
+          <div className="space-y-4">
+            {/* Controls: Search & Category Filter */}
+            <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex flex-col md:flex-row gap-3 items-center justify-between print:hidden">
+              <div className="relative w-full md:w-80">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                <input
+                  type="text"
+                  placeholder="Cari nomor, judul, atau perihal surat..."
+                  value={searchDocQuery}
+                  onChange={(e) => setSearchDocQuery(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#3c8dbc]"
+                />
+              </div>
+
+              <div className="flex items-center space-x-2 w-full md:w-auto overflow-x-auto">
+                <Filter className="w-4 h-4 text-slate-400 shrink-0" />
+                {['Semua', 'SK Panitia', 'Surat Edaran', 'Surat Undangan', 'Surat Permohonan'].map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setCategoryFilter(cat)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer shrink-0 ${
+                      categoryFilter === cat
+                        ? 'bg-slate-800 text-amber-400'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <div className="flex items-center space-x-2 w-full md:w-auto overflow-x-auto">
-              <Filter className="w-4 h-4 text-slate-400 shrink-0" />
-              {['Semua', 'SK Panitia', 'Surat Edaran', 'Surat Undangan', 'Surat Permohonan'].map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setCategoryFilter(cat)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer shrink-0 ${
-                    categoryFilter === cat
-                      ? 'bg-slate-800 text-amber-400'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* List of Documents */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 print:hidden">
-            {filteredDocs.map((doc) => (
-              <div
-                key={doc.id}
-                className="bg-white rounded-xl border border-slate-200 p-4 shadow-2xs hover:shadow-md transition space-y-3 flex flex-col justify-between"
-              >
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-[10px] font-extrabold font-mono bg-slate-100 text-slate-800 border border-slate-200 px-2 py-0.5 rounded">
-                      {doc.docNumber}
-                    </span>
-                    <span
-                      className={`text-[10px] font-black px-2 py-0.5 rounded border ${
-                        doc.category === 'SK Panitia'
-                          ? 'bg-purple-100 text-purple-800 border-purple-200'
-                          : doc.category === 'Surat Edaran'
-                          ? 'bg-amber-100 text-amber-800 border-amber-200'
-                          : doc.category === 'Surat Undangan'
-                          ? 'bg-blue-100 text-blue-800 border-blue-200'
-                          : 'bg-emerald-100 text-emerald-800 border-emerald-200'
-                      }`}
-                    >
-                      {doc.category}
-                    </span>
-                  </div>
-
-                  <h3 className="font-extrabold text-slate-900 text-sm leading-snug line-clamp-2">
-                    {doc.title}
-                  </h3>
-
-                  <div className="flex items-center space-x-3 text-[11px] text-slate-500 font-medium pt-0.5">
-                    <span className="flex items-center space-x-1">
-                      <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                      <span>{doc.date}</span>
-                    </span>
-                    <span>•</span>
-                    <span className="flex items-center space-x-1">
-                      <Building className="w-3.5 h-3.5 text-slate-400" />
-                      <span className="truncate max-w-[150px]">{doc.sender}</span>
-                    </span>
-                  </div>
-
-                  <div className="bg-slate-50 p-2.5 rounded border border-slate-100 text-xs text-slate-700 font-normal leading-relaxed line-clamp-3">
-                    {doc.content}
-                  </div>
-                </div>
-
-                <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-1 flex-wrap">
-                  <div className="flex items-center space-x-1">
-                    <button
-                      onClick={() => setSelectedDocForPreview(doc)}
-                      className="text-xs font-bold text-[#3c8dbc] hover:text-[#367fa9] flex items-center space-x-1 cursor-pointer bg-sky-50 px-2.5 py-1 rounded border border-sky-200"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>Cetak Ber-Kop</span>
-                    </button>
-
-                    <button
-                      onClick={() => exportOfficialDocToWord(doc, ketuaName, sekretarisName, mengetahuiName)}
-                      className="text-xs font-bold text-amber-800 hover:text-amber-900 flex items-center space-x-1 cursor-pointer bg-amber-50 px-2.5 py-1 rounded border border-amber-200"
-                      title="Unduh Dokumen dalam format Word (.doc)"
-                    >
-                      <FileType className="w-3.5 h-3.5 text-amber-600" />
-                      <span>Word (.doc)</span>
-                    </button>
-                  </div>
-
-                  {isAdmin && (
-                    <div className="flex items-center space-x-1">
-                      <button
-                        onClick={() => handleOpenEditDoc(doc)}
-                        className="p-1.5 text-slate-600 hover:text-[#3c8dbc] hover:bg-sky-50 rounded transition flex items-center space-x-1 text-xs font-bold px-2 py-1 bg-slate-50 border border-slate-200 cursor-pointer"
-                        title="Ubah / Edit Tulisan Surat"
-                      >
-                        <Edit className="w-3.5 h-3.5 text-[#3c8dbc]" />
-                        <span>Edit</span>
-                      </button>
-                      <button
-                        onClick={() => onDeleteDocument(doc.id)}
-                        className="p-1.5 text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded transition flex items-center space-x-1 text-xs font-bold px-2 py-1 bg-slate-50 border border-slate-200 cursor-pointer"
-                        title="Hapus Surat"
-                      >
-                        <Trash2 className="w-3.5 h-3.5 text-rose-500" />
-                        <span>Hapus</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-
-            {filteredDocs.length === 0 && (
-              <div className="md:col-span-2 bg-white rounded-xl p-8 border border-dashed border-slate-200 text-center space-y-3">
-                <FileText className="w-10 h-10 text-slate-300 mx-auto" />
-                <p className="text-xs text-slate-500 font-semibold">
-                  Tidak ditemukan dokumen/surat yang sesuai pencarian.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* TAB 2: KETENTUAN & KRITERIA */}
-      {activeSubTab === 'ketentuan' && (
-        <div className="space-y-4 print:hidden">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {(regulations || []).map((reg) => {
-              if (!reg) return null;
-              const safePoints = Array.isArray(reg.points)
-                ? reg.points
-                : typeof reg.points === 'string'
-                ? [reg.points]
-                : [];
-
-              return (
+            {/* List of Documents */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 print:hidden">
+              {filteredDocs.map((doc) => (
                 <div
-                  key={reg.id || Math.random().toString()}
-                  className="bg-white rounded-xl border border-slate-200 p-4 shadow-2xs space-y-3 flex flex-col justify-between"
+                  key={doc.id}
+                  className="bg-white rounded-xl border border-slate-200 p-4 shadow-2xs hover:shadow-md transition space-y-3 flex flex-col justify-between"
                 >
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-200 px-2 py-0.5 rounded">
-                        {reg.section || 'Ketentuan'}
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[10px] font-extrabold font-mono bg-slate-100 text-slate-800 border border-slate-200 px-2 py-0.5 rounded">
+                        {doc.docNumber}
                       </span>
-                      <span className="text-[10px] text-slate-400 font-medium">
-                        Update: {reg.lastUpdated || '-'}
+                      <span
+                        className={`text-[10px] font-black px-2 py-0.5 rounded border ${
+                          doc.category === 'SK Panitia'
+                            ? 'bg-purple-100 text-purple-800 border-purple-200'
+                            : doc.category === 'Surat Edaran'
+                            ? 'bg-amber-100 text-amber-800 border-amber-200'
+                            : doc.category === 'Surat Undangan'
+                            ? 'bg-blue-100 text-blue-800 border-blue-200'
+                            : 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                        }`}
+                      >
+                        {doc.category}
                       </span>
                     </div>
 
-                    <h3 className="font-extrabold text-slate-900 text-sm">{stripHtml(reg.title)}</h3>
+                    <h3 className="font-extrabold text-slate-900 text-sm leading-snug line-clamp-2">
+                      {doc.title}
+                    </h3>
 
-                    <p className="text-xs text-slate-600 leading-relaxed font-normal">{stripHtml(reg.description)}</p>
-
-                    <div className="space-y-1.5 pt-1">
-                      {safePoints.map((pt, idx) => (
-                        <div key={idx} className="flex items-start space-x-2 text-xs text-slate-800 font-medium">
-                          <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                          <span>{stripHtml(pt)}</span>
-                        </div>
-                      ))}
+                    <div className="flex items-center space-x-3 text-[11px] text-slate-500 font-medium pt-0.5">
+                      <span className="flex items-center space-x-1">
+                        <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                        <span>{doc.date}</span>
+                      </span>
+                      <span>•</span>
+                      <span className="flex items-center space-x-1">
+                        <Building className="w-3.5 h-3.5 text-slate-400" />
+                        <span className="truncate max-w-[150px]">{doc.sender}</span>
+                      </span>
                     </div>
 
-                    {/* Direct Action: Jump to nominations for this category */}
-                    {onNavigateToNominees && (
-                      <div className="pt-2">
-                        <button
-                          type="button"
-                          onClick={onNavigateToNominees}
-                          className="w-full py-2 px-3 bg-[#005a2b] hover:bg-[#004220] text-white font-black text-xs rounded-lg shadow-xs flex items-center justify-center space-x-1.5 transition cursor-pointer"
-                        >
-                          <UserCheck className="w-4 h-4 text-amber-300" />
-                          <span>Pahami & Tambah Peserta di Kolom Nominasi ➡️</span>
-                        </button>
-                      </div>
-                    )}
+                    <div className="bg-slate-50 p-2.5 rounded border border-slate-100 text-xs text-slate-700 font-normal leading-relaxed line-clamp-3">
+                      {doc.content}
+                    </div>
                   </div>
 
-                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-1 flex-wrap">
-                    <div className="flex items-center space-x-1 flex-wrap gap-y-1">
+                  <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-1 flex-wrap">
+                    <div className="flex items-center space-x-1">
                       <button
-                        type="button"
-                        onClick={() => setSelectedRegForPreview(reg)}
-                        className="text-xs font-extrabold text-[#005a2b] bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded flex items-center space-x-1 cursor-pointer"
-                        title="Pratinjau Dokumen Ber-Kop Resmi & Cetak PDF"
+                        onClick={() => setSelectedDocForPreview(doc)}
+                        className="text-xs font-bold text-[#3c8dbc] hover:text-[#367fa9] flex items-center space-x-1 cursor-pointer bg-sky-50 px-2.5 py-1 rounded border border-sky-200"
                       >
                         <Eye className="w-3.5 h-3.5" />
-                        <span>Cetak Ber-Kop / PDF</span>
+                        <span>Cetak Ber-Kop</span>
                       </button>
 
                       <button
-                        type="button"
-                        onClick={() => exportRegulationsToWord([reg])}
-                        className="text-xs font-bold text-amber-800 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-1 rounded flex items-center space-x-1 cursor-pointer"
-                        title="Unduh File Word (.doc)"
+                        onClick={() => exportOfficialDocToWord(doc, ketuaName, sekretarisName, mengetahuiName)}
+                        className="text-xs font-bold text-amber-800 hover:text-amber-900 flex items-center space-x-1 cursor-pointer bg-amber-50 px-2.5 py-1 rounded border border-amber-200"
+                        title="Unduh Dokumen dalam format Word (.doc)"
                       >
                         <FileType className="w-3.5 h-3.5 text-amber-600" />
-                        <span>Word</span>
+                        <span>Word (.doc)</span>
                       </button>
                     </div>
 
                     {isAdmin && (
                       <div className="flex items-center space-x-1">
                         <button
-                          type="button"
-                          onClick={() => handleOpenEditReg(reg)}
-                          className="p-1.5 text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 rounded transition flex items-center space-x-1 text-xs font-bold px-2 py-1 bg-slate-50 border border-slate-200 cursor-pointer"
-                          title="Ubah / Edit Tulisan Ketentuan"
+                          onClick={() => handleOpenEditDoc(doc)}
+                          className="p-1.5 text-slate-600 hover:text-[#3c8dbc] hover:bg-sky-50 rounded transition flex items-center space-x-1 text-xs font-bold px-2 py-1 bg-slate-50 border border-slate-200 cursor-pointer"
+                          title="Ubah / Edit Tulisan Surat"
                         >
-                          <Edit className="w-3.5 h-3.5 text-[#005a2b]" />
+                          <Edit className="w-3.5 h-3.5 text-[#3c8dbc]" />
                           <span>Edit</span>
                         </button>
                         <button
-                          type="button"
-                          onClick={() => onDeleteRegulation(reg.id)}
+                          onClick={() => onDeleteDocument(doc.id)}
                           className="p-1.5 text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded transition flex items-center space-x-1 text-xs font-bold px-2 py-1 bg-slate-50 border border-slate-200 cursor-pointer"
-                          title="Hapus Ketentuan"
+                          title="Hapus Surat"
                         >
                           <Trash2 className="w-3.5 h-3.5 text-rose-500" />
                           <span>Hapus</span>
@@ -1524,17 +1419,146 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
                     )}
                   </div>
                 </div>
-              );
-            })}
+              ))}
 
-            {(!regulations || regulations.length === 0) && (
-              <div className="col-span-full py-8 text-center bg-white rounded-xl border border-slate-200 p-6">
-                <BookOpen className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                <p className="text-xs font-bold text-slate-600">Belum ada data ketentuan & kriteria.</p>
-              </div>
-            )}
+              {filteredDocs.length === 0 && (
+                <div className="md:col-span-2 bg-white rounded-xl p-8 border border-dashed border-slate-200 text-center space-y-3">
+                  <FileText className="w-10 h-10 text-slate-300 mx-auto" />
+                  <p className="text-xs text-slate-500 font-semibold">
+                    Tidak ditemukan dokumen/surat yang sesuai pencarian.
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        </CollapsibleSection>
+      )}
+
+      {/* TAB 2: KETENTUAN & KRITERIA */}
+      {activeSubTab === 'ketentuan' && (
+        <CollapsibleSection
+          sectionId="documents_ketentuan_section"
+          title="Ketentuan, Angket Usulan, & Kriteria Penilaian"
+          subtitle="Daftar regulasi, pedoman kualifikasi kandidat, dan angket usulan resmi penganugerahan"
+          icon={<BookOpen className="w-4 h-4 text-emerald-600" />}
+          badge={
+            <span className="text-[10px] font-extrabold bg-emerald-100 text-emerald-900 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+              {regulations.length} Ketentuan
+            </span>
+          }
+        >
+          <div className="space-y-4 print:hidden">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {(regulations || []).map((reg) => {
+                if (!reg) return null;
+                const safePoints = Array.isArray(reg.points)
+                  ? reg.points
+                  : typeof reg.points === 'string'
+                  ? [reg.points]
+                  : [];
+
+                return (
+                  <div
+                    key={reg.id || Math.random().toString()}
+                    className="bg-white rounded-xl border border-slate-200 p-4 shadow-2xs space-y-3 flex flex-col justify-between"
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-200 px-2 py-0.5 rounded">
+                          {reg.section || 'Ketentuan'}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-medium">
+                          Update: {reg.lastUpdated || '-'}
+                        </span>
+                      </div>
+
+                      <h3 className="font-extrabold text-slate-900 text-sm">{stripHtml(reg.title)}</h3>
+
+                      <p className="text-xs text-slate-600 leading-relaxed font-normal">{stripHtml(reg.description)}</p>
+
+                      <div className="space-y-1.5 pt-1">
+                        {safePoints.map((pt, idx) => (
+                          <div key={idx} className="flex items-start space-x-2 text-xs text-slate-800 font-medium">
+                            <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                            <span>{stripHtml(pt)}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Direct Action: Jump to nominations for this category */}
+                      {onNavigateToNominees && (
+                        <div className="pt-2">
+                          <button
+                            type="button"
+                            onClick={onNavigateToNominees}
+                            className="w-full py-2 px-3 bg-[#005a2b] hover:bg-[#004220] text-white font-black text-xs rounded-lg shadow-xs flex items-center justify-center space-x-1.5 transition cursor-pointer"
+                          >
+                            <UserCheck className="w-4 h-4 text-amber-300" />
+                            <span>Pahami & Tambah Peserta di Kolom Nominasi ➡️</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-1 flex-wrap">
+                      <div className="flex items-center space-x-1 flex-wrap gap-y-1">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedRegForPreview(reg)}
+                          className="text-xs font-extrabold text-[#005a2b] bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded flex items-center space-x-1 cursor-pointer"
+                          title="Pratinjau Dokumen Ber-Kop Resmi & Cetak PDF"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>Cetak Ber-Kop / PDF</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => exportRegulationsToWord([reg])}
+                          className="text-xs font-bold text-amber-800 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-1 rounded flex items-center space-x-1 cursor-pointer"
+                          title="Unduh File Word (.doc)"
+                        >
+                          <FileType className="w-3.5 h-3.5 text-amber-600" />
+                          <span>Word</span>
+                        </button>
+                      </div>
+
+                      {isAdmin && (
+                        <div className="flex items-center space-x-1">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditReg(reg)}
+                            className="p-1.5 text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 rounded transition flex items-center space-x-1 text-xs font-bold px-2 py-1 bg-slate-50 border border-slate-200 cursor-pointer"
+                            title="Ubah / Edit Tulisan Ketentuan"
+                          >
+                            <Edit className="w-3.5 h-3.5 text-[#005a2b]" />
+                            <span>Edit</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onDeleteRegulation(reg.id)}
+                            className="p-1.5 text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded transition flex items-center space-x-1 text-xs font-bold px-2 py-1 bg-slate-50 border border-slate-200 cursor-pointer"
+                            title="Hapus Ketentuan"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                            <span>Hapus</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {(!regulations || regulations.length === 0) && (
+                <div className="col-span-full py-8 text-center bg-white rounded-xl border border-slate-200 p-6">
+                  <BookOpen className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                  <p className="text-xs font-bold text-slate-600">Belum ada data ketentuan & kriteria.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </CollapsibleSection>
       )}
 
       {/* Modal Import Confirmation */}

@@ -4,6 +4,7 @@ import { AwardCategory, Nomination } from '../types';
 import { sendWebhookPayload, exportToCSV } from '../services/webhookService';
 import { addCertificateRecordToFirestore } from '../services/certificatesService';
 import { ContentHeader } from './ContentHeader';
+import { CollapsibleSection } from './CollapsibleSection';
 
 export const AWARD_LETTER_OPTIONS = [
   'Penghargaan Khidmah (Ranting)',
@@ -148,14 +149,13 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
       </div>
 
       {/* Editor Options Panel - Hidden on Print */}
-      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4 print:hidden">
-        <h3 className="font-bold text-slate-900 text-sm flex items-center justify-between">
-          <span className="flex items-center space-x-2">
-            <UserCheck className="w-4 h-4 text-amber-600" />
-            <span>Konfigurasi Surat & Jenis Penghargaan</span>
-          </span>
-
-          <div className="flex items-center space-x-3 text-xs font-semibold text-slate-600">
+      <CollapsibleSection
+        sectionId="certificates_config_section"
+        title="Konfigurasi Surat & Jenis Penghargaan"
+        subtitle="Pilih opsi jenis penghargaan resmi, data penerima, tanggal, serta stempel TTD panitia"
+        icon={<UserCheck className="w-4 h-4 text-amber-600" />}
+        badge={
+          <div className="flex items-center space-x-3 text-xs font-semibold text-slate-600 print:hidden">
             <label className="flex items-center space-x-1 cursor-pointer">
               <input
                 type="checkbox"
@@ -184,9 +184,10 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
               <span>Stempel TTD</span>
             </label>
           </div>
-        </h3>
-
-        {/* 1. Quick Select Award Options (Required Categories) */}
+        }
+      >
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4 print:hidden">
+          {/* 1. Quick Select Award Options (Required Categories) */}
         <div className="space-y-1.5 pb-2 border-b border-slate-100">
           <label className="block text-xs font-bold text-slate-700">Pilihan Jenis Surat Penghargaan Resmi *</label>
           <div className="flex flex-wrap gap-1.5">
@@ -336,12 +337,24 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
           </div>
         </div>
       </div>
+    </CollapsibleSection>
 
       {/* Live Official Certificate / Award Letter Preview Frame */}
-      <div className="space-y-2">
-        <div className="md:hidden flex items-center justify-between text-[11px] text-amber-800 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-200/80 font-medium">
-          <span>📱 Pratinjau Surat Penghargaan (Geser kesamping untuk melihat penuh)</span>
-        </div>
+      <CollapsibleSection
+        sectionId="certificates_preview_section"
+        title="Pratinjau Lembar Surat Penghargaan / Sertifikat"
+        subtitle="Sertifikat dapat diunduh/dicetak langsung dalam format cetak PDF ber-Kop dan Ber-Watermark"
+        icon={<Award className="w-4 h-4 text-amber-600" />}
+        badge={
+          <span className="text-[10px] font-extrabold bg-amber-100 text-amber-900 border border-amber-200 px-2.5 py-0.5 rounded-full">
+            Pratinjau Cetak
+          </span>
+        }
+      >
+        <div className="space-y-2">
+          <div className="md:hidden flex items-center justify-between text-[11px] text-amber-800 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-200/80 font-medium">
+            <span>📱 Pratinjau Surat Penghargaan (Geser kesamping untuk melihat penuh)</span>
+          </div>
 
         <div className="overflow-x-auto pb-4 rounded-3xl">
           <div className="printable-cert min-w-[700px] max-w-4xl mx-auto bg-amber-50/20 p-6 sm:p-10 rounded-3xl border-8 border-amber-500/80 shadow-xl relative text-slate-900 font-serif my-2">
@@ -483,6 +496,7 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
           </div>
         </div>
       </div>
-    </div>
-  );
+    </CollapsibleSection>
+  </div>
+);
 };

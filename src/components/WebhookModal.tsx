@@ -28,12 +28,31 @@ export const WebhookModal: React.FC<WebhookModalProps> = ({ isOpen, onClose }) =
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    let t1: NodeJS.Timeout;
+    if (isSaved) {
+      t1 = setTimeout(() => setIsSaved(false), 3000);
+    }
+    return () => {
+      if (t1) clearTimeout(t1);
+    };
+  }, [isSaved]);
+
+  useEffect(() => {
+    let t2: NodeJS.Timeout;
+    if (copiedScript) {
+      t2 = setTimeout(() => setCopiedScript(false), 3000);
+    }
+    return () => {
+      if (t2) clearTimeout(t2);
+    };
+  }, [copiedScript]);
+
   if (!isOpen) return null;
 
   const handleSave = async () => {
     await saveWebhookUrl(url);
     setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 3000);
   };
 
   const handleTestWebhook = async () => {
@@ -54,7 +73,6 @@ export const WebhookModal: React.FC<WebhookModalProps> = ({ isOpen, onClose }) =
   const handleCopyScript = () => {
     navigator.clipboard.writeText(GOOGLE_APPS_SCRIPT_FULL_CODE);
     setCopiedScript(true);
-    setTimeout(() => setCopiedScript(false), 3000);
   };
 
   return (
