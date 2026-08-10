@@ -65,10 +65,31 @@ import { AccountsView } from './components/AccountsView';
 
 import { LoginView } from './components/LoginView';
 import { WebhookModal } from './components/WebhookModal';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { fetchWebhookUrlFromFirestore } from './services/webhookService';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
+  // Safe initialization of activeTab from localStorage
+  const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
+    try {
+      const savedTab = localStorage.getItem('sie_active_tab');
+      if (savedTab && ['dashboard', 'nominasi', 'keuangan', 'koordinasi', 'sertifikat', 'surat', 'akun'].includes(savedTab)) {
+        return savedTab as ActiveTab;
+      }
+    } catch (e) {
+      console.warn('Failed to parse active tab from storage:', e);
+    }
+    return 'dashboard';
+  });
+
+  // Save activeTab to localStorage on changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('sie_active_tab', activeTab);
+    } catch (e) {
+      console.warn('Failed to save active tab to storage:', e);
+    }
+  }, [activeTab]);
 
   // User Authentication Session State
   const [currentUser, setCurrentUser] = useState<UserSession | null>(() => {
@@ -92,6 +113,48 @@ export default function App() {
     }
     return null;
   });
+
+  // Global App Lifecycle & Background Visibility Handler
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // App went to background: mark offline or pause active tasks
+        if (currentUser?.id) {
+          setUserOffline(currentUser.id).catch(() => {});
+        }
+      } else {
+        // App resumed from background: restore session and set online
+        const savedSession = localStorage.getItem('sie_user_session') || sessionStorage.getItem('sie_user_session');
+        if (savedSession) {
+          try {
+            const parsed = JSON.parse(savedSession);
+            if (parsed && parsed.id) {
+              setCurrentUser(parsed);
+              setUserOnline(parsed).catch(() => {});
+            }
+          } catch (e) {
+            console.warn('Error restoring user session on resume:', e);
+          }
+        } else if (currentUser) {
+          setUserOnline(currentUser).catch(() => {});
+        }
+      }
+    };
+
+    const handlePageHide = () => {
+      if (currentUser?.id) {
+        setUserOffline(currentUser.id).catch(() => {});
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pagehide', handlePageHide);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pagehide', handlePageHide);
+    };
+  }, [currentUser]);
 
   // Subscribe to Firebase Auth real-time state changes
   useEffect(() => {
@@ -140,18 +203,22 @@ export default function App() {
   useEffect(() => {
     if (!currentUser) return;
 
-    // Immediately set online on login or mount
-    setUserOnline(currentUser);
+    // Immediately set online if document is visible
+    if (!document.hidden) {
+      setUserOnline(currentUser).catch(() => {});
+    }
 
-    // Heartbeat every 20 seconds
+    // Heartbeat every 20 seconds only when document is visible
     const interval = setInterval(() => {
-      setUserOnline(currentUser);
+      if (!document.hidden) {
+        setUserOnline(currentUser).catch(() => {});
+      }
     }, 20000);
 
     // Mark offline on window unload
     const handleBeforeUnload = () => {
       if (currentUser?.id) {
-        setUserOffline(currentUser.id);
+        setUserOffline(currentUser.id).catch(() => {});
       }
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
@@ -164,7 +231,7 @@ export default function App() {
 
   const handleLoginSuccess = (user: UserSession) => {
     setCurrentUser(user);
-    setUserOnline(user);
+    setUserOnline(user).catch(() => {});
     try {
       localStorage.setItem('sie_user_session', JSON.stringify(user));
       sessionStorage.setItem('sie_user_session', JSON.stringify(user));
@@ -191,68 +258,101 @@ export default function App() {
     logoutFirebase().catch((err) => console.warn('Failed to logout Firebase:', err));
   };
 
-  // LocalStorage helper initialization
+  // LocalStorage helper initialization with try...catch
   const [transactions, setTransactions] = useState<Transaction[]>(() => {
-    const saved = localStorage.getItem('sie_transactions');
-    return saved ? JSON.parse(saved) : INITIAL_TRANSACTIONS;
+    try {
+      const saved = localStorage.getItem('sie_transactions');
+      return saved ? JSON.parse(saved) : INITIAL_TRANSACTIONS;
+    } catch (e) {
+      return INITIAL_TRANSACTIONS;
+    }
   });
 
   const [nominations, setNominations] = useState<Nomination[]>(() => {
-    const saved = localStorage.getItem('sie_nominations');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error('Failed to parse saved nominations', e);
-      }
+    try {
+      const saved = localStorage.getItem('sie_nominations');
+      return saved ? JSON.parse(saved) : INITIAL_NOMINATIONS;
+    } catch (e) {
+      return INITIAL_NOMINATIONS;
     }
-    return INITIAL_NOMINATIONS;
   });
 
   const [categories] = useState<AwardCategory[]>(() => {
-    const saved = localStorage.getItem('sie_categories');
-    return saved ? JSON.parse(saved) : INITIAL_CATEGORIES;
+    try {
+      const saved = localStorage.getItem('sie_categories');
+      return saved ? JSON.parse(saved) : INITIAL_CATEGORIES;
+    } catch (e) {
+      return INITIAL_CATEGORIES;
+    }
   });
 
   const [tasks, setTasks] = useState<CommitteeTask[]>(() => {
-    const saved = localStorage.getItem('sie_tasks');
-    return saved ? JSON.parse(saved) : INITIAL_TASKS;
+    try {
+      const saved = localStorage.getItem('sie_tasks');
+      return saved ? JSON.parse(saved) : INITIAL_TASKS;
+    } catch (e) {
+      return INITIAL_TASKS;
+    }
   });
 
   const [inventory, setInventory] = useState<InventoryItem[]>(() => {
-    const saved = localStorage.getItem('sie_inventory');
-    return saved ? JSON.parse(saved) : INITIAL_INVENTORY;
+    try {
+      const saved = localStorage.getItem('sie_inventory');
+      return saved ? JSON.parse(saved) : INITIAL_INVENTORY;
+    } catch (e) {
+      return INITIAL_INVENTORY;
+    }
   });
 
   const [rundown, setRundown] = useState<RundownItem[]>(() => {
-    const saved = localStorage.getItem('sie_rundown');
-    return saved ? JSON.parse(saved) : INITIAL_RUNDOWN;
+    try {
+      const saved = localStorage.getItem('sie_rundown');
+      return saved ? JSON.parse(saved) : INITIAL_RUNDOWN;
+    } catch (e) {
+      return INITIAL_RUNDOWN;
+    }
   });
 
   const [accounts, setAccounts] = useState<CommitteeAccount[]>(() => {
-    const saved = localStorage.getItem('sie_accounts');
-    return saved ? JSON.parse(saved) : INITIAL_ACCOUNTS;
+    try {
+      const saved = localStorage.getItem('sie_accounts');
+      return saved ? JSON.parse(saved) : INITIAL_ACCOUNTS;
+    } catch (e) {
+      return INITIAL_ACCOUNTS;
+    }
   });
 
   const [documents, setDocuments] = useState<OfficialDocument[]>(() => {
-    const saved = localStorage.getItem('sie_documents');
-    return saved ? JSON.parse(saved) : INITIAL_DOCUMENTS;
+    try {
+      const saved = localStorage.getItem('sie_documents');
+      return saved ? JSON.parse(saved) : INITIAL_DOCUMENTS;
+    } catch (e) {
+      return INITIAL_DOCUMENTS;
+    }
   });
 
   const [regulations, setRegulations] = useState<RegulationRule[]>(() => {
-    const saved = localStorage.getItem('sie_regulations');
-    return saved ? JSON.parse(saved) : INITIAL_REGULATIONS;
+    try {
+      const saved = localStorage.getItem('sie_regulations');
+      return saved ? JSON.parse(saved) : INITIAL_REGULATIONS;
+    } catch (e) {
+      return INITIAL_REGULATIONS;
+    }
   });
 
   const [certificates, setCertificates] = useState<CertificateRecord[]>([]);
 
   // Save documents & regulations to localStorage
   useEffect(() => {
-    localStorage.setItem('sie_documents', JSON.stringify(documents));
+    try {
+      localStorage.setItem('sie_documents', JSON.stringify(documents));
+    } catch (e) {}
   }, [documents]);
 
   useEffect(() => {
-    localStorage.setItem('sie_regulations', JSON.stringify(regulations));
+    try {
+      localStorage.setItem('sie_regulations', JSON.stringify(regulations));
+    } catch (e) {}
   }, [regulations]);
 
   const handleAddDocument = async (newDoc: Omit<OfficialDocument, 'id'>) => {
@@ -302,7 +402,6 @@ export default function App() {
       console.error('Firestore sync failed on delete regulation:', err);
     }
   };
-
 
   // Direct modal trigger states
   const [openAddNominationDirectly, setOpenAddNominationDirectly] = useState(false);
@@ -452,9 +551,11 @@ export default function App() {
   // Automatic Background Sync to Google Sheets when datasets update
   useEffect(() => {
     const webhookUrl = getWebhookUrl();
-    if (!webhookUrl) return;
+    if (!webhookUrl || document.hidden) return;
 
     const timer = setTimeout(() => {
+      if (document.hidden) return;
+
       // Sync batch payload
       syncAllCollectionsToGoogleSheets({
         nominations,
@@ -484,23 +585,33 @@ export default function App() {
 
   // Sync state to LocalStorage
   useEffect(() => {
-    localStorage.setItem('sie_transactions', JSON.stringify(transactions));
+    try {
+      localStorage.setItem('sie_transactions', JSON.stringify(transactions));
+    } catch (e) {}
   }, [transactions]);
 
   useEffect(() => {
-    localStorage.setItem('sie_nominations', JSON.stringify(nominations));
+    try {
+      localStorage.setItem('sie_nominations', JSON.stringify(nominations));
+    } catch (e) {}
   }, [nominations]);
 
   useEffect(() => {
-    localStorage.setItem('sie_tasks', JSON.stringify(tasks));
+    try {
+      localStorage.setItem('sie_tasks', JSON.stringify(tasks));
+    } catch (e) {}
   }, [tasks]);
 
   useEffect(() => {
-    localStorage.setItem('sie_inventory', JSON.stringify(inventory));
+    try {
+      localStorage.setItem('sie_inventory', JSON.stringify(inventory));
+    } catch (e) {}
   }, [inventory]);
 
   useEffect(() => {
-    localStorage.setItem('sie_accounts', JSON.stringify(accounts));
+    try {
+      localStorage.setItem('sie_accounts', JSON.stringify(accounts));
+    } catch (e) {}
   }, [accounts]);
 
   // Reset Data Handler
@@ -509,10 +620,12 @@ export default function App() {
     setNominations(INITIAL_NOMINATIONS);
     setTasks(INITIAL_TASKS);
     setInventory(INITIAL_INVENTORY);
-    localStorage.removeItem('sie_transactions');
-    localStorage.removeItem('sie_nominations');
-    localStorage.removeItem('sie_tasks');
-    localStorage.removeItem('sie_inventory');
+    try {
+      localStorage.removeItem('sie_transactions');
+      localStorage.removeItem('sie_nominations');
+      localStorage.removeItem('sie_tasks');
+      localStorage.removeItem('sie_inventory');
+    } catch (e) {}
   };
 
   // Nomination Handlers with Firestore Real-time Integration
@@ -711,107 +824,109 @@ export default function App() {
           onCloseMobile={() => setIsMobileSidebarOpen(false)}
         />
 
-        {/* Main Content Area */}
+        {/* Main Content Area wrapped in ErrorBoundary */}
         <main className="flex-1 p-3 sm:p-6 pb-28 md:pb-12 min-w-0">
-          {activeTab === 'dashboard' && (
-            <DashboardView
-              setActiveTab={setActiveTab}
-              transactions={transactions}
-              nominations={nominations}
-              categories={categories}
-              tasks={tasks}
-              currentUser={currentUser}
-              onOpenAddNomination={() => {
-                setActiveTab('nominasi');
-                setOpenAddNominationDirectly(true);
-              }}
-              onOpenAddTransaction={() => {
-                setActiveTab('keuangan');
-                setOpenAddTransactionDirectly(true);
-              }}
-              onOpenWebhookModal={() => setIsWebhookModalOpen(true)}
-            />
-          )}
+          <ErrorBoundary>
+            {activeTab === 'dashboard' && (
+              <DashboardView
+                setActiveTab={setActiveTab}
+                transactions={transactions}
+                nominations={nominations}
+                categories={categories}
+                tasks={tasks}
+                currentUser={currentUser}
+                onOpenAddNomination={() => {
+                  setActiveTab('nominasi');
+                  setOpenAddNominationDirectly(true);
+                }}
+                onOpenAddTransaction={() => {
+                  setActiveTab('keuangan');
+                  setOpenAddTransactionDirectly(true);
+                }}
+                onOpenWebhookModal={() => setIsWebhookModalOpen(true)}
+              />
+            )}
 
-          {activeTab === 'nominasi' && (
-            <NominationsView
-              nominations={nominations}
-              categories={categories}
-              onAddNomination={handleAddNomination}
-              onUpdateNomination={handleUpdateNomination}
-              onDeleteNomination={handleDeleteNomination}
-              isAddModalOpenOpenDirectly={openAddNominationDirectly}
-              onCloseAddModalDirectly={() => setOpenAddNominationDirectly(false)}
-              currentUser={currentUser}
-            />
-          )}
+            {activeTab === 'nominasi' && (
+              <NominationsView
+                nominations={nominations}
+                categories={categories}
+                onAddNomination={handleAddNomination}
+                onUpdateNomination={handleUpdateNomination}
+                onDeleteNomination={handleDeleteNomination}
+                isAddModalOpenOpenDirectly={openAddNominationDirectly}
+                onCloseAddModalDirectly={() => setOpenAddNominationDirectly(false)}
+                currentUser={currentUser}
+              />
+            )}
 
-          {activeTab === 'keuangan' && (
-            <FinanceView
-              transactions={transactions}
-              onAddTransaction={handleAddTransaction}
-              onUpdateTransaction={handleUpdateTransaction}
-              onDeleteTransaction={handleDeleteTransaction}
-              isAddModalOpenDirectly={openAddTransactionDirectly}
-              onCloseAddModalDirectly={() => setOpenAddTransactionDirectly(false)}
-            />
-          )}
+            {activeTab === 'keuangan' && (
+              <FinanceView
+                transactions={transactions}
+                onAddTransaction={handleAddTransaction}
+                onUpdateTransaction={handleUpdateTransaction}
+                onDeleteTransaction={handleDeleteTransaction}
+                isAddModalOpenDirectly={openAddTransactionDirectly}
+                onCloseAddModalDirectly={() => setOpenAddTransactionDirectly(false)}
+              />
+            )}
 
-          {activeTab === 'koordinasi' && (
-            <CoordinationView
-              tasks={tasks}
-              inventory={inventory}
-              rundown={rundown}
-              onAddTask={handleAddTask}
-              onUpdateTaskStatus={handleUpdateTaskStatus}
-              onDeleteTask={handleDeleteTask}
-              onAddInventory={handleAddInventory}
-            />
-          )}
+            {activeTab === 'koordinasi' && (
+              <CoordinationView
+                tasks={tasks}
+                inventory={inventory}
+                rundown={rundown}
+                onAddTask={handleAddTask}
+                onUpdateTaskStatus={handleUpdateTaskStatus}
+                onDeleteTask={handleDeleteTask}
+                onAddInventory={handleAddInventory}
+              />
+            )}
 
-          {activeTab === 'sertifikat' && (
-            <CertificatesView nominations={nominations} categories={categories} />
-          )}
+            {activeTab === 'sertifikat' && (
+              <CertificatesView nominations={nominations} categories={categories} />
+            )}
 
-          {activeTab === 'surat' && (
-            <DocumentsView
-              documents={documents}
-              regulations={regulations}
-              onAddDocument={handleAddDocument}
-              onUpdateDocument={handleUpdateDocument}
-              onDeleteDocument={handleDeleteDocument}
-              onAddRegulation={handleAddRegulation}
-              onUpdateRegulation={handleUpdateRegulation}
-              onDeleteRegulation={handleDeleteRegulation}
-              currentUser={currentUser}
-              onNavigateToNominees={() => {
-                setActiveTab('nominasi');
-                setOpenAddNominationDirectly(true);
-              }}
-            />
-          )}
+            {activeTab === 'surat' && (
+              <DocumentsView
+                documents={documents}
+                regulations={regulations}
+                onAddDocument={handleAddDocument}
+                onUpdateDocument={handleUpdateDocument}
+                onDeleteDocument={handleDeleteDocument}
+                onAddRegulation={handleAddRegulation}
+                onUpdateRegulation={handleUpdateRegulation}
+                onDeleteRegulation={handleDeleteRegulation}
+                currentUser={currentUser}
+                onNavigateToNominees={() => {
+                  setActiveTab('nominasi');
+                  setOpenAddNominationDirectly(true);
+                }}
+              />
+            )}
 
-          {activeTab === 'akun' && (
-            <AccountsView
-              accounts={accounts}
-              onAddAccount={handleAddAccount}
-              onDeleteAccount={handleDeleteAccount}
-              onUpdateAccount={handleUpdateAccount}
-              currentUser={currentUser}
-              onLogout={handleLogout}
-              onSwitchUser={(acc) => {
-                const session: UserSession = {
-                  id: acc.id,
-                  name: acc.name,
-                  role: `${acc.role} (${acc.category === 'admin' ? 'ADMIN' : 'PETUGAS'})`,
-                  category: acc.category,
-                  email: `${acc.name.toLowerCase().replace(/[^a-z]/g, '')}@penganugerahan.id`,
-                  loginTime: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
-                };
-                handleLoginSuccess(session);
-              }}
-            />
-          )}
+            {activeTab === 'akun' && (
+              <AccountsView
+                accounts={accounts}
+                onAddAccount={handleAddAccount}
+                onDeleteAccount={handleDeleteAccount}
+                onUpdateAccount={handleUpdateAccount}
+                currentUser={currentUser}
+                onLogout={handleLogout}
+                onSwitchUser={(acc) => {
+                  const session: UserSession = {
+                    id: acc.id,
+                    name: acc.name,
+                    role: `${acc.role} (${acc.category === 'admin' ? 'ADMIN' : 'PETUGAS'})`,
+                    category: acc.category,
+                    email: `${acc.name.toLowerCase().replace(/[^a-z]/g, '')}@penganugerahan.id`,
+                    loginTime: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+                  };
+                  handleLoginSuccess(session);
+                }}
+              />
+            )}
+          </ErrorBoundary>
         </main>
       </div>
 
@@ -820,4 +935,5 @@ export default function App() {
     </div>
   );
 }
+
 
