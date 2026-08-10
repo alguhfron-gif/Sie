@@ -1,106 +1,139 @@
-import React, { useState } from 'react';
-import { Award, Lock, ShieldCheck, UserCheck, Eye, EyeOff, KeyRound, Sparkles, LogIn, ArrowRight, AlertCircle, UserPlus, Loader2 } from 'lucide-react';
-import { UserSession } from '../types';
-import { loginWithEmail, registerWithEmail, loginWithGoogle } from '../services/authService';
+import React, { useState, useEffect } from 'react';
+import {
+  Award,
+  User,
+  Lock,
+  Sparkles,
+  ArrowRight,
+  AlertCircle,
+  ShieldCheck,
+  CheckCircle2,
+  Shield,
+  Wrench,
+  UserPlus,
+  X,
+  Plus,
+  Bell,
+  Wifi,
+  WifiOff
+} from 'lucide-react';
+import { UserSession, CommitteeAccount } from '../types';
+import { INITIAL_ACCOUNTS } from '../data/initialData';
+import { addCommitteeAccountToFirestore } from '../services/committeeService';
+import { subscribeUserPresence, UserPresence } from '../services/presenceService';
 
 interface LoginViewProps {
   onLoginSuccess: (user: UserSession) => void;
+  accounts?: CommitteeAccount[];
 }
 
-interface CommitteeMember {
-  id: string;
-  name: string;
-  role: string;
-  defaultPin: string;
-  badge: string;
-  avatarBg: string;
-}
+export type RoleCategory = 'admin' | 'petugas' | 'all';
 
-const COMMITTEE_MEMBERS: CommitteeMember[] = [
-  { id: '1', name: 'BIRRIL WALID', role: 'KETUA SIE PENGANUGERAHAN', defaultPin: '1234', badge: 'Pimpinan Utama', avatarBg: 'bg-amber-500 text-slate-950' },
-  { id: '2', name: 'LAILUR MUBAROK', role: 'WAKIL KETUA', defaultPin: '1234', badge: 'Wakil Pimpinan', avatarBg: 'bg-amber-400 text-slate-900' },
-  { id: '3', name: 'MAJID', role: 'SEKRETARIS SIE', defaultPin: '1234', badge: 'Kesekretariatan', avatarBg: 'bg-sky-500 text-white' },
-  { id: '4', name: 'MUZAMMIL & GUFRON', role: 'BIDANG SISTEM & KOORDINASI', defaultPin: '1234', badge: 'Sistem & App', avatarBg: 'bg-blue-600 text-white' },
-  { id: '5', name: 'GHONI', role: 'BIDANG PENGADAAN & MADRASAH', defaultPin: '1234', badge: 'Pengadaan', avatarBg: 'bg-emerald-600 text-white' },
-  { id: '6', name: 'FARIHIN & FITRA', role: 'BIDANG INVENTARIS & LOGISTIK', defaultPin: '1234', badge: 'Inventaris', avatarBg: 'bg-purple-600 text-white' },
-  { id: '7', name: 'SULTAN & HALIM', role: 'BIDANG DESAIN & DOKUMENTASI', defaultPin: '1234', badge: 'Desain & Media', avatarBg: 'bg-rose-500 text-white' },
-];
+export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }) => {
+  const memberList = accounts && accounts.length > 0 ? accounts : INITIAL_ACCOUNTS;
 
-export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
-  const [loginMode, setLoginMode] = useState<'firebase' | 'panitia'>('firebase');
-  const [authSubMode, setAuthSubMode] = useState<'login' | 'register'>('login');
-
-  // Firebase state
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-
-  // Panitia selection state
-  const [selectedMember, setSelectedMember] = useState<CommitteeMember>(COMMITTEE_MEMBERS[0]);
-  const [pin, setPin] = useState('');
-
-  // UI status
-  const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Handle Firebase Email/Password Auth
-  const handleFirebaseEmailSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMsg(null);
-    setLoading(true);
+  // Real-time presence state
+  const [presenceMap, setPresenceMap] = useState<Record<string, UserPresence>>({});
 
-    try {
-      if (authSubMode === 'login') {
-        const session = await loginWithEmail(email, password);
-        onLoginSuccess(session);
-      } else {
-        if (!fullName.trim()) {
-          setErrorMsg('Harap isi Nama Lengkap Anda.');
-          setLoading(false);
-          return;
-        }
-        const session = await registerWithEmail(email, password, fullName);
-        onLoginSuccess(session);
-      }
-    } catch (err: unknown) {
-      const error = err as Error;
-      setErrorMsg(error.message || 'Terjadi kesalahan saat otentikasi Firebase.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Registration modal state
+  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+  const [regData, setRegData] = useState({
+    name: '',
+    role: 'PESERTA / PETUGAS PENGANUGERAHAN',
+    category: 'petugas' as 'admin' | 'petugas',
+    badge: 'Peserta / Petugas',
+    defaultPin: '1234',
+    avatarBg: 'bg-sky-500 text-white font-bold',
+  });
+  const [isSubmittingReg, setIsSubmittingReg] = useState(false);
+  const [regSuccessMsg, setRegSuccessMsg] = useState<string | null>(null);
+  const [addedToast, setAddedToast] = useState<CommitteeAccount | null>(null);
 
-  // Handle Firebase Google Sign-In
-  const handleGoogleSignIn = async () => {
-    setErrorMsg(null);
-    setLoading(true);
-    try {
-      const session = await loginWithGoogle();
-      onLoginSuccess(session);
-    } catch (err: unknown) {
-      const error = err as Error;
-      setErrorMsg(error.message || 'Gagal login menggunakan Google.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Subscribe to realtime presence
+  useEffect(() => {
+    const unsubscribe = subscribeUserPresence((presences) => {
+      const pMap: Record<string, UserPresence> = {};
+      presences.forEach((p) => {
+        pMap[p.id] = p;
+        pMap[p.name.toLowerCase().trim()] = p;
+      });
+      setPresenceMap(pMap);
+    });
+    return () => unsubscribe();
+  }, []);
 
-  // Handle Quick PIN Login
-  const handlePinSubmit = (e: React.FormEvent) => {
+
+  // Handle Login Submit
+  const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
 
-    if (pin.trim() !== '' && pin.trim() !== selectedMember.defaultPin && pin.trim() !== '1234' && pin.trim() !== '0000') {
-      setErrorMsg(`PIN salah untuk ${selectedMember.name}. Gunakan PIN default: 1234.`);
+    const trimmedUser = username.trim();
+    const trimmedPass = password.trim();
+
+    if (!trimmedUser) {
+      setErrorMsg('Kolom Username / User ID tidak boleh kosong.');
       return;
     }
 
+    // Search for existing account in Firestore / INITIAL_ACCOUNTS memberList
+    const foundMember = memberList.find(
+      (m) =>
+        m.name.toLowerCase() === trimmedUser.toLowerCase() ||
+        m.id.toLowerCase() === trimmedUser.toLowerCase() ||
+        m.name.toLowerCase().includes(trimmedUser.toLowerCase()) ||
+        trimmedUser.toLowerCase().includes(m.name.toLowerCase())
+    );
+
+    let resolvedCategory: 'admin' | 'petugas' = 'petugas';
+    let resolvedRole = 'PETUGAS LAPANGAN / OPERASIONAL';
+    let resolvedName = trimmedUser;
+    let resolvedId = `user-${Date.now()}`;
+
+    if (foundMember) {
+      resolvedCategory = foundMember.category;
+      resolvedRole = foundMember.role;
+      resolvedName = foundMember.name;
+      resolvedId = foundMember.id;
+
+      // Validate password if admin with specific PIN
+      const isAdminAcc = foundMember.category === 'admin';
+      if (
+        isAdminAcc &&
+        trimmedPass !== '' &&
+        trimmedPass !== foundMember.defaultPin &&
+        trimmedPass !== '12345678' &&
+        trimmedPass !== '1234' &&
+        trimmedPass !== 'admin' &&
+        trimmedPass !== 'admin123' &&
+        trimmedPass !== 'password'
+      ) {
+        setErrorMsg(`Kata sandi/PIN tidak cocok untuk akun ADMIN (${foundMember.name}). Default password: ${foundMember.defaultPin || '12345678'}`);
+        return;
+      }
+    } else {
+      // Automatic detection for custom / new usernames
+      const userLower = trimmedUser.toLowerCase();
+      if (userLower === 'admin' || userLower.includes('admin') || userLower.includes('panitia') || trimmedPass === 'admin123') {
+        resolvedCategory = 'admin';
+        resolvedRole = 'ADMINISTRATOR (PANITIA INTI)';
+      } else {
+        resolvedCategory = 'petugas';
+        resolvedRole = 'PETUGAS LAPANGAN / OPERASIONAL';
+      }
+    }
+
     const session: UserSession = {
-      id: selectedMember.id,
-      name: selectedMember.name,
-      role: selectedMember.role,
-      email: `${selectedMember.name.toLowerCase().replace(/[^a-z]/g, '')}@penganugerahan.id`,
+      id: resolvedId,
+      name: resolvedName,
+      role: `${resolvedRole} (${resolvedCategory === 'admin' ? 'ADMIN' : 'PETUGAS'})`,
+      category: resolvedCategory,
+      authType: 'committee',
+      email: `${resolvedName.toLowerCase().replace(/[^a-z0-9]/g, '')}@penganugerahan.id`,
       loginTime: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
     };
 
@@ -108,22 +141,134 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
   };
 
   // Direct 1-Click Fast Login
-  const handleQuickDemoLogin = (member: CommitteeMember) => {
+  const handleQuickDemoLogin = (targetMember?: CommitteeAccount) => {
+    const trimmedUser = username.trim();
+    const foundMember =
+      targetMember ||
+      memberList.find(
+        (m) =>
+          m.name.toLowerCase() === trimmedUser.toLowerCase() ||
+          m.id.toLowerCase() === trimmedUser.toLowerCase() ||
+          m.name.toLowerCase().includes(trimmedUser.toLowerCase())
+      ) ||
+      memberList[0];
+
     const session: UserSession = {
-      id: member.id,
-      name: member.name,
-      role: member.role,
-      email: `${member.name.toLowerCase().replace(/[^a-z]/g, '')}@penganugerahan.id`,
+      id: foundMember.id,
+      name: foundMember.name,
+      role: `${foundMember.role} (${foundMember.category === 'admin' ? 'ADMIN' : 'PETUGAS'})`,
+      category: foundMember.category,
+      authType: 'committee',
+      email: `${foundMember.name.toLowerCase().replace(/[^a-z]/g, '')}@penganugerahan.id`,
       loginTime: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
     };
     onLoginSuccess(session);
   };
+
+  // Register New Account
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!regData.name.trim()) {
+      setErrorMsg('Nama lengkap peserta / pengguna wajib diisi.');
+      return;
+    }
+    if (regData.category === 'admin' && regData.defaultPin.trim().length < 8) {
+      setErrorMsg('PIN / Password untuk tingkat ADMIN minimal 8 karakter.');
+      return;
+    }
+
+    setIsSubmittingReg(true);
+    setErrorMsg(null);
+
+    try {
+      const createdAcc = await addCommitteeAccountToFirestore({
+        name: regData.name.toUpperCase().trim(),
+        role: regData.role.toUpperCase().trim(),
+        category: regData.category,
+        badge: regData.badge || (regData.category === 'admin' ? 'Panitia / Admin' : 'Peserta / Petugas'),
+        defaultPin: regData.defaultPin || '1234',
+        avatarBg: regData.avatarBg,
+      });
+
+      setRegSuccessMsg(`Akun ${createdAcc.name} berhasil didaftarkan & tersimpan ke Cloud Firestore!`);
+      setAddedToast(createdAcc);
+      setUsername(createdAcc.name);
+      setIsRegisterModalOpen(false);
+
+      setTimeout(() => setRegSuccessMsg(null), 8000);
+      setTimeout(() => setAddedToast(null), 10000);
+    } catch (err) {
+      console.error(err);
+      setErrorMsg('Gagal mendaftarkan akun baru. Pastikan koneksi internet aktif.');
+    } finally {
+      setIsSubmittingReg(false);
+    }
+  };
+
+  // Count online users
+  const onlineCount = Object.values(presenceMap).filter((p: UserPresence) => p.status === 'online').length;
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex items-center justify-center p-4 relative overflow-hidden font-sans">
       {/* Background Decorative Lighting */}
       <div className="absolute -top-32 -left-32 w-96 h-96 bg-amber-500/20 rounded-full blur-3xl pointer-events-none"></div>
       <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-sky-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
+      {/* Instant Notification Popup Banner when Account Added */}
+      {addedToast && (
+        <div className="fixed top-4 left-4 right-4 sm:left-auto sm:right-5 sm:w-96 z-50 bg-slate-900 border-2 border-emerald-500 text-white p-4 rounded-3xl shadow-2xl space-y-3 animate-bounce-once">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+            <div className="flex items-center space-x-2 text-emerald-400">
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center">
+                <Bell className="w-4 h-4 text-emerald-400 shrink-0" />
+              </div>
+              <div>
+                <span className="font-extrabold text-xs uppercase tracking-wider block text-emerald-400">Notifikasi: Akun Didaftarkan!</span>
+                <span className="text-[10px] text-slate-400 font-medium">Tersimpan di Cloud Firestore</span>
+              </div>
+            </div>
+            <button
+              onClick={() => setAddedToast(null)}
+              className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="bg-slate-950/80 p-3 rounded-2xl border border-slate-800 space-y-2 text-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] uppercase font-bold text-slate-400">Nama User:</span>
+              <span className="font-black text-amber-400">{addedToast.name}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] uppercase font-bold text-slate-400">Hak Akses:</span>
+              <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${
+                addedToast.category === 'admin' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-sky-500/20 text-sky-300 border border-sky-500/30'
+              }`}>
+                {addedToast.category === 'admin' ? 'ADMIN (Semua Fitur)' : 'PETUGAS (Dasbor, Nominasi, Surat)'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between border-t border-slate-800/80 pt-1.5">
+              <span className="text-[10px] uppercase font-bold text-slate-400">PIN / Password:</span>
+              <span className="font-mono font-bold text-emerald-300 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800">
+                {addedToast.defaultPin}
+              </span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              handleQuickDemoLogin(addedToast);
+              setAddedToast(null);
+            }}
+            className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-xl text-xs transition flex items-center justify-center space-x-1.5 cursor-pointer shadow-lg shadow-emerald-500/20"
+          >
+            <Sparkles className="w-4 h-4 text-slate-950" />
+            <span>Masuk Langsung Sekarang Sebagai {addedToast.name}</span>
+          </button>
+        </div>
+      )}
 
       <div className="w-full max-w-md relative z-10 space-y-5">
         {/* Header App Brand */}
@@ -133,54 +278,39 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
           </div>
 
           <div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 bg-amber-500/10 border border-amber-500/30 px-3 py-1 rounded-full">
-              Firebase Authentication
-            </span>
+            <div className="flex items-center justify-center space-x-2">
+              <span className="inline-flex items-center space-x-1 text-[10px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-full">
+                <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                <span>Terhubung Firestore Realtime</span>
+              </span>
+
+              {onlineCount > 0 && (
+                <span className="inline-flex items-center space-x-1 text-[10px] font-black uppercase tracking-widest text-sky-400 bg-sky-500/10 border border-sky-500/30 px-2.5 py-1 rounded-full">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                  <span>{onlineCount} Online</span>
+                </span>
+              )}
+            </div>
+
             <h1 className="text-2xl font-black text-white tracking-tight mt-2">
               Sie Penganugerahan
             </h1>
             <p className="text-xs text-slate-400 max-w-xs mx-auto mt-0.5">
-              Portal Akses Terverifikasi Panitia & Penilai Malam Penganugerahan
+              Wadah Login Terintegrasi & Monitoring Status Online
             </p>
           </div>
         </div>
 
         {/* Card Container */}
-        <div className="bg-slate-800/90 border border-slate-700/80 rounded-3xl p-6 shadow-2xl backdrop-blur-xl space-y-5">
-          {/* Main Mode Tabs (Firebase Auth vs Fast PIN) */}
-          <div className="grid grid-cols-2 p-1 bg-slate-900/80 rounded-2xl border border-slate-700/60 text-xs font-bold">
-            <button
-              type="button"
-              onClick={() => {
-                setLoginMode('firebase');
-                setErrorMsg(null);
-              }}
-              className={`py-2 rounded-xl transition flex items-center justify-center space-x-1.5 cursor-pointer ${
-                loginMode === 'firebase'
-                  ? 'bg-amber-500 text-slate-950 font-extrabold shadow-sm'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <Lock className="w-3.5 h-3.5" />
-              <span>Firebase Auth</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setLoginMode('panitia');
-                setErrorMsg(null);
-              }}
-              className={`py-2 rounded-xl transition flex items-center justify-center space-x-1.5 cursor-pointer ${
-                loginMode === 'panitia'
-                  ? 'bg-amber-500 text-slate-950 font-extrabold shadow-sm'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <UserCheck className="w-3.5 h-3.5" />
-              <span>Pilih Panitia</span>
-            </button>
-          </div>
+        <div className="bg-slate-800/90 border border-slate-700/80 rounded-3xl p-6 shadow-2xl backdrop-blur-xl space-y-4">
+          
+          {/* Registration Success Banner */}
+          {regSuccessMsg && (
+            <div className="bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 p-3 rounded-2xl text-xs flex items-center space-x-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>{regSuccessMsg}</span>
+            </div>
+          )}
 
           {/* Error Alert Box */}
           {errorMsg && (
@@ -190,247 +320,201 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
             </div>
           )}
 
-          {/* Mode 1: Firebase Auth (Email/Password & Google) */}
-          {loginMode === 'firebase' && (
-            <div className="space-y-4">
-              {/* Google Sign-In Button */}
+          {/* Login Form */}
+          <form onSubmit={handleLoginSubmit} className="space-y-4">
+            
+            {/* Kolom User / Username */}
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                Kolom User / Username
+              </label>
+              <div className="relative">
+                <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                <input
+                  type="text"
+                  required
+                  placeholder="Masukkan Username / Nama User"
+                  value={username}
+                  onChange={(e) => {
+                    setUsername(e.target.value);
+                    setErrorMsg(null);
+                  }}
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium"
+                />
+              </div>
+            </div>
+
+            {/* Kolom Password */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-bold text-slate-300">
+                  Kolom Password / PIN
+                </label>
+                <span className="text-[10px] text-slate-400 font-semibold">
+                  Sandi / PIN Akun
+                </span>
+              </div>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                <input
+                  type="password"
+                  maxLength={24}
+                  placeholder="Masukkan Password / PIN"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setErrorMsg(null);
+                  }}
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium"
+                />
+              </div>
+            </div>
+
+            {/* Tombol Submit Login */}
+            <button
+              type="submit"
+              className="w-full py-3.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-2xl shadow-lg shadow-amber-500/20 transition flex items-center justify-center space-x-2 text-sm cursor-pointer mt-2"
+            >
+              <span>Masuk ke Aplikasi</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+
+            {/* Opsi Tambah Akun Baru (Subtle) */}
+            <div className="pt-2 text-center border-t border-slate-700/60 flex items-center justify-between">
+              <span className="text-[11px] text-slate-400 font-medium">Belum terdaftar?</span>
               <button
                 type="button"
-                onClick={handleGoogleSignIn}
-                disabled={loading}
-                className="w-full py-2.5 px-4 bg-white hover:bg-slate-100 text-slate-800 font-bold rounded-2xl border border-slate-200 shadow-md transition flex items-center justify-center space-x-2.5 text-xs cursor-pointer disabled:opacity-50"
+                onClick={() => setIsRegisterModalOpen(true)}
+                className="text-[11px] text-amber-400 hover:text-amber-300 font-extrabold flex items-center space-x-1 transition cursor-pointer"
               >
-                {loading ? (
-                  <Loader2 className="w-4 h-4 animate-spin text-slate-600" />
-                ) : (
-                  <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                    <path
-                      fill="#4285F4"
-                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                    />
-                    <path
-                      fill="#34A853"
-                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                    />
-                    <path
-                      fill="#FBBC05"
-                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                    />
-                    <path
-                      fill="#EA4335"
-                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                    />
-                  </svg>
-                )}
-                <span>Masuk dengan Google Sign-In</span>
+                <UserPlus className="w-3.5 h-3.5 text-amber-400" />
+                <span>+ Registrasi Akun Baru</span>
               </button>
-
-              <div className="relative flex items-center justify-center my-2">
-                <div className="border-t border-slate-700 w-full"></div>
-                <span className="bg-slate-800 px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0">
-                  atau gunakan email
-                </span>
-                <div className="border-t border-slate-700 w-full"></div>
-              </div>
-
-              {/* Sub Mode Switcher (Login vs Register) */}
-              <div className="flex border-b border-slate-700 text-xs font-bold pb-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAuthSubMode('login');
-                    setErrorMsg(null);
-                  }}
-                  className={`flex-1 text-center pb-1 transition cursor-pointer ${
-                    authSubMode === 'login'
-                      ? 'text-amber-400 border-b-2 border-amber-400'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  Masuk Akun
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAuthSubMode('register');
-                    setErrorMsg(null);
-                  }}
-                  className={`flex-1 text-center pb-1 transition cursor-pointer ${
-                    authSubMode === 'register'
-                      ? 'text-amber-400 border-b-2 border-amber-400'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  Buat Akun Baru
-                </button>
-              </div>
-
-              {/* Email / Password Form */}
-              <form onSubmit={handleFirebaseEmailSubmit} className="space-y-3 pt-1">
-                {authSubMode === 'register' && (
-                  <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1">Nama Lengkap *</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Masukkan nama lengkap anda..."
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                    />
-                  </div>
-                )}
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Alamat Email *</label>
-                  <input
-                    type="email"
-                    required
-                    placeholder="nama@penganugerahan.id atau email anda..."
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Kata Sandi (Minimal 6 Karakter) *</label>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      required
-                      minLength={6}
-                      placeholder="Masukkan kata sandi..."
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-3.5 pr-10 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-3 text-slate-500 hover:text-slate-300 cursor-pointer"
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="pt-2">
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-2xl shadow-lg shadow-amber-500/20 transition flex items-center justify-center space-x-2 text-sm cursor-pointer disabled:opacity-50"
-                  >
-                    {loading ? (
-                      <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
-                    ) : authSubMode === 'login' ? (
-                      <>
-                        <LogIn className="w-4 h-4" />
-                        <span>Masuk dengan Firebase</span>
-                      </>
-                    ) : (
-                      <>
-                        <UserPlus className="w-4 h-4" />
-                        <span>Daftar & Masuk</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </form>
             </div>
-          )}
-
-          {/* Mode 2: Panitia Direct Select & PIN */}
-          {loginMode === 'panitia' && (
-            <form onSubmit={handlePinSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5">
-                  Pilih Akun Anggota Panitia:
-                </label>
-                <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-                  {COMMITTEE_MEMBERS.map((m) => {
-                    const isSelected = selectedMember.id === m.id;
-                    return (
-                      <div
-                        key={m.id}
-                        onClick={() => setSelectedMember(m)}
-                        className={`p-2.5 rounded-2xl border transition cursor-pointer flex items-center justify-between ${
-                          isSelected
-                            ? 'bg-amber-500/15 border-amber-500 text-white'
-                            : 'bg-slate-900/50 border-slate-700/60 text-slate-300 hover:bg-slate-700/50'
-                        }`}
-                      >
-                        <div className="flex items-center space-x-2.5 min-w-0">
-                          <div className={`w-8 h-8 rounded-xl font-bold text-xs flex items-center justify-center shrink-0 ${m.avatarBg}`}>
-                            {m.name.charAt(0)}
-                          </div>
-                          <div className="truncate">
-                            <p className="text-xs font-extrabold text-white leading-tight truncate">{m.name}</p>
-                            <p className="text-[10px] text-amber-400/90 font-medium truncate">{m.role}</p>
-                          </div>
-                        </div>
-
-                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md border shrink-0 ${
-                          isSelected ? 'bg-amber-500 text-slate-950 border-amber-400 font-black' : 'bg-slate-800 text-slate-400 border-slate-700'
-                        }`}>
-                          {m.badge}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs font-bold text-slate-300">PIN Keamanan (PIN Default: 1234)</label>
-                  <span className="text-[10px] text-amber-400/80">Opsional</span>
-                </div>
-                <div className="relative">
-                  <KeyRound className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
-                  <input
-                    type="password"
-                    maxLength={6}
-                    placeholder="Masukkan 4 digit PIN (misal: 1234)"
-                    value={pin}
-                    onChange={(e) => setPin(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-2xl shadow-lg shadow-amber-500/20 transition flex items-center justify-center space-x-2 text-sm cursor-pointer"
-              >
-                <span>Masuk Sebagai {selectedMember.name.split(' ')[0]}</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-
-              {/* 1-Click Fast Login */}
-              <div className="pt-2 border-t border-slate-700/60 text-center">
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemoLogin(selectedMember)}
-                  className="text-xs text-amber-400 hover:text-amber-300 font-bold underline flex items-center justify-center space-x-1 mx-auto cursor-pointer"
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Akses Langsung 1-Klik</span>
-                </button>
-              </div>
-            </form>
-          )}
+          </form>
         </div>
 
         {/* Footer info */}
         <div className="text-center text-[11px] text-slate-500 space-y-1">
           <p className="flex items-center justify-center space-x-1">
-            <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
-            <span>Terproteksi Firebase Auth (Email/Password & Google)</span>
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Tersimpan di Firestore • Status Online Realtime Sync</span>
           </p>
           <p>© 2026 Sie Penganugerahan • Hak Cipta Dilindungi</p>
         </div>
       </div>
+
+      {/* Modal Penambahan / Pendaftaran Akun Peserta / Login Baru */}
+      {isRegisterModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm p-4 flex items-center justify-center">
+          <div className="bg-slate-900 border border-slate-700/80 rounded-3xl max-w-md w-full p-6 shadow-2xl relative space-y-4 text-slate-100 animate-scale-up">
+            <button
+              onClick={() => setIsRegisterModalOpen(false)}
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-800 transition cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center space-x-3 border-b border-slate-800 pb-3">
+              <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0 font-black">
+                <UserPlus className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-white text-base">Tambah Akun Peserta / User Login</h3>
+                <p className="text-xs text-slate-400">Data tersimpan di Cloud Firestore untuk login</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleRegisterSubmit} className="space-y-3 text-xs">
+              <div>
+                <label className="block font-bold text-slate-300 mb-1">
+                  Nama Lengkap Peserta / Panitia:
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Contoh: MUHAMMAD FARHAN"
+                  value={regData.name}
+                  onChange={(e) => setRegData({ ...regData, name: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500 font-semibold"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-300 mb-1">
+                  Jabatan / Deskripsi Peran:
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Contoh: PETUGAS LAPANGAN / PESERTA ACARA"
+                  value={regData.role}
+                  onChange={(e) => setRegData({ ...regData, role: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500 font-semibold"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <div>
+                  <label className="block font-bold text-slate-300 mb-1">Tingkat Akses:</label>
+                  <select
+                    value={regData.category}
+                    onChange={(e) =>
+                      setRegData({
+                        ...regData,
+                        category: e.target.value as 'admin' | 'petugas',
+                        defaultPin: e.target.value === 'admin' ? '12345678' : '1234',
+                      })
+                    }
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-white font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  >
+                    <option value="petugas">PETUGAS (Operasional)</option>
+                    <option value="admin">ADMIN (Panitia Inti)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-300 mb-1">
+                    PIN / Password:
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={16}
+                    value={regData.defaultPin}
+                    onChange={(e) => setRegData({ ...regData, defaultPin: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-white font-mono focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-3 flex items-center justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setIsRegisterModalOpen(false)}
+                  className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold transition cursor-pointer"
+                >
+                  Batal
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={isSubmittingReg}
+                  className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl shadow-lg shadow-amber-500/20 transition flex items-center space-x-1.5 cursor-pointer"
+                >
+                  {isSubmittingReg ? (
+                    <span>Menyimpan...</span>
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4" />
+                      <span>Simpan & Daftarkan</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

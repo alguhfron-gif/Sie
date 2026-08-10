@@ -4,8 +4,8 @@ import {
   getWebhookUrl,
   saveWebhookUrl,
   sendWebhookPayload,
-  GOOGLE_APPS_SCRIPT_TEMPLATE,
 } from '../services/webhookService';
+import { GOOGLE_APPS_SCRIPT_FULL_CODE } from '../services/googleSheets';
 
 interface WebhookModalProps {
   isOpen: boolean;
@@ -52,7 +52,7 @@ export const WebhookModal: React.FC<WebhookModalProps> = ({ isOpen, onClose }) =
   };
 
   const handleCopyScript = () => {
-    navigator.clipboard.writeText(GOOGLE_APPS_SCRIPT_TEMPLATE);
+    navigator.clipboard.writeText(GOOGLE_APPS_SCRIPT_FULL_CODE);
     setCopiedScript(true);
     setTimeout(() => setCopiedScript(false), 3000);
   };
@@ -67,8 +67,8 @@ export const WebhookModal: React.FC<WebhookModalProps> = ({ isOpen, onClose }) =
               <FileSpreadsheet className="w-5 h-5 text-amber-300" />
             </div>
             <div>
-              <h2 className="text-base font-extrabold text-white">Integrasi Webhook Google Sheets</h2>
-              <p className="text-xs text-emerald-100">Sinkronkan data otomatis ke spreadsheet tanpa reload</p>
+              <h2 className="text-base font-extrabold text-white">Tempel URL Web App ke Aplikasi</h2>
+              <p className="text-xs text-emerald-100">Integrasi Sinkronisasi Otomatis Google Sheets Multi-Tab</p>
             </div>
           </div>
           <button
@@ -81,16 +81,27 @@ export const WebhookModal: React.FC<WebhookModalProps> = ({ isOpen, onClose }) =
 
         {/* Modal Body */}
         <div className="p-6 space-y-5 text-xs text-slate-700">
+          {/* Instruction Banner */}
+          <div className="bg-amber-50 border border-amber-200/90 rounded-2xl p-3.5 flex items-start space-x-3 text-amber-950">
+            <Sparkles className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <div className="text-[11px] leading-relaxed">
+              <p className="font-extrabold text-slate-900">Petunjuk Menghubungkan Google Sheets:</p>
+              <p className="text-slate-700 mt-0.5">
+                Tempelkan (paste) <b>URL Web App Google Apps Script</b> Anda pada kolom input di bawah ini, lalu klik <b>Simpan</b> &amp; <b>Uji Kirim Tes Data</b>.
+              </p>
+            </div>
+          </div>
+
           <div>
             <label className="block font-bold text-slate-800 mb-1.5 flex items-center justify-between">
-              <span>Google Apps Script Webhook URL *</span>
+              <span>Tempel Web App URL Google Sheets di Sini *</span>
               <button
                 type="button"
                 onClick={() => setShowGuide(!showGuide)}
                 className="text-[11px] text-emerald-700 font-bold hover:underline flex items-center space-x-1 cursor-pointer"
               >
                 <HelpCircle className="w-3.5 h-3.5" />
-                <span>{showGuide ? 'Sembunyikan Panduan' : 'Cara Membuat Apps Script'}</span>
+                <span>{showGuide ? 'Sembunyikan Panduan' : 'Cara Dapatkan Web App URL'}</span>
               </button>
             </label>
 

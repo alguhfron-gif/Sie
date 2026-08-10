@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ActiveTab, AwardCategory, Nomination, Transaction, CommitteeTask, InventoryItem, RundownItem, TaskStatus, UserSession } from './types';
+import { ActiveTab, AwardCategory, Nomination, Transaction, CommitteeTask, InventoryItem, RundownItem, TaskStatus, UserSession, CommitteeAccount, OfficialDocument, RegulationRule } from './types';
 import {
   INITIAL_CATEGORIES,
   INITIAL_NOMINATIONS,
@@ -7,7 +7,11 @@ import {
   INITIAL_TASKS,
   INITIAL_INVENTORY,
   INITIAL_RUNDOWN,
+  INITIAL_ACCOUNTS,
+  INITIAL_DOCUMENTS,
+  INITIAL_REGULATIONS,
 } from './data/initialData';
+
 import {
   subscribeNominations,
   addNominationToFirestore,
@@ -24,19 +28,41 @@ import {
   subscribeCommitteeTasks,
   subscribeInventory,
   subscribeRundown,
+  subscribeCommitteeAccounts,
   addCommitteeTaskToFirestore,
   updateCommitteeTaskInFirestore,
   deleteCommitteeTaskFromFirestore,
   addInventoryToFirestore,
+  addCommitteeAccountToFirestore,
+  updateCommitteeAccountInFirestore,
+  deleteCommitteeAccountFromFirestore,
 } from './services/committeeService';
+import {
+  subscribeOfficialDocuments,
+  subscribeRegulations,
+  addOfficialDocumentToFirestore,
+  updateOfficialDocumentInFirestore,
+  deleteOfficialDocumentFromFirestore,
+  addRegulationToFirestore,
+  updateRegulationInFirestore,
+  deleteRegulationFromFirestore,
+} from './services/documentsService';
 import { subscribeToAuthChanges, logoutFirebase } from './services/authService';
+import { setUserOnline, setUserOffline } from './services/presenceService';
+import { subscribeCertificates, CertificateRecord } from './services/certificatesService';
+import { syncAllCollectionsToGoogleSheets, getWebhookUrl } from './services/googleSheets';
+import { syncCollectionToSheets } from './services/googleSheetsSync';
 import { Navbar } from './components/Navbar';
+import { Sidebar } from './components/Sidebar';
 import { BottomNav } from './components/BottomNav';
 import { DashboardView } from './components/DashboardView';
 import { NominationsView } from './components/NominationsView';
 import { FinanceView } from './components/FinanceView';
 import { CoordinationView } from './components/CoordinationView';
 import { CertificatesView } from './components/CertificatesView';
+import { DocumentsView } from './components/DocumentsView';
+import { AccountsView } from './components/AccountsView';
+
 import { LoginView } from './components/LoginView';
 import { WebhookModal } from './components/WebhookModal';
 import { fetchWebhookUrlFromFirestore } from './services/webhookService';
@@ -46,12 +72,22 @@ export default function App() {
 
   // User Authentication Session State
   const [currentUser, setCurrentUser] = useState<UserSession | null>(() => {
-    const savedSession = localStorage.getItem('sie_user_session');
+    // 1. Try localStorage
+    const savedLocal = localStorage.getItem('sie_user_session');
+    if (savedLocal) {
+      try {
+        return JSON.parse(savedLocal);
+      } catch (e) {
+        console.error('Failed to parse saved user session from localStorage', e);
+      }
+    }
+    // 2. Fallback to sessionStorage
+    const savedSession = sessionStorage.getItem('sie_user_session');
     if (savedSession) {
       try {
         return JSON.parse(savedSession);
       } catch (e) {
-        console.error('Failed to parse saved user session', e);
+        console.error('Failed to parse saved user session from sessionStorage', e);
       }
     }
     return null;
@@ -61,22 +97,98 @@ export default function App() {
   useEffect(() => {
     const unsubscribe = subscribeToAuthChanges((firebaseSession) => {
       if (firebaseSession) {
-        setCurrentUser(firebaseSession);
-        localStorage.setItem('sie_user_session', JSON.stringify(firebaseSession));
+        // Protect active local Committee / Petugas session from being unexpectedly overwritten
+        const rawSaved = localStorage.getItem('sie_user_session') || sessionStorage.getItem('sie_user_session');
+        let isCommitteeOrPetugasSession = false;
+        if (rawSaved) {
+          try {
+            const parsed = JSON.parse(rawSaved);
+            if (parsed?.authType === 'committee' || parsed?.category === 'petugas' || parsed?.category === 'admin') {
+              isCommitteeOrPetugasSession = true;
+            }
+          } catch (e) {}
+        }
+
+        // Only update if not currently using a local Committee/Petugas login session
+        if (!isCommitteeOrPetugasSession) {
+          const sessionData: UserSession = {
+            ...firebaseSession,
+            authType: 'firebase',
+          };
+          setCurrentUser(sessionData);
+          try {
+            localStorage.setItem('sie_user_session', JSON.stringify(sessionData));
+            sessionStorage.setItem('sie_user_session', JSON.stringify(sessionData));
+          } catch (e) {}
+        }
       }
     });
     return () => unsubscribe();
   }, []);
 
+  // Enforce access control: Admin sees everything; Petugas strictly limited to Dasbor, Nominasi, and Surat
+  const isAdmin = currentUser?.category === 'admin' || (currentUser?.role && currentUser.role.toUpperCase().includes('ADMIN'));
+  const isPetugas = !isAdmin && (currentUser?.category === 'petugas' || (currentUser?.role && currentUser.role.toUpperCase().includes('PETUGAS')));
+
+  useEffect(() => {
+    if (isPetugas && activeTab !== 'dashboard' && activeTab !== 'nominasi' && activeTab !== 'surat') {
+      setActiveTab('dashboard');
+    }
+  }, [isPetugas, activeTab]);
+
+  // Automatic real-time presence heartbeat when user is logged in
+  useEffect(() => {
+    if (!currentUser) return;
+
+    // Immediately set online on login or mount
+    setUserOnline(currentUser);
+
+    // Heartbeat every 20 seconds
+    const interval = setInterval(() => {
+      setUserOnline(currentUser);
+    }, 20000);
+
+    // Mark offline on window unload
+    const handleBeforeUnload = () => {
+      if (currentUser?.id) {
+        setUserOffline(currentUser.id);
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [currentUser]);
+
   const handleLoginSuccess = (user: UserSession) => {
     setCurrentUser(user);
-    localStorage.setItem('sie_user_session', JSON.stringify(user));
+    setUserOnline(user);
+    try {
+      localStorage.setItem('sie_user_session', JSON.stringify(user));
+      sessionStorage.setItem('sie_user_session', JSON.stringify(user));
+    } catch (e) {
+      console.warn('Failed to save session to browser storage:', e);
+    }
   };
 
   const handleLogout = async () => {
-    await logoutFirebase();
+    const userId = currentUser?.id;
+    // Immediately clear current user state so application routes instantly to Login view
     setCurrentUser(null);
-    localStorage.removeItem('sie_user_session');
+    try {
+      localStorage.removeItem('sie_user_session');
+      sessionStorage.removeItem('sie_user_session');
+    } catch (e) {
+      console.warn('Failed to clear local session storage:', e);
+    }
+
+    // Background presence & Firebase auth cleanup
+    if (userId) {
+      setUserOffline(userId).catch((err) => console.warn('Failed to update offline status:', err));
+    }
+    logoutFirebase().catch((err) => console.warn('Failed to logout Firebase:', err));
   };
 
   // LocalStorage helper initialization
@@ -116,6 +228,81 @@ export default function App() {
     const saved = localStorage.getItem('sie_rundown');
     return saved ? JSON.parse(saved) : INITIAL_RUNDOWN;
   });
+
+  const [accounts, setAccounts] = useState<CommitteeAccount[]>(() => {
+    const saved = localStorage.getItem('sie_accounts');
+    return saved ? JSON.parse(saved) : INITIAL_ACCOUNTS;
+  });
+
+  const [documents, setDocuments] = useState<OfficialDocument[]>(() => {
+    const saved = localStorage.getItem('sie_documents');
+    return saved ? JSON.parse(saved) : INITIAL_DOCUMENTS;
+  });
+
+  const [regulations, setRegulations] = useState<RegulationRule[]>(() => {
+    const saved = localStorage.getItem('sie_regulations');
+    return saved ? JSON.parse(saved) : INITIAL_REGULATIONS;
+  });
+
+  const [certificates, setCertificates] = useState<CertificateRecord[]>([]);
+
+  // Save documents & regulations to localStorage
+  useEffect(() => {
+    localStorage.setItem('sie_documents', JSON.stringify(documents));
+  }, [documents]);
+
+  useEffect(() => {
+    localStorage.setItem('sie_regulations', JSON.stringify(regulations));
+  }, [regulations]);
+
+  const handleAddDocument = async (newDoc: Omit<OfficialDocument, 'id'>) => {
+    try {
+      await addOfficialDocumentToFirestore(newDoc);
+    } catch (err) {
+      console.error('Firestore sync failed on add document:', err);
+    }
+  };
+
+  const handleUpdateDocument = async (updatedDoc: OfficialDocument) => {
+    try {
+      await updateOfficialDocumentInFirestore(updatedDoc);
+    } catch (err) {
+      console.error('Firestore sync failed on update document:', err);
+    }
+  };
+
+  const handleDeleteDocument = async (id: string) => {
+    try {
+      await deleteOfficialDocumentFromFirestore(id);
+    } catch (err) {
+      console.error('Firestore sync failed on delete document:', err);
+    }
+  };
+
+  const handleAddRegulation = async (newReg: Omit<RegulationRule, 'id'>) => {
+    try {
+      await addRegulationToFirestore(newReg);
+    } catch (err) {
+      console.error('Firestore sync failed on add regulation:', err);
+    }
+  };
+
+  const handleUpdateRegulation = async (updatedReg: RegulationRule) => {
+    try {
+      await updateRegulationInFirestore(updatedReg);
+    } catch (err) {
+      console.error('Firestore sync failed on update regulation:', err);
+    }
+  };
+
+  const handleDeleteRegulation = async (id: string) => {
+    try {
+      await deleteRegulationFromFirestore(id);
+    } catch (err) {
+      console.error('Firestore sync failed on delete regulation:', err);
+    }
+  };
+
 
   // Direct modal trigger states
   const [openAddNominationDirectly, setOpenAddNominationDirectly] = useState(false);
@@ -197,10 +384,103 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
+  // Subscribe to Cloud Firestore Committee Accounts Real-time Updates
+  useEffect(() => {
+    const unsubscribe = subscribeCommitteeAccounts(
+      (firestoreItems) => {
+        if (firestoreItems && firestoreItems.length >= 0) {
+          setAccounts(firestoreItems);
+        }
+      },
+      (error) => {
+        console.warn('Realtime Firestore accounts notice:', error);
+      }
+    );
+    return () => unsubscribe();
+  }, []);
+
+  // Subscribe to Cloud Firestore Official Documents Real-time Updates
+  useEffect(() => {
+    const unsubscribe = subscribeOfficialDocuments(
+      (firestoreItems) => {
+        if (firestoreItems && firestoreItems.length >= 0) {
+          setDocuments(firestoreItems);
+        }
+      },
+      (error) => {
+        console.warn('Realtime Firestore official documents notice:', error);
+      }
+    );
+    return () => unsubscribe();
+  }, []);
+
+  // Subscribe to Cloud Firestore Regulations Real-time Updates
+  useEffect(() => {
+    const unsubscribe = subscribeRegulations(
+      (firestoreItems) => {
+        if (firestoreItems && firestoreItems.length >= 0) {
+          setRegulations(firestoreItems);
+        }
+      },
+      (error) => {
+        console.warn('Realtime Firestore regulations notice:', error);
+      }
+    );
+    return () => unsubscribe();
+  }, []);
+
+  // Subscribe to Cloud Firestore Certificates Real-time Updates
+  useEffect(() => {
+    const unsubscribe = subscribeCertificates(
+      (firestoreItems) => {
+        if (firestoreItems && firestoreItems.length >= 0) {
+          setCertificates(firestoreItems);
+        }
+      },
+      (error) => {
+        console.warn('Realtime Firestore certificates notice:', error);
+      }
+    );
+    return () => unsubscribe();
+  }, []);
+
   // Fetch Webhook URL from Firestore on mount
   useEffect(() => {
     fetchWebhookUrlFromFirestore();
   }, []);
+
+  // Automatic Background Sync to Google Sheets when datasets update
+  useEffect(() => {
+    const webhookUrl = getWebhookUrl();
+    if (!webhookUrl) return;
+
+    const timer = setTimeout(() => {
+      // Sync batch payload
+      syncAllCollectionsToGoogleSheets({
+        nominations,
+        transactions,
+        tasks,
+        rundown,
+        inventory,
+        certificates,
+        documents,
+        regulations,
+        accounts,
+      });
+
+      // Also sync individual collections using syncCollectionToSheets helper
+      if (nominations.length > 0) syncCollectionToSheets('Nominasi', nominations);
+      if (transactions.length > 0) syncCollectionToSheets('Keuangan', transactions);
+      if (tasks.length > 0) syncCollectionToSheets('Tugas Panitia', tasks);
+      if (rundown.length > 0) syncCollectionToSheets('Rundown Acara', rundown);
+      if (inventory.length > 0) syncCollectionToSheets('Inventaris', inventory);
+      if (certificates.length > 0) syncCollectionToSheets('Sertifikat', certificates);
+      if (documents.length > 0) syncCollectionToSheets('Surat & Dokumen', documents);
+      if (accounts.length > 0) syncCollectionToSheets('Akun Petugas', accounts);
+    }, 4000); // 4 second debounce to prevent spamming webhooks during typing/bulk operations
+
+    return () => clearTimeout(timer);
+  }, [nominations, transactions, tasks, rundown, inventory, certificates, documents, regulations, accounts]);
 
   // Sync state to LocalStorage
   useEffect(() => {
@@ -219,6 +499,10 @@ export default function App() {
     localStorage.setItem('sie_inventory', JSON.stringify(inventory));
   }, [inventory]);
 
+  useEffect(() => {
+    localStorage.setItem('sie_accounts', JSON.stringify(accounts));
+  }, [accounts]);
+
   // Reset Data Handler
   const handleResetData = () => {
     setTransactions(INITIAL_TRANSACTIONS);
@@ -231,18 +515,8 @@ export default function App() {
     localStorage.removeItem('sie_inventory');
   };
 
-  // Nomination Handlers with Firestore Integration
+  // Nomination Handlers with Firestore Real-time Integration
   const handleAddNomination = async (newNom: Omit<Nomination, 'id' | 'createdAt'>) => {
-    const localCreated: Nomination = {
-      ...newNom,
-      id: `nom-${Date.now()}`,
-      createdAt: new Date().toISOString().split('T')[0],
-    };
-
-    // Optimistic UI update
-    setNominations((prev) => [localCreated, ...prev]);
-
-    // Save to Cloud Firestore
     try {
       await addNominationToFirestore(newNom);
     } catch (err) {
@@ -251,10 +525,6 @@ export default function App() {
   };
 
   const handleUpdateNomination = async (updatedNom: Nomination) => {
-    // Optimistic UI update
-    setNominations((prev) => prev.map((n) => (n.id === updatedNom.id ? updatedNom : n)));
-
-    // Save to Cloud Firestore
     try {
       await updateNominationInFirestore(updatedNom);
     } catch (err) {
@@ -263,10 +533,6 @@ export default function App() {
   };
 
   const handleDeleteNomination = async (id: string) => {
-    // Optimistic UI update
-    setNominations((prev) => prev.filter((n) => n.id !== id));
-
-    // Delete from Cloud Firestore
     try {
       await deleteNominationFromFirestore(id);
     } catch (err) {
@@ -274,14 +540,8 @@ export default function App() {
     }
   };
 
-  // Transaction Handlers with Firestore Integration
+  // Transaction Handlers with Firestore Real-time Integration
   const handleAddTransaction = async (newTrx: Omit<Transaction, 'id'>) => {
-    const created: Transaction = {
-      ...newTrx,
-      id: `trx-${Date.now()}`,
-    };
-    setTransactions((prev) => [created, ...prev]);
-
     try {
       await addTransactionToFirestore(newTrx);
     } catch (err) {
@@ -290,8 +550,6 @@ export default function App() {
   };
 
   const handleUpdateTransaction = async (updatedTrx: Transaction) => {
-    setTransactions((prev) => prev.map((t) => (t.id === updatedTrx.id ? updatedTrx : t)));
-
     try {
       await updateTransactionInFirestore(updatedTrx);
     } catch (err) {
@@ -300,8 +558,6 @@ export default function App() {
   };
 
   const handleDeleteTransaction = async (id: string) => {
-    setTransactions((prev) => prev.filter((t) => t.id !== id));
-
     try {
       await deleteTransactionFromFirestore(id);
     } catch (err) {
@@ -309,14 +565,8 @@ export default function App() {
     }
   };
 
-  // Task Handlers
+  // Task Handlers with Firestore Real-time Integration
   const handleAddTask = async (newTask: Omit<CommitteeTask, 'id'>) => {
-    const created: CommitteeTask = {
-      ...newTask,
-      id: `task-${Date.now()}`,
-    };
-    setTasks((prev) => [...prev, created]);
-
     try {
       await addCommitteeTaskToFirestore(newTask);
     } catch (err) {
@@ -325,8 +575,6 @@ export default function App() {
   };
 
   const handleUpdateTaskStatus = async (id: string, status: TaskStatus) => {
-    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, status } : t)));
-
     try {
       await updateCommitteeTaskInFirestore(id, { status });
     } catch (err) {
@@ -335,8 +583,6 @@ export default function App() {
   };
 
   const handleDeleteTask = async (id: string) => {
-    setTasks((prev) => prev.filter((t) => t.id !== id));
-
     try {
       await deleteCommitteeTaskFromFirestore(id);
     } catch (err) {
@@ -344,14 +590,8 @@ export default function App() {
     }
   };
 
-  // Inventory Handlers
+  // Inventory Handlers with Firestore Real-time Integration
   const handleAddInventory = async (newInv: Omit<InventoryItem, 'id'>) => {
-    const created: InventoryItem = {
-      ...newInv,
-      id: `inv-${Date.now()}`,
-    };
-    setInventory((prev) => [...prev, created]);
-
     try {
       await addInventoryToFirestore(newInv);
     } catch (err) {
@@ -359,9 +599,75 @@ export default function App() {
     }
   };
 
+  // Account Handlers with Firestore Real-time Integration & Optimistic State
+  const handleAddAccount = async (newAcc: Omit<CommitteeAccount, 'id'>) => {
+    const tempId = `acc-${Date.now()}`;
+    const created: CommitteeAccount = {
+      ...newAcc,
+      id: tempId,
+      createdAt: new Date().toISOString().split('T')[0],
+    };
+
+    setAccounts((prev) => {
+      const existingIdx = prev.findIndex((a) => a.name.toUpperCase().trim() === created.name.toUpperCase().trim());
+      if (existingIdx !== -1) {
+        const copy = [...prev];
+        copy[existingIdx] = { ...copy[existingIdx], ...created };
+        return copy;
+      }
+      return [...prev, created];
+    });
+
+    try {
+      await addCommitteeAccountToFirestore(newAcc);
+    } catch (err) {
+      console.error('Firestore sync failed on add account:', err);
+    }
+  };
+
+  const handleUpdateAccount = async (updatedAcc: CommitteeAccount) => {
+    setAccounts((prev) =>
+      prev.map((a) => (a.id === updatedAcc.id || a.name.toUpperCase().trim() === updatedAcc.name.toUpperCase().trim() ? updatedAcc : a))
+    );
+
+    if (currentUser && (currentUser.id === updatedAcc.id || currentUser.name.toUpperCase().trim() === updatedAcc.name.toUpperCase().trim())) {
+      const updatedSession: UserSession = {
+        ...currentUser,
+        id: updatedAcc.id,
+        name: updatedAcc.name,
+        role: `${updatedAcc.role} (${updatedAcc.category === 'admin' ? 'ADMIN' : 'PETUGAS'})`,
+        category: updatedAcc.category,
+      };
+      setCurrentUser(updatedSession);
+      try {
+        localStorage.setItem('sie_user_session', JSON.stringify(updatedSession));
+        sessionStorage.setItem('sie_user_session', JSON.stringify(updatedSession));
+      } catch (e) {}
+    }
+
+    try {
+      await updateCommitteeAccountInFirestore(updatedAcc);
+    } catch (err) {
+      console.error('Firestore sync failed on update account:', err);
+    }
+  };
+
+  const handleDeleteAccount = async (id: string) => {
+    setAccounts((prev) => prev.filter((a) => a.id !== id));
+
+    try {
+      await deleteCommitteeAccountFromFirestore(id);
+    } catch (err) {
+      console.error('Firestore sync failed on delete account:', err);
+    }
+  };
+
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
   // If user is not logged in, render Login Screen
   if (!currentUser) {
-    return <LoginView onLoginSuccess={handleLoginSuccess} />;
+    return <LoginView onLoginSuccess={handleLoginSuccess} accounts={accounts} />;
   }
 
   return (
@@ -380,6 +686,10 @@ export default function App() {
         onLogin={() => setCurrentUser(null)}
         onOpenWebhookModal={() => setIsWebhookModalOpen(true)}
         onRefreshData={() => window.location.reload()}
+        onToggleSidebar={() => {
+          setIsSidebarCollapsed((prev) => !prev);
+          setIsMobileSidebarOpen((prev) => !prev);
+        }}
       />
 
       {/* Google Sheets Webhook Configuration Modal */}
@@ -388,69 +698,125 @@ export default function App() {
         onClose={() => setIsWebhookModalOpen(false)}
       />
 
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-24 md:pb-12">
-        {activeTab === 'dashboard' && (
-          <DashboardView
-            setActiveTab={setActiveTab}
-            transactions={transactions}
-            nominations={nominations}
-            categories={categories}
-            tasks={tasks}
-            onOpenAddNomination={() => {
-              setActiveTab('nominasi');
-              setOpenAddNominationDirectly(true);
-            }}
-            onOpenAddTransaction={() => {
-              setActiveTab('keuangan');
-              setOpenAddTransactionDirectly(true);
-            }}
-            onOpenWebhookModal={() => setIsWebhookModalOpen(true)}
-          />
-        )}
+      {/* Main Layout Area with Left Sidebar & Content */}
+      <div className="max-w-7xl w-full mx-auto flex flex-1 min-h-[calc(100vh-4rem)]">
+        <Sidebar
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          currentUser={currentUser}
+          onLogout={handleLogout}
+          collapsed={isSidebarCollapsed}
+          setCollapsed={setIsSidebarCollapsed}
+          mobileOpen={isMobileSidebarOpen}
+          onCloseMobile={() => setIsMobileSidebarOpen(false)}
+        />
 
-        {activeTab === 'nominasi' && (
-          <NominationsView
-            nominations={nominations}
-            categories={categories}
-            onAddNomination={handleAddNomination}
-            onUpdateNomination={handleUpdateNomination}
-            onDeleteNomination={handleDeleteNomination}
-            isAddModalOpenOpenDirectly={openAddNominationDirectly}
-            onCloseAddModalDirectly={() => setOpenAddNominationDirectly(false)}
-          />
-        )}
+        {/* Main Content Area */}
+        <main className="flex-1 p-3 sm:p-6 pb-28 md:pb-12 min-w-0">
+          {activeTab === 'dashboard' && (
+            <DashboardView
+              setActiveTab={setActiveTab}
+              transactions={transactions}
+              nominations={nominations}
+              categories={categories}
+              tasks={tasks}
+              currentUser={currentUser}
+              onOpenAddNomination={() => {
+                setActiveTab('nominasi');
+                setOpenAddNominationDirectly(true);
+              }}
+              onOpenAddTransaction={() => {
+                setActiveTab('keuangan');
+                setOpenAddTransactionDirectly(true);
+              }}
+              onOpenWebhookModal={() => setIsWebhookModalOpen(true)}
+            />
+          )}
 
-        {activeTab === 'keuangan' && (
-          <FinanceView
-            transactions={transactions}
-            onAddTransaction={handleAddTransaction}
-            onUpdateTransaction={handleUpdateTransaction}
-            onDeleteTransaction={handleDeleteTransaction}
-            isAddModalOpenDirectly={openAddTransactionDirectly}
-            onCloseAddModalDirectly={() => setOpenAddTransactionDirectly(false)}
-          />
-        )}
+          {activeTab === 'nominasi' && (
+            <NominationsView
+              nominations={nominations}
+              categories={categories}
+              onAddNomination={handleAddNomination}
+              onUpdateNomination={handleUpdateNomination}
+              onDeleteNomination={handleDeleteNomination}
+              isAddModalOpenOpenDirectly={openAddNominationDirectly}
+              onCloseAddModalDirectly={() => setOpenAddNominationDirectly(false)}
+              currentUser={currentUser}
+            />
+          )}
 
-        {activeTab === 'koordinasi' && (
-          <CoordinationView
-            tasks={tasks}
-            inventory={inventory}
-            rundown={rundown}
-            onAddTask={handleAddTask}
-            onUpdateTaskStatus={handleUpdateTaskStatus}
-            onDeleteTask={handleDeleteTask}
-            onAddInventory={handleAddInventory}
-          />
-        )}
+          {activeTab === 'keuangan' && (
+            <FinanceView
+              transactions={transactions}
+              onAddTransaction={handleAddTransaction}
+              onUpdateTransaction={handleUpdateTransaction}
+              onDeleteTransaction={handleDeleteTransaction}
+              isAddModalOpenDirectly={openAddTransactionDirectly}
+              onCloseAddModalDirectly={() => setOpenAddTransactionDirectly(false)}
+            />
+          )}
 
-        {activeTab === 'sertifikat' && (
-          <CertificatesView nominations={nominations} categories={categories} />
-        )}
-      </main>
+          {activeTab === 'koordinasi' && (
+            <CoordinationView
+              tasks={tasks}
+              inventory={inventory}
+              rundown={rundown}
+              onAddTask={handleAddTask}
+              onUpdateTaskStatus={handleUpdateTaskStatus}
+              onDeleteTask={handleDeleteTask}
+              onAddInventory={handleAddInventory}
+            />
+          )}
+
+          {activeTab === 'sertifikat' && (
+            <CertificatesView nominations={nominations} categories={categories} />
+          )}
+
+          {activeTab === 'surat' && (
+            <DocumentsView
+              documents={documents}
+              regulations={regulations}
+              onAddDocument={handleAddDocument}
+              onUpdateDocument={handleUpdateDocument}
+              onDeleteDocument={handleDeleteDocument}
+              onAddRegulation={handleAddRegulation}
+              onUpdateRegulation={handleUpdateRegulation}
+              onDeleteRegulation={handleDeleteRegulation}
+              currentUser={currentUser}
+              onNavigateToNominees={() => {
+                setActiveTab('nominasi');
+                setOpenAddNominationDirectly(true);
+              }}
+            />
+          )}
+
+          {activeTab === 'akun' && (
+            <AccountsView
+              accounts={accounts}
+              onAddAccount={handleAddAccount}
+              onDeleteAccount={handleDeleteAccount}
+              onUpdateAccount={handleUpdateAccount}
+              currentUser={currentUser}
+              onLogout={handleLogout}
+              onSwitchUser={(acc) => {
+                const session: UserSession = {
+                  id: acc.id,
+                  name: acc.name,
+                  role: `${acc.role} (${acc.category === 'admin' ? 'ADMIN' : 'PETUGAS'})`,
+                  category: acc.category,
+                  email: `${acc.name.toLowerCase().replace(/[^a-z]/g, '')}@penganugerahan.id`,
+                  loginTime: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+                };
+                handleLoginSuccess(session);
+              }}
+            />
+          )}
+        </main>
+      </div>
 
       {/* Mobile Bottom Navigation Bar */}
-      <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
+      <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} currentUser={currentUser} />
     </div>
   );
 }

@@ -6,12 +6,13 @@ import {
   onSnapshot,
 } from 'firebase/firestore';
 import { db, logFirestoreError, handleFirestoreError, OperationType } from '../firebase';
-import { CommitteeTask, InventoryItem, RundownItem } from '../types';
-import { INITIAL_TASKS, INITIAL_INVENTORY, INITIAL_RUNDOWN } from '../data/initialData';
+import { CommitteeTask, InventoryItem, RundownItem, CommitteeAccount } from '../types';
+import { INITIAL_TASKS, INITIAL_INVENTORY, INITIAL_RUNDOWN, INITIAL_ACCOUNTS } from '../data/initialData';
 
 const TASKS_COLLECTION = 'committee_tasks';
 const INVENTORY_COLLECTION = 'committee_inventory';
 const RUNDOWN_COLLECTION = 'committee_rundown';
+const ACCOUNTS_COLLECTION = 'committee_accounts';
 
 // ============================================================================
 // COMMITTEE TASKS (Tugas Panitia) Real-time Sync
@@ -251,5 +252,99 @@ export async function updateRundownInFirestore(updatedRundown: RundownItem[]): P
     }
   } catch (error) {
     console.error('Failed to update rundown in Firestore:', error);
+  }
+}
+
+// ============================================================================
+// COMMITTEE ACCOUNTS (Kelola Akun Admin & Petugas) Real-time Sync
+// ============================================================================
+export function subscribeCommitteeAccounts(
+  onSuccess: (data: CommitteeAccount[]) => void,
+  onError?: (error: unknown) => void
+) {
+  const colRef = collection(db, ACCOUNTS_COLLECTION);
+
+  return onSnapshot(
+    colRef,
+    async (snapshot) => {
+      if (snapshot.empty) {
+        try {
+          for (const initAcc of INITIAL_ACCOUNTS) {
+            const docRef = doc(db, ACCOUNTS_COLLECTION, initAcc.id);
+            await setDoc(docRef, initAcc);
+          }
+        } catch (e) {
+          console.warn('Failed to seed initial accounts to Firestore:', e);
+        }
+        onSuccess(INITIAL_ACCOUNTS);
+        return;
+      }
+
+      const items: CommitteeAccount[] = [];
+      snapshot.forEach((docSnap) => {
+        items.push({
+          ...(docSnap.data() as Omit<CommitteeAccount, 'id'>),
+          id: docSnap.id,
+        });
+      });
+
+      onSuccess(items);
+    },
+    (error) => {
+      console.warn('Firestore onSnapshot notice for accounts:', error);
+      if (onError) onError(error);
+      logFirestoreError(error, OperationType.GET, ACCOUNTS_COLLECTION);
+    }
+  );
+}
+
+export async function addCommitteeAccountToFirestore(
+  newAcc: Omit<CommitteeAccount, 'id'>
+): Promise<CommitteeAccount> {
+  const docId = `acc-${Date.now()}`;
+  const created: CommitteeAccount = {
+    ...newAcc,
+    id: docId,
+    createdAt: new Date().toISOString().split('T')[0],
+  };
+
+  const docRef = doc(db, ACCOUNTS_COLLECTION, docId);
+  try {
+    await setDoc(docRef, JSON.parse(JSON.stringify(created)));
+    return created;
+  } catch (error) {
+    console.error('Failed to add committee account to Firestore:', error);
+    try {
+      handleFirestoreError(error, OperationType.WRITE, `${ACCOUNTS_COLLECTION}/${docId}`);
+    } catch (e) {}
+    throw error;
+  }
+}
+
+export async function updateCommitteeAccountInFirestore(
+  updatedAcc: CommitteeAccount
+): Promise<void> {
+  const docRef = doc(db, ACCOUNTS_COLLECTION, updatedAcc.id);
+  try {
+    await setDoc(docRef, JSON.parse(JSON.stringify(updatedAcc)), { merge: true });
+  } catch (error) {
+    console.error('Failed to update committee account in Firestore:', error);
+    try {
+      handleFirestoreError(error, OperationType.UPDATE, `${ACCOUNTS_COLLECTION}/${updatedAcc.id}`);
+    } catch (e) {}
+    throw error;
+  }
+}
+
+export async function deleteCommitteeAccountFromFirestore(id: string): Promise<void> {
+  const docRef = doc(db, ACCOUNTS_COLLECTION, id);
+  try {
+    await deleteDoc(docRef);
+  } catch (error) {
+    console.error('Failed to delete committee account from Firestore:', error);
+    try {
+      handleFirestoreError(error, OperationType.DELETE, `${ACCOUNTS_COLLECTION}/${id}`);
+    } catch (e) {}
+    throw error;
   }
 }

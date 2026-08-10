@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Users, CheckCircle2, Clock, Plus, PackageCheck, AlertCircle, Edit2, Trash2, ShieldCheck, UserCheck, FileText, Code, Box, Image, ChevronRight, FileSpreadsheet } from 'lucide-react';
 import { CommitteeTask, InventoryItem, RundownItem, TaskStatus } from '../types';
 import { sendWebhookPayload, exportToCSV } from '../services/webhookService';
+import { ContentHeader } from './ContentHeader';
 
 interface CoordinationViewProps {
   tasks: CommitteeTask[];
@@ -231,15 +232,22 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
   };
 
   return (
-    <div className="space-y-6 pb-12">
-      {/* Top Header */}
-      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-4 pb-12">
+      {/* Content Header & Breadcrumbs */}
+      <ContentHeader
+        title="Koordinasi Panitia & Logistik"
+        subtitle="Struktur Panitia, Manajemen Tugas, Logistik Trofi, dan Rundown Malam Penganugerahan"
+        activeTab="koordinasi"
+      />
+
+      {/* Top Header Box */}
+      <div className="admin-box border-t-4 border-t-[#f39c12] p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center space-x-2">
-            <Users className="w-5 h-5 text-amber-600" />
-            <h1 className="text-xl font-bold text-slate-900">Koordinasi Panitia & Operasional Acara</h1>
+            <Users className="w-5 h-5 text-[#f39c12]" />
+            <h1 className="text-base font-extrabold text-gray-800">Koordinasi Panitia & Operasional Acara</h1>
           </div>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-gray-500 mt-1">
             Struktur dan pembagian tugas panitia, manajemen papan tugas, inventarisasi trofi & perlengkapan, serta rundown acara.
           </p>
         </div>
@@ -248,14 +256,14 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
           <button
             onClick={handleExportCommittee}
             title="Ekspor Data Panitia, Tugas, dan Logistik ke CSV & Google Sheets"
-            className="flex items-center space-x-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold px-3.5 py-2 rounded-2xl border border-emerald-300 text-xs transition shadow-sm cursor-pointer"
+            className="flex items-center space-x-1.5 bg-[#00a65a] hover:bg-[#008d4c] text-white font-bold px-3.5 py-1.5 rounded text-xs transition shadow-2xs cursor-pointer"
           >
-            <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
-            <span>Ekspor ke Google Sheets / CSV</span>
+            <FileSpreadsheet className="w-4 h-4 text-white" />
+            <span>Ekspor ke Sheets / CSV</span>
           </button>
 
           {/* SubTab Toggle */}
-          <div className="flex flex-wrap items-center bg-slate-100 p-1 rounded-2xl border border-slate-200 text-xs font-semibold gap-1">
+          <div className="flex items-center bg-slate-100 p-1 rounded-2xl border border-slate-200 text-xs font-semibold gap-1 overflow-x-auto touch-scroll-x no-scrollbar">
             <button
               onClick={() => setSubTab('structure')}
               className={`px-3 py-1.5 rounded-xl transition cursor-pointer ${

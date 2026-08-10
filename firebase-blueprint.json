@@ -80,6 +80,20 @@
         "issueDate": { "type": "string" },
         "department": { "type": "string" }
       }
+    },
+    "CommitteeAccount": {
+      "title": "Committee Account",
+      "description": "Committee member account data",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "username": { "type": "string" },
+        "password": { "type": "string" },
+        "category": { "type": "string", "enum": ["admin", "petugas"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["name", "role", "username", "password", "category"]
     }
   },
   "firestore": {
@@ -102,9 +116,22 @@
     "/committee_rundown/{rundownId}": {
       "description": "Collection storing event rundown items"
     },
+    "/committee_accounts/{accountId}": {
+      "schema": { "$ref": "#/entities/CommitteeAccount" },
+      "description": "Collection storing committee member login accounts"
+    },
     "/certificates/{certificateId}": {
       "schema": { "$ref": "#/entities/CertificateRecord" },
       "description": "Collection storing generated certificates"
+    },
+    "/official_documents/{documentId}": {
+      "description": "Collection storing official documents and decree letters"
+    },
+    "/regulations/{regulationId}": {
+      "description": "Collection storing regulation rules and evaluation standards"
+    },
+    "/user_presence/{presenceId}": {
+      "description": "Collection storing real-time user login presence and online/offline status"
     },
     "/settings/{settingId}": {
       "description": "Collection storing app settings such as Google Apps Script webhook URL"

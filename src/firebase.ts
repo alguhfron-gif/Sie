@@ -5,22 +5,25 @@ import { getFirestore, initializeFirestore, Firestore } from 'firebase/firestore
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 import firebaseConfigJson from '../firebase-applet-config.json';
 
-// Helper to sanitize env values and fallback if invalid or placeholder
-const getEnvValue = (val: string | undefined, fallback: string): string => {
-  if (!val || val.trim() === '' || val.includes('isi_') || val.includes('your_')) {
-    return fallback;
+// Helper to prioritize explicit config from firebase-applet-config.json over environment fallbacks
+const getConfigValue = (jsonVal: string | undefined, envVal: string | undefined, fallback: string = ''): string => {
+  if (jsonVal && jsonVal.trim() !== '' && !jsonVal.includes('isi_') && !jsonVal.includes('your_')) {
+    return jsonVal.trim();
   }
-  return val.trim();
+  if (envVal && envVal.trim() !== '' && !envVal.includes('isi_') && !envVal.includes('your_')) {
+    return envVal.trim();
+  }
+  return fallback;
 };
 
-// Default Firebase Client Configuration
+// Default Firebase Client Configuration (prioritizes user's explicit firebase-applet-config.json)
 export const firebaseConfig = {
-  apiKey: getEnvValue(import.meta.env.VITE_FIREBASE_API_KEY, firebaseConfigJson.apiKey),
-  authDomain: getEnvValue(import.meta.env.VITE_FIREBASE_AUTH_DOMAIN, firebaseConfigJson.authDomain),
-  projectId: getEnvValue(import.meta.env.VITE_FIREBASE_PROJECT_ID, firebaseConfigJson.projectId),
-  storageBucket: getEnvValue(import.meta.env.VITE_FIREBASE_STORAGE_BUCKET, firebaseConfigJson.storageBucket),
-  messagingSenderId: getEnvValue(import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID, firebaseConfigJson.messagingSenderId),
-  appId: getEnvValue(import.meta.env.VITE_FIREBASE_APP_ID, firebaseConfigJson.appId)
+  apiKey: getConfigValue(firebaseConfigJson.apiKey, import.meta.env.VITE_FIREBASE_API_KEY),
+  authDomain: getConfigValue(firebaseConfigJson.authDomain, import.meta.env.VITE_FIREBASE_AUTH_DOMAIN),
+  projectId: getConfigValue(firebaseConfigJson.projectId, import.meta.env.VITE_FIREBASE_PROJECT_ID),
+  storageBucket: getConfigValue(firebaseConfigJson.storageBucket, import.meta.env.VITE_FIREBASE_STORAGE_BUCKET),
+  messagingSenderId: getConfigValue(firebaseConfigJson.messagingSenderId, import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID),
+  appId: getConfigValue(firebaseConfigJson.appId, import.meta.env.VITE_FIREBASE_APP_ID)
 };
 
 // Initialize Firebase App safely
@@ -48,7 +51,7 @@ let dbService: Firestore;
 try {
   const customDbId = firebaseConfigJson.firestoreDatabaseId;
   const firestoreSettings = {
-    experimentalAutoDetectLongPolling: true,
+    experimentalForceLongPolling: true,
   };
   if (customDbId && customDbId !== '(default)') {
     dbService = initializeFirestore(app, firestoreSettings, customDbId);

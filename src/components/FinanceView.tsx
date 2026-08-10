@@ -4,6 +4,7 @@ import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recha
 import { Transaction, TransactionCategory, TransactionType } from '../types';
 import { uploadReceiptImage } from '../services/storageService';
 import { sendWebhookPayload, exportToCSV } from '../services/webhookService';
+import { ContentHeader } from './ContentHeader';
 
 interface FinanceViewProps {
   transactions: Transaction[];
@@ -322,14 +323,21 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
         </div>
       ) : (
         <>
-          {/* Top Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+          {/* Content Header & Breadcrumbs */}
+          <ContentHeader
+            title="Pengelolaan Keuangan & Anggaran"
+            subtitle="Pencatatan Arus Kas, Bukti Nota, dan Pertanggungjawaban Sie Penganugerahan"
+            activeTab="keuangan"
+          />
+
+          {/* Top Action Box */}
+          <div className="admin-box border-t-4 border-t-[#00a65a] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <div className="flex items-center space-x-2">
-                <DollarSign className="w-5 h-5 text-emerald-600" />
-                <h1 className="text-xl font-bold text-slate-900">Pengelolaan Keuangan & Anggaran Sie</h1>
+                <DollarSign className="w-5 h-5 text-[#00a65a]" />
+                <h1 className="text-base font-extrabold text-gray-800">Laporan Kas & Anggaran Sie Penganugerahan</h1>
               </div>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs text-gray-500 mt-1">
                 Catat arus kas masuk/keluar, pertanggungjawaban trofi & sertifikat, serta buat laporan resmi.
               </p>
             </div>
@@ -338,23 +346,23 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
               <button
                 onClick={handleExportFinance}
                 title="Ekspor Seluruh Data Keuangan ke CSV & Google Sheets"
-                className="flex items-center space-x-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold px-3.5 py-2.5 rounded-2xl border border-emerald-300 text-xs transition shadow-sm cursor-pointer"
+                className="flex items-center space-x-1.5 bg-[#00a65a] hover:bg-[#008d4c] text-white font-bold px-3.5 py-1.5 rounded text-xs transition shadow-2xs cursor-pointer"
               >
-                <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
-                <span>Ekspor ke Google Sheets / CSV</span>
+                <FileSpreadsheet className="w-4 h-4 text-white" />
+                <span>Ekspor ke Sheets / CSV</span>
               </button>
 
               <button
                 onClick={() => setShowPrintReport(true)}
-                className="flex items-center space-x-1.5 bg-slate-50 hover:bg-slate-100 text-slate-800 font-bold px-3.5 py-2.5 rounded-2xl border border-slate-200 text-xs transition cursor-pointer"
+                className="flex items-center space-x-1.5 bg-[#f39c12] hover:bg-[#e08e0b] text-slate-950 font-bold px-3.5 py-1.5 rounded text-xs transition shadow-2xs cursor-pointer"
               >
-                <FileText className="w-4 h-4 text-amber-700" />
+                <FileText className="w-4 h-4 text-slate-950" />
                 <span>Format Laporan Resmi</span>
               </button>
 
               <button
                 onClick={handleOpenAdd}
-                className="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold px-4 py-2.5 rounded-2xl shadow-sm transition text-xs cursor-pointer"
+                className="flex items-center space-x-1.5 bg-[#3c8dbc] hover:bg-[#367fa9] text-white font-extrabold px-3.5 py-1.5 rounded shadow-2xs transition text-xs cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>+ Tambah Transaksi</span>

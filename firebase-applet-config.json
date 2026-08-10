@@ -1,12 +1,12 @@
 {
-  "projectId": "universal-overview-040ks",
-  "appId": "1:483147478653:web:eed1a0af02f597fdde6314",
-  "apiKey": "AIzaSyDkXPqaUfkEhhVquS6AtpUM1ubuOEcxUJo",
-  "authDomain": "universal-overview-040ks.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-siepenganugeraha-75ba367d-a200-47a1-bb0e-ec111f30332e",
-  "storageBucket": "universal-overview-040ks.firebasestorage.app",
-  "messagingSenderId": "483147478653",
+  "projectId": "sie-penganugrahan",
+  "appId": "1:794946122065:web:a59afe46edaa6938e96370",
+  "apiKey": "AIzaSyAUDZGvUNhWAd_sk8loWDkgHEtUiRj5ESA",
+  "authDomain": "sie-penganugrahan.firebaseapp.com",
+  "firestoreDatabaseId": "(default)",
+  "storageBucket": "sie-penganugrahan.firebasestorage.app",
+  "messagingSenderId": "794946122065",
   "measurementId": "",
-  "oAuthClientId": "483147478653-nia7aolf7igbnpe5fdqs0m2ov4erteup.apps.googleusercontent.com",
+  "oAuthClientId": "",
   "recaptchaSiteKey": ""
 }

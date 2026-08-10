@@ -1,4 +1,4 @@
-import { AwardCategory, Nomination, Transaction, CommitteeTask, InventoryItem, RundownItem } from '../types';
+import { AwardCategory, Nomination, Transaction, CommitteeTask, InventoryItem, RundownItem, CommitteeAccount } from '../types';
 
 export const INITIAL_CATEGORIES: AwardCategory[] = [
   {
@@ -266,3 +266,176 @@ export const INITIAL_RUNDOWN: RundownItem[] = [
     notes: 'Penyerahan cinderamata pimpinan',
   },
 ];
+
+export const INITIAL_ACCOUNTS: CommitteeAccount[] = [
+  // TINGKAT ADMIN (Panitia Inti / Pimpinan)
+  {
+    id: '1',
+    name: 'BIRRIL WALID',
+    role: 'KETUA SIE PENGANUGERAHAN',
+    category: 'admin',
+    defaultPin: '12345678',
+    badge: 'Ketua / Admin',
+    avatarBg: 'bg-amber-500 text-slate-950 font-black',
+    createdAt: '2026-07-01',
+  },
+  {
+    id: '2',
+    name: 'LAILUR MUBAROK',
+    role: 'WAKIL KETUA SIE',
+    category: 'admin',
+    defaultPin: '12345678',
+    badge: 'Wakil / Admin',
+    avatarBg: 'bg-amber-400 text-slate-900 font-extrabold',
+    createdAt: '2026-07-01',
+  },
+  {
+    id: '3',
+    name: 'MAJID',
+    role: 'SEKRETARIS SIE',
+    category: 'admin',
+    defaultPin: '12345678',
+    badge: 'Sekretaris / Admin',
+    avatarBg: 'bg-amber-300 text-slate-950 font-bold',
+    createdAt: '2026-07-01',
+  },
+
+  // TINGKAT PETUGAS (Petugas Lapangan & Operasional)
+  {
+    id: '4',
+    name: 'MUZAMMIL & GUFRON',
+    role: 'PETUGAS SISTEM & KOORDINASI',
+    category: 'petugas',
+    defaultPin: '1234',
+    badge: 'Petugas Sistem',
+    avatarBg: 'bg-sky-500 text-white font-bold',
+    createdAt: '2026-07-01',
+  },
+  {
+    id: '5',
+    name: 'GHONI',
+    role: 'PETUGAS PENGADAAN & MADRASAH',
+    category: 'petugas',
+    defaultPin: '1234',
+    badge: 'Petugas Pengadaan',
+    avatarBg: 'bg-emerald-600 text-white font-bold',
+    createdAt: '2026-07-01',
+  },
+  {
+    id: '6',
+    name: 'FARIHIN & FITRA',
+    role: 'PETUGAS INVENTARIS & LOGISTIK',
+    category: 'petugas',
+    defaultPin: '1234',
+    badge: 'Petugas Logistik',
+    avatarBg: 'bg-purple-600 text-white font-bold',
+    createdAt: '2026-07-01',
+  },
+  {
+    id: '7',
+    name: 'SULTAN & HALIM',
+    role: 'PETUGAS DESAIN & DOKUMENTASI',
+    category: 'petugas',
+    defaultPin: '1234',
+    badge: 'Petugas Media',
+    avatarBg: 'bg-rose-500 text-white font-bold',
+    createdAt: '2026-07-01',
+  },
+];
+
+export const INITIAL_DOCUMENTS: import('../types').OfficialDocument[] = [
+  {
+    id: 'doc-1',
+    docNumber: 'SK/001/PENG/VII/2026',
+    title: 'Surat Keputusan Pembentukan & Susunan Panitia Sie Penganugerahan 2026',
+    category: 'SK Panitia',
+    date: '2026-07-01',
+    sender: 'Ketua Panitia Pelaksana',
+    content: `MEMUTUSKAN:
+1. Menetapkan Susunan Panitia Khusus Sie Penganugerahan Tahun 2026.
+2. Memberikan wewenang penuh kepada Sie Penganugerahan untuk mengelola penjurian, administrasi nominasi, pengadaan trofi, serta pelaksanaan penganugerahan.
+3. Surat Keputusan ini berlaku sejak tanggal ditetapkan hingga seluruh rangkaian kegiatan usai.`,
+    status: 'Diterbitkan',
+  },
+  {
+    id: 'doc-2',
+    docNumber: '002/PENG-EDR/VII/2026',
+    title: 'Surat Edaran Panduan & Tata Cara Pengusulan Calon Nominasi Penerima Anugerah',
+    category: 'Surat Edaran',
+    date: '2026-07-05',
+    sender: 'Sekretaris Sie Penganugerahan',
+    content: `Diberitahukan kepada seluruh pimpinan unit, pengurus, dan PPS bahwa pengusulan kandidat nominasi telah dibuka.
+Persyaratan:
+- Mengisi formulir usulan nominasi secara digital/manual.
+- Melampirkan berkas bukti rekam jejak & prestasi.
+- Batas akhir pengiriman berkas: 25 Juli 2026.`,
+    status: 'Diterbitkan',
+  },
+  {
+    id: 'doc-3',
+    docNumber: '003/PENG-UND/VII/2026',
+    title: 'Surat Undangan Perhelatan Malam Penganugerahan & Penyerahan Trofi',
+    category: 'Surat Undangan',
+    date: '2026-07-15',
+    sender: 'Panitia Sie Penganugerahan',
+    content: `Mengharap kehadiran Bapak/Ibu/Saudara pada Malam Anugerah Penganugerahan yang akan dilaksanakan pada:
+Hari/Tanggal: Sabtu, 1 Agustus 2026
+Waktu: Pukul 19.00 WIB - Selesai
+Tempat: Gedung Utama Penganugerahan
+Pakaian: Busana Resmi / Batik / Jas Organisasi`,
+    status: 'Diterbitkan',
+  },
+  {
+    id: 'doc-4',
+    docNumber: '004/PENG-PMH/VII/2026',
+    title: 'Surat Permohonan Verifikasi Data PPS & Madrasah Pendukung',
+    category: 'Surat Permohonan',
+    date: '2026-07-18',
+    sender: 'Sie Penganugerahan (Bagian Data)',
+    content: `Permohonan sinkronisasi dan verifikasi keabsahan data para calon penerima penghargaan dari unit madrasah & PPS terkait demi kelancaran penjurian.`,
+    status: 'Diterbitkan',
+  },
+];
+
+export const INITIAL_REGULATIONS: import('../types').RegulationRule[] = [
+  {
+    id: 'reg-1',
+    section: 'Ketentuan Umum',
+    title: 'Persyaratan Dasar Calon Penerima Anugerah',
+    description: 'Seluruh kandidat penerima penghargaan wajib memenuhi standar kualifikasi etika dan rekam jejak berikut:',
+    points: [
+      'Memiliki dedikasi, integritas, dan loyalitas yang tinggi terhadap organisasi/lembaga.',
+      'Bebas dari sanksi pelanggaran tata tertib dan memiliki rekam jejak positif.',
+      'Menyampaikan kelengkapan berkas pendukung prestasi / kontribusi nyata.',
+      'Disetujui oleh pimpinan unit atau tim verifikasi teknis.',
+    ],
+    lastUpdated: '2026-07-10',
+  },
+  {
+    id: 'reg-2',
+    section: 'Kriteria Penilaian',
+    title: 'Sistem & Bobot Penilaian Penjurian (Scoring)',
+    description: 'Proses penjurian menggunakan pembobotan komprehensif dari 3 aspek utama:',
+    points: [
+      'Bobot Prestasi / Karya Nyata (40%): Tingkat dampak, inovasi, dan pengakuan publik.',
+      'Bobot Dedikasi & Loyalitas (35%): Keaktifan, keikutsertaan, dan konsistensi pengabdian.',
+      'Bobot Etika & Rekomendasi (25%): Penilaian sikap, persetujuan pimpinan, dan verifikasi berkas.',
+      'Skor akhir minimal untuk ditetapkan sebagai Pemenang adalah 85.',
+    ],
+    lastUpdated: '2026-07-12',
+  },
+  {
+    id: 'reg-3',
+    section: 'Tata Tertib Acara',
+    title: 'Prosedur & Protokol Panggung Penyerahan Anugerah',
+    description: 'Tata cara wajib yang dipatuhi saat prosesi penganugerahan berlangung di atas panggung:',
+    points: [
+      'Pemenang wajib hadir di ruang transit 30 menit sebelum acara dimulai.',
+      'Pemenang dipanggil secara berurutan sesuai nomor urut kategori.',
+      'Pendamping penganugerahan menyerahkan trofi dan sertifikat di atas panggung utama.',
+      'Prosesi dilanjutkan dengan sesi foto resmi bersama pimpinan & dokumentasi media.',
+    ],
+    lastUpdated: '2026-07-15',
+  },
+];
+

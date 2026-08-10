@@ -25,7 +25,23 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    match /committee_accounts/{accountId} {
+      allow read, write: if true;
+    }
+
     match /certificates/{certificateId} {
+      allow read, write: if true;
+    }
+
+    match /official_documents/{documentId} {
+      allow read, write: if true;
+    }
+
+    match /regulations/{regulationId} {
+      allow read, write: if true;
+    }
+
+    match /user_presence/{presenceId} {
       allow read, write: if true;
     }
 

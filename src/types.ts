@@ -87,8 +87,43 @@ export interface UserSession {
   id: string;
   name: string;
   role: string;
+  category?: 'admin' | 'petugas';
+  authType?: 'committee' | 'firebase';
   email?: string;
   loginTime: string;
 }
 
-export type ActiveTab = 'dashboard' | 'nominasi' | 'keuangan' | 'koordinasi' | 'sertifikat';
+export interface CommitteeAccount {
+  id: string;
+  name: string;
+  role: string;
+  category: 'admin' | 'petugas';
+  defaultPin: string;
+  badge: string;
+  avatarBg?: string;
+  createdAt?: string;
+}
+
+export interface OfficialDocument {
+  id: string;
+  docNumber: string;
+  title: string;
+  category: 'SK Panitia' | 'Surat Edaran' | 'Surat Undangan' | 'Surat Permohonan' | 'Lainnya';
+  date: string;
+  sender: string;
+  content: string;
+  status: 'Diterbitkan' | 'Draf' | 'Arsip';
+  fileUrl?: string;
+}
+
+export interface RegulationRule {
+  id: string;
+  section: string; // e.g. 'Ketentuan Umum', 'Kriteria Penilaian', 'Tata Tertib Acara'
+  title: string;
+  description: string;
+  points: string[];
+  lastUpdated: string;
+}
+
+export type ActiveTab = 'dashboard' | 'nominasi' | 'keuangan' | 'koordinasi' | 'sertifikat' | 'surat' | 'akun';
+

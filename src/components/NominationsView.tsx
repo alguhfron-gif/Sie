@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { Award, Plus, Search, Filter, CheckCircle2, Edit2, Trash2, Trophy, Star, UserCheck, ShieldCheck, LayoutGrid, List, Phone, Briefcase, IdCard, Sparkles, FileSpreadsheet, Download, Loader2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import ExcelJS from 'exceljs';
-import { AwardCategory, Nomination, NominationStatus } from '../types';
+import { AwardCategory, Nomination, NominationStatus, UserSession } from '../types';
 import { sendWebhookPayload, exportToCSV } from '../services/webhookService';
+import { ContentHeader } from './ContentHeader';
 
 interface NominationsViewProps {
   nominations: Nomination[];
@@ -13,6 +14,7 @@ interface NominationsViewProps {
   onDeleteNomination: (id: string) => void;
   isAddModalOpenOpenDirectly?: boolean;
   onCloseAddModalDirectly?: () => void;
+  currentUser?: UserSession | null;
 }
 
 export const NominationsView: React.FC<NominationsViewProps> = ({
@@ -23,7 +25,10 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
   onDeleteNomination,
   isAddModalOpenOpenDirectly = false,
   onCloseAddModalDirectly,
+  currentUser,
 }) => {
+  const isAdmin = !currentUser || currentUser.category === 'admin' || (currentUser?.role && currentUser.role.toUpperCase().includes('ADMIN'));
+  const isPetugas = !isAdmin;
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
@@ -68,7 +73,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
     setJustification('');
     setStatus('Penilaian');
     setScore(85);
-    setNominatorName('');
+    setNominatorName(currentUser?.name || '');
     setIsModalOpen(true);
   };
 
@@ -315,35 +320,42 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
   };
 
   return (
-    <div className="space-y-6 pb-12">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+    <div className="space-y-4 pb-12">
+      {/* Breadcrumb & Title */}
+      <ContentHeader
+        title="Nominasi & Peserta Penganugerahan"
+        subtitle="Sistem Pendaftaran, Penilaian, dan Penetapan Pemenang"
+        activeTab="nominasi"
+      />
+
+      {/* Top Header Box */}
+      <div className="admin-box border-t-4 border-t-[#3c8dbc] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <Trophy className="w-5 h-5 text-amber-500" />
-            <h1 className="text-xl font-extrabold text-slate-900">Pengelolaan Nominasi & Peserta Penganugerahan</h1>
-            <span className="flex items-center space-x-1 text-[10px] font-extrabold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-0.5 rounded-full shadow-2xs">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <Trophy className="w-5 h-5 text-[#f39c12]" />
+            <h1 className="text-base font-extrabold text-gray-800">Daftar Peserta & Nominasi Penganugerahan</h1>
+            <span className="flex items-center space-x-1 text-[10px] font-extrabold bg-[#00a65a] text-white px-2 py-0.5 rounded shadow-2xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
               <span>Firestore Sync Active</span>
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-gray-500 mt-1">
             Manajemen data lengkap peserta, penambahan atribut identitas (NIP/NIK, Jabatan, Kontak, Karya), penilaian, hingga penetapan pemenang.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
           <button
             type="button"
             onClick={handleExportExcel}
             disabled={isExporting}
-            className="flex items-center justify-center space-x-2 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold px-4 py-2.5 rounded-2xl shadow-sm transition text-xs sm:text-sm cursor-pointer disabled:opacity-50"
+            className="flex items-center justify-center space-x-1.5 bg-[#00a65a] hover:bg-[#008d4c] text-white font-extrabold px-3.5 py-1.5 rounded shadow-2xs transition text-xs cursor-pointer disabled:opacity-50"
             title="Ekspor seluruh data peserta ke file Excel (.xlsx)"
           >
             {isExporting ? (
               <Loader2 className="w-4 h-4 animate-spin text-white" />
             ) : (
-              <FileSpreadsheet className="w-4 h-4 text-emerald-200" />
+              <FileSpreadsheet className="w-4 h-4 text-white" />
             )}
             <span>{isExporting ? 'Mengekspor...' : 'Ekspor Excel'}</span>
           </button>
@@ -351,7 +363,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
           <button
             type="button"
             onClick={handleOpenAdd}
-            className="flex items-center justify-center space-x-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-4 py-2.5 rounded-2xl shadow-sm transition text-xs sm:text-sm cursor-pointer"
+            className="flex items-center justify-center space-x-1.5 bg-[#3c8dbc] hover:bg-[#367fa9] text-white font-extrabold px-3.5 py-1.5 rounded shadow-2xs transition text-xs cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Tambah Peserta Baru</span>
@@ -550,7 +562,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                   <span className="text-slate-500">Pengusul: <strong className="text-slate-800">{nom.nominatorName}</strong></span>
 
                   <div className="flex items-center space-x-2">
-                    {!isWinner && (
+                    {isAdmin && !isWinner && (
                       <button
                         onClick={() => handleSetWinner(nom)}
                         className="px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold rounded-xl border border-amber-300 text-[11px] transition cursor-pointer"
@@ -561,17 +573,19 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                     <button
                       onClick={() => handleOpenEdit(nom)}
                       className="p-1.5 text-slate-500 hover:text-slate-800 rounded-lg hover:bg-slate-100 cursor-pointer"
-                      title="Edit Peserta"
+                      title={isAdmin ? "Edit Peserta" : "Lihat / Edit Detail Peserta"}
                     >
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
-                    <button
-                      onClick={() => onDeleteNomination(nom.id)}
-                      className="p-1.5 text-rose-600 hover:text-rose-700 rounded-lg hover:bg-rose-50 cursor-pointer"
-                      title="Hapus"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    {isAdmin && (
+                      <button
+                        onClick={() => onDeleteNomination(nom.id)}
+                        className="p-1.5 text-rose-600 hover:text-rose-700 rounded-lg hover:bg-rose-50 cursor-pointer"
+                        title="Hapus Peserta"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -653,7 +667,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                       </td>
                       <td className="px-4 py-3 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end space-x-1.5">
-                          {!isWinner && (
+                          {isAdmin && !isWinner && (
                             <button
                               onClick={() => handleSetWinner(nom)}
                               className="px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold rounded-lg border border-amber-300 text-[10px] transition cursor-pointer"
@@ -665,17 +679,19 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                           <button
                             onClick={() => handleOpenEdit(nom)}
                             className="p-1.5 text-slate-500 hover:text-slate-800 rounded-lg hover:bg-slate-100 cursor-pointer"
-                            title="Edit Data Peserta"
+                            title={isAdmin ? "Edit Data Peserta" : "Lihat / Edit Detail Peserta"}
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
-                          <button
-                            onClick={() => onDeleteNomination(nom.id)}
-                            className="p-1.5 text-rose-600 hover:text-rose-700 rounded-lg hover:bg-rose-50 cursor-pointer"
-                            title="Hapus"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          {isAdmin && (
+                            <button
+                              onClick={() => onDeleteNomination(nom.id)}
+                              className="p-1.5 text-rose-600 hover:text-rose-700 rounded-lg hover:bg-rose-50 cursor-pointer"
+                              title="Hapus Peserta"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -851,11 +867,18 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Status Penetapan</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Status Penetapan {!isAdmin && <span className="text-[10px] text-amber-700 font-normal">(Khusus Admin)</span>}
+                    </label>
                     <select
                       value={status}
+                      disabled={!isAdmin}
                       onChange={(e) => setStatus(e.target.value as NominationStatus)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl text-xs focus:ring-2 focus:ring-amber-500/40 focus:bg-white focus:outline-none font-medium"
+                      className={`w-full px-3 py-2 border rounded-xl text-xs font-medium ${
+                        !isAdmin
+                          ? 'bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed'
+                          : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-2 focus:ring-amber-500/40 focus:bg-white focus:outline-none'
+                      }`}
                     >
                       <option value="Draf">Draf</option>
                       <option value="Penilaian">Dalam Penilaian</option>
@@ -866,14 +889,18 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Nilai / Skor Penjuri (0 - 100): <span className="text-amber-700 font-bold">{score}</span></label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Nilai / Skor Penjuri (0 - 100): <span className="text-amber-700 font-bold">{score}</span>
+                    {!isAdmin && <span className="text-[10px] text-amber-700 font-normal ml-1">(Khusus Admin)</span>}
+                  </label>
                   <input
                     type="range"
                     min="50"
                     max="100"
                     value={score}
+                    disabled={!isAdmin}
                     onChange={(e) => setScore(Number(e.target.value))}
-                    className="w-full accent-amber-500 mt-1 cursor-pointer"
+                    className={`w-full accent-amber-500 mt-1 ${!isAdmin ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
                   />
                 </div>
               </div>
@@ -906,7 +933,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
 
               <div className="pt-3 border-t border-slate-200 flex items-center justify-between gap-2">
                 <div>
-                  {editingNomination && (
+                  {isAdmin && editingNomination && (
                     <button
                       type="button"
                       onClick={handleDeleteInModal}
