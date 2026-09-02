@@ -4,6 +4,7 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from 
 import { ActiveTab, AwardCategory, Nomination, Transaction, CommitteeTask, UserSession } from '../types';
 import { getWebhookUrl } from '../services/webhookService';
 import { ContentHeader } from './ContentHeader';
+import { MiladLogo } from './MiladLogo';
 
 interface DashboardViewProps {
   setActiveTab: (tab: ActiveTab) => void;
@@ -87,12 +88,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       {/* Action Header Banner */}
       <div className="admin-box border-t-4 border-t-[#00a65a] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded bg-[#00a65a] text-white flex items-center justify-center font-black text-xl shrink-0 shadow">
-            🏆
-          </div>
+          <MiladLogo size="md" className="w-11 h-11 shrink-0" />
           <div>
             <h2 className="text-base font-extrabold text-gray-800 leading-tight">
-              {isPetugas ? 'Sistem Input Data Petugas Lapangan' : 'Sistem Operator Sie Penganugerahan - Sidogiri'}
+              {isPetugas ? 'Sistem Input Data Petugas Lapangan' : 'Milad Sidogiri • Sie Penganugerahan'}
             </h2>
             <p className="text-xs text-gray-500">
               {isPetugas

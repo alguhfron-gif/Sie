@@ -15,12 +15,15 @@ import {
   Plus,
   Bell,
   Wifi,
-  WifiOff
+  WifiOff,
+  Image as ImageIcon
 } from 'lucide-react';
 import { UserSession, CommitteeAccount } from '../types';
 import { INITIAL_ACCOUNTS } from '../data/initialData';
 import { addCommitteeAccountToFirestore } from '../services/committeeService';
 import { subscribeUserPresence, UserPresence } from '../services/presenceService';
+import { MiladLogo } from './MiladLogo';
+import { LogoManagerModal } from './LogoManagerModal';
 
 interface LoginViewProps {
   onLoginSuccess: (user: UserSession) => void;
@@ -41,6 +44,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
 
   // Registration modal state
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+  const [isLogoModalOpen, setIsLogoModalOpen] = useState(false);
   const [regData, setRegData] = useState({
     name: '',
     role: 'PESERTA / PETUGAS PENGANUGERAHAN',
@@ -290,9 +294,27 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
 
       <div className="w-full max-w-md relative z-10 space-y-5">
         {/* Header App Brand */}
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-[#00a65a] text-white font-black shadow-lg shadow-emerald-900/30 ring-4 ring-emerald-500/30">
-            <Award className="w-9 h-9 text-white" />
+        <div className="text-center space-y-3">
+          <div className="flex flex-col items-center justify-center space-y-2">
+            <button
+              type="button"
+              onClick={() => setIsLogoModalOpen(true)}
+              title="Klik untuk Mengatur atau Mengunggah Logo Milad Resmi"
+              className="group relative cursor-pointer focus:outline-none p-1 rounded-2xl hover:bg-emerald-950/40 transition"
+            >
+              <MiladLogo size="xl" className="w-24 h-24 drop-shadow-xl transition-transform group-hover:scale-105" />
+              <span className="absolute bottom-1 right-1 bg-amber-400 text-slate-950 p-1 rounded-full text-[9px] font-bold shadow-md flex items-center gap-0.5">
+                <ImageIcon className="w-3 h-3" />
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsLogoModalOpen(true)}
+              className="text-[11px] font-bold text-amber-300 hover:text-amber-200 bg-amber-950/50 hover:bg-amber-950/80 border border-amber-500/30 px-3 py-1 rounded-full transition flex items-center space-x-1.5 shadow-xs cursor-pointer"
+            >
+              <ImageIcon className="w-3.5 h-3.5 text-amber-400" />
+              <span>Ganti / Upload Logo Asli</span>
+            </button>
           </div>
 
           <div>
@@ -311,10 +333,10 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
             </div>
 
             <h1 className="text-2xl font-black text-white tracking-tight mt-2">
-              Sie Penganugerahan
+              MILAD SIDOGIRI
             </h1>
-            <p className="text-xs text-slate-400 max-w-xs mx-auto mt-0.5">
-              Wadah Login Terintegrasi & Monitoring Status Online
+            <p className="text-xs text-emerald-300 font-bold max-w-xs mx-auto mt-0.5">
+              Sie Penganugerahan • Pondok Pesantren Sidogiri
             </p>
           </div>
         </div>
@@ -533,6 +555,12 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
           </div>
         </div>
       )}
+
+      {/* Modal Pengaturan & Upload Logo */}
+      <LogoManagerModal
+        isOpen={isLogoModalOpen}
+        onClose={() => setIsLogoModalOpen(false)}
+      />
     </div>
   );
 };

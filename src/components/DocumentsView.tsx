@@ -35,6 +35,7 @@ import {
 import { OfficialDocument, RegulationRule, UserSession } from '../types';
 import { ContentHeader } from './ContentHeader';
 import { CollapsibleSection } from './CollapsibleSection';
+import { MiladLogo } from './MiladLogo';
 
 export const stripHtml = (str: any) => {
   if (str === null || str === undefined) return '';
@@ -388,18 +389,8 @@ export const AngketUsulanPaper: React.FC<{
     <div className="printable-letter bg-white p-6 sm:p-12 rounded-2xl border border-slate-300 shadow-xl text-slate-900 font-sans relative overflow-hidden w-full max-w-3xl mx-auto my-6 min-h-[900px] flex flex-col justify-between page-break-before">
       {/* BACKGROUND WATERMARK */}
       {showWatermark && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0 opacity-[0.06]">
-          <div className="w-80 h-80 sm:w-96 sm:h-96 rounded-full border-[8px] border-[#005a2b] flex items-center justify-center relative p-6">
-            <div className="w-64 h-64 sm:w-72 sm:h-72 rounded-full border-2 border-[#005a2b] flex flex-col items-center justify-center text-center p-4">
-              <div className="text-4xl sm:text-5xl font-extrabold text-[#005a2b] font-serif">P.P.S</div>
-              <div className="text-[12px] font-black uppercase tracking-widest text-[#005a2b] mt-2">
-                PONDOK PESANTREN SIDOGIRI
-              </div>
-              <div className="text-[10px] font-bold text-[#005a2b] uppercase tracking-wider mt-1">
-                PASURUAN JAWA TIMUR
-              </div>
-            </div>
-          </div>
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0">
+          <MiladLogo variant="watermark" className="w-80 h-80 sm:w-96 sm:h-96" />
         </div>
       )}
 
@@ -604,19 +595,8 @@ export const OfficialLetterPaper: React.FC<OfficialLetterPaperProps> = ({
       <div className="printable-letter bg-white p-6 sm:p-12 rounded-2xl border border-slate-300 shadow-xl text-slate-900 font-sans relative overflow-hidden w-full max-w-3xl mx-auto my-2 min-h-[900px] flex flex-col justify-between">
         {/* BACKGROUND WATERMARK */}
         {showWatermark && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0 opacity-[0.07]">
-            <div className="w-80 h-80 sm:w-96 sm:h-96 rounded-full border-[8px] border-[#005a2b] flex items-center justify-center relative p-6">
-              <div className="w-64 h-64 sm:w-72 sm:h-72 rounded-full border-2 border-[#005a2b] flex flex-col items-center justify-center text-center p-4">
-                <div className="text-4xl sm:text-5xl font-extrabold text-[#005a2b] font-serif">P.P.S</div>
-                <div className="text-[12px] font-black uppercase tracking-widest text-[#005a2b] mt-2">
-                  PONDOK PESANTREN SIDOGIRI
-                </div>
-                <div className="text-[10px] font-bold text-[#005a2b] uppercase tracking-wider mt-1">
-                  PASURUAN JAWA TIMUR
-                </div>
-                <div className="text-2xl mt-1 text-[#005a2b]">★ ★ ★</div>
-              </div>
-            </div>
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0">
+            <MiladLogo variant="watermark" className="w-80 h-80 sm:w-96 sm:h-96" />
           </div>
         )}
 
@@ -627,19 +607,15 @@ export const OfficialLetterPaper: React.FC<OfficialLetterPaperProps> = ({
             <div className="border-b-2 border-gray-800 pb-3">
               <div className="flex items-start justify-between">
                 <div className="flex items-center space-x-3">
-                  {/* Logo Emblem Icon Sidogiri */}
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-br from-[#005a2b] to-[#003d1d] p-1.5 shadow-sm shrink-0 flex flex-col items-center justify-center text-center text-white border border-emerald-400">
-                    <div className="text-[10px] font-black tracking-widest text-emerald-300 leading-none">PPS</div>
-                    <div className="text-xs font-black my-0.5 leading-none">SIDOGIRI</div>
-                    <div className="text-[8px] text-emerald-200 leading-none">1745 H</div>
-                  </div>
+                  {/* Logo Emblem Icon Milad Sidogiri */}
+                  <MiladLogo size="md" className="w-14 h-14 sm:w-16 sm:h-16 shrink-0" />
 
                   <div className="min-w-0">
                     <div className="flex items-center space-x-2">
                       <span className="text-lg sm:text-xl font-bold font-serif text-[#005a2b] tracking-wider">
-                        sidogiri
+                        MILAD SIDOGIRI
                       </span>
-                      <span className="text-xs font-black text-emerald-800 tracking-wide">Santri Merdeka!</span>
+                      <span className="text-xs font-black text-emerald-800 tracking-wide">Sie Penganugerahan</span>
                     </div>
                     <h2 className="text-xs sm:text-sm font-extrabold text-[#005a2b] tracking-wide uppercase leading-tight mt-0.5">
                       PONDOK PESANTREN SIDOGIRI

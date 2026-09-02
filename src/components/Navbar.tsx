@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Award, DollarSign, Users, FileCheck, LayoutDashboard, Menu, X, LogOut, LogIn, User, FileSpreadsheet, RefreshCw, Cloud, UserPlus, Shield, FileText, Moon, ChevronDown, Clock } from 'lucide-react';
+import { Award, DollarSign, Users, FileCheck, LayoutDashboard, Menu, X, LogOut, LogIn, User, FileSpreadsheet, RefreshCw, Cloud, UserPlus, Shield, FileText, Moon, ChevronDown, Clock, Image as ImageIcon } from 'lucide-react';
 import { ActiveTab, UserSession } from '../types';
+import { MiladLogo } from './MiladLogo';
+import { LogoManagerModal } from './LogoManagerModal';
 
 interface NavbarProps {
   activeTab: ActiveTab;
@@ -28,6 +30,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [logoModalOpen, setLogoModalOpen] = useState(false);
 
   const desktopDropdownRef = useRef<HTMLDivElement>(null);
   const mobileDropdownRef = useRef<HTMLDivElement>(null);
@@ -152,18 +155,26 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Menu className="w-5 h-5 text-emerald-400" />
             </button>
 
-            <div className="flex items-center space-x-2.5 cursor-pointer" onClick={() => setActiveTab('dashboard')}>
-              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center text-white font-black shadow border border-emerald-400/40 shrink-0">
-                <Award className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-              </div>
-              <div>
+            <div className="flex items-center space-x-2.5">
+              <button
+                type="button"
+                onClick={() => setLogoModalOpen(true)}
+                title="Klik untuk Mengatur / Mengganti Logo Milad"
+                className="group relative cursor-pointer focus:outline-none"
+              >
+                <MiladLogo size="sm" className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 transition-transform group-hover:scale-105" />
+                <span className="absolute -bottom-1 -right-1 bg-amber-400 text-slate-950 p-0.5 rounded-full text-[8px] opacity-0 group-hover:opacity-100 transition shadow">
+                  <ImageIcon className="w-2.5 h-2.5" />
+                </span>
+              </button>
+              <div className="cursor-pointer" onClick={() => setActiveTab('dashboard')}>
                 <div className="flex items-center space-x-1.5">
                   <span className="font-extrabold text-xs sm:text-base tracking-tight text-white whitespace-nowrap">
-                    SIE PENGANUGERAHAN
+                    MILAD SIDOGIRI
                   </span>
                   <span className="hidden xl:inline-flex items-center space-x-1.5 bg-[#1e2e25] text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded text-[9px] font-black tracking-wide">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#00a65a] animate-pulse shrink-0"></span>
-                    <span>SIDOGIRI SYSTEM</span>
+                    <span>SIE PENGANUGERAHAN</span>
                   </span>
                 </div>
               </div>
@@ -251,6 +262,19 @@ export const Navbar: React.FC<NavbarProps> = ({
                           <span className="text-[11px]">Sync: Cloud Firestore Terhubung</span>
                         </div>
                       </div>
+
+                      {/* Button Atur / Unggah Logo */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUserDropdownOpen(false);
+                          setLogoModalOpen(true);
+                        }}
+                        className="w-full flex items-center space-x-2 text-xs font-bold text-amber-200 hover:text-amber-100 bg-amber-950/40 hover:bg-amber-950/70 p-2.5 rounded-lg transition cursor-pointer border border-amber-500/30"
+                      >
+                        <ImageIcon className="w-4 h-4 text-amber-400" />
+                        <span>Atur / Unggah Logo Milad</span>
+                      </button>
 
                       {onOpenWebhookModal && (
                         <button
@@ -445,7 +469,18 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* Action Buttons in Drawer */}
-          <div className="pt-2 border-t border-emerald-100">
+          <div className="pt-2 border-t border-emerald-100 space-y-2">
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                setLogoModalOpen(true);
+              }}
+              className="w-full py-2.5 px-3 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-xs flex items-center justify-center space-x-1.5 cursor-pointer shadow-xs"
+            >
+              <ImageIcon className="w-3.5 h-3.5 text-amber-700" />
+              <span>Atur / Unggah Logo Milad</span>
+            </button>
+
             {currentUser && onLogout ? (
               <button
                 onClick={() => {
@@ -472,6 +507,12 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
       )}
+
+      {/* Modal Pengaturan & Upload Logo */}
+      <LogoManagerModal
+        isOpen={logoModalOpen}
+        onClose={() => setLogoModalOpen(false)}
+      />
     </header>
   );
 };

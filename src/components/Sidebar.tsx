@@ -17,6 +17,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { ActiveTab, UserSession } from '../types';
+import { MiladLogo } from './MiladLogo';
 
 interface SidebarProps {
   activeTab: ActiveTab;
@@ -353,12 +354,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {/* Drawer Header */}
             <div className="flex items-center justify-between pb-3 mb-3 border-b border-[#23382c]">
               <div className="flex items-center space-x-2.5">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center text-white font-black shadow border border-emerald-400/40">
-                  <Award className="w-5 h-5 text-white" />
-                </div>
+                <MiladLogo size="sm" className="w-9 h-9 shrink-0" />
                 <div>
-                  <h3 className="font-extrabold text-xs text-white tracking-wide">SIE PENGANUGERAHAN</h3>
-                  <p className="text-[10px] text-emerald-400 font-bold">PPS Sidogiri System</p>
+                  <h3 className="font-extrabold text-xs text-white tracking-wide">MILAD SIDOGIRI</h3>
+                  <p className="text-[10px] text-emerald-400 font-bold">Sie Penganugerahan PPS</p>
                 </div>
               </div>
               <button

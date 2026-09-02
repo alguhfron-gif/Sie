@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { FileCheck, Printer, Award, Shield, Sparkles, UserCheck, FileSpreadsheet, Check, ChevronDown } from 'lucide-react';
+import { FileCheck, Printer, Award, Shield, Sparkles, UserCheck, FileSpreadsheet, Check, ChevronDown, Image as ImageIcon } from 'lucide-react';
 import { AwardCategory, Nomination } from '../types';
 import { sendWebhookPayload, exportToCSV } from '../services/webhookService';
 import { addCertificateRecordToFirestore } from '../services/certificatesService';
 import { ContentHeader } from './ContentHeader';
 import { CollapsibleSection } from './CollapsibleSection';
+import { MiladLogo } from './MiladLogo';
+import { LogoManagerModal } from './LogoManagerModal';
 
 export const AWARD_LETTER_OPTIONS = [
   'Penghargaan Khidmah (Ranting)',
@@ -41,6 +43,7 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
   const [showKopHeader, setShowKopHeader] = useState<boolean>(true);
   const [showWatermark, setShowWatermark] = useState<boolean>(true);
   const [showStamp, setShowStamp] = useState<boolean>(true);
+  const [isLogoModalOpen, setIsLogoModalOpen] = useState<boolean>(false);
 
   const activeAwardName = awardTitle === 'Lainnya' ? customAwardTitle || 'Penghargaan Khusus' : awardTitle;
 
@@ -156,6 +159,14 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
         icon={<UserCheck className="w-4 h-4 text-emerald-600" />}
         badge={
           <div className="flex items-center space-x-3 text-xs font-semibold text-slate-600 print:hidden">
+            <button
+              type="button"
+              onClick={() => setIsLogoModalOpen(true)}
+              className="text-[11px] font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-300 px-2.5 py-0.5 rounded-lg flex items-center space-x-1 cursor-pointer transition"
+            >
+              <ImageIcon className="w-3 h-3 text-amber-600" />
+              <span>Ganti / Upload Logo</span>
+            </button>
             <label className="flex items-center space-x-1 cursor-pointer">
               <input
                 type="checkbox"
@@ -359,21 +370,10 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
         <div className="overflow-x-auto pb-4 rounded-3xl">
           <div className="printable-cert min-w-[700px] max-w-4xl mx-auto bg-emerald-50/20 p-6 sm:p-10 rounded-3xl border-8 border-emerald-600/80 shadow-xl relative text-slate-900 font-serif my-2">
             
-            {/* BACKGROUND WATERMARK (BEGRON BELAKANG LOGO EMBLEM PPS) */}
+            {/* BACKGROUND WATERMARK (MILAD SIDOGIRI WATERMARK) */}
             {showWatermark && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0 opacity-[0.08]">
-                <div className="w-80 h-80 sm:w-96 sm:h-96 rounded-full border-[8px] border-[#005a2b] flex items-center justify-center relative p-6">
-                  <div className="w-64 h-64 sm:w-72 sm:h-72 rounded-full border-2 border-[#005a2b] flex flex-col items-center justify-center text-center p-4">
-                    <div className="text-4xl sm:text-5xl font-extrabold text-[#005a2b] font-serif">P.P.S</div>
-                    <div className="text-[12px] font-black uppercase tracking-widest text-[#005a2b] mt-2">
-                      PONDOK PESANTREN SIDOGIRI
-                    </div>
-                    <div className="text-[10px] font-bold text-[#005a2b] uppercase tracking-wider mt-1">
-                      PASURUAN JAWA TIMUR
-                    </div>
-                    <div className="text-2xl mt-1 text-[#005a2b]">★ ★ ★</div>
-                  </div>
-                </div>
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0">
+                <MiladLogo variant="watermark" className="w-80 h-80 sm:w-96 sm:h-96" />
               </div>
             )}
 
@@ -390,12 +390,8 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
               {showKopHeader && (
                 <div className="border-b-2 border-emerald-700/60 pb-4 mb-2">
                   <div className="flex items-center justify-between space-x-4">
-                    {/* Logo Emblem Sidogiri */}
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-[#005a2b] to-[#003d1d] p-2 shadow-md shrink-0 flex flex-col items-center justify-center text-center text-white border-2 border-emerald-400">
-                      <div className="text-[11px] font-black tracking-widest text-emerald-300 leading-none">PPS</div>
-                      <div className="text-xs font-black my-0.5 leading-none">SIDOGIRI</div>
-                      <div className="text-[8px] text-emerald-200 leading-none">1745 H</div>
-                    </div>
+                    {/* Logo Emblem Milad Sidogiri */}
+                    <MiladLogo size="lg" className="w-16 h-16 sm:w-20 sm:h-20 shrink-0" />
 
                     {/* Title Header text & Calligraphy */}
                     <div className="min-w-0 flex-1 text-center space-y-0.5">
@@ -403,7 +399,7 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
                         مشاورة وتعليم الكتاب
                       </div>
                       <h2 className="text-xs sm:text-sm font-extrabold text-[#005a2b] tracking-wider uppercase font-sans">
-                        PANITIA SIE PENGANUGERAHAN
+                        PANITIA MILAD • SIE PENGANUGERAHAN
                       </h2>
                       <h3 className="text-xs sm:text-sm font-black text-gray-900 uppercase tracking-widest font-sans">
                         PONDOK PESANTREN SIDOGIRI
@@ -414,9 +410,7 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
                     </div>
 
                     {/* Badge Gold Seal */}
-                    <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-tr from-emerald-700 via-emerald-500 to-teal-400 rounded-full flex items-center justify-center text-white font-sans shadow-md border border-emerald-300 shrink-0">
-                      <Award className="w-8 h-8 text-white" />
-                    </div>
+                    <MiladLogo variant="gold-seal" className="w-14 h-14 sm:w-16 sm:h-16 shrink-0" />
                   </div>
                 </div>
               )}
@@ -497,6 +491,12 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
         </div>
       </div>
     </CollapsibleSection>
-  </div>
-);
+
+      {/* Modal Pengaturan & Upload Logo */}
+      <LogoManagerModal
+        isOpen={isLogoModalOpen}
+        onClose={() => setIsLogoModalOpen(false)}
+      />
+    </div>
+  );
 };
