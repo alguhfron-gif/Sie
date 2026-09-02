@@ -126,10 +126,38 @@ export async function saveCustomLogo(logoDataOrUrl: string | null): Promise<void
 }
 
 /**
+ * Direct fetch from Firestore once at startup (for instant retrieval on cold start)
+ */
+export async function fetchInitialCustomLogo(): Promise<string | null> {
+  try {
+    const docRef = doc(db, 'settings', 'milad_logo');
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      const cloudLogo = docSnap.data()?.logoUrl || null;
+      if (cloudLogo) {
+        try {
+          localStorage.setItem(CUSTOM_LOGO_STORAGE_KEY, cloudLogo);
+        } catch {}
+        window.dispatchEvent(new Event(CUSTOM_LOGO_EVENT));
+        return cloudLogo;
+      }
+    }
+  } catch (err) {
+    console.warn('Initial logo fetch error:', err);
+  }
+  return getLocalCustomLogo();
+}
+
+/**
  * Real-time listener: Subscribes to logo changes in Firestore across all devices
  */
 export function subscribeCustomLogo(callback: (logoUrl: string | null) => void): () => void {
   try {
+    // Initial direct fetch
+    fetchInitialCustomLogo().then((logo) => {
+      if (logo) callback(logo);
+    });
+
     const docRef = doc(db, 'settings', 'milad_logo');
     const unsubscribe = onSnapshot(
       docRef,
