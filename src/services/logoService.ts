@@ -1,6 +1,7 @@
 import { doc, setDoc, onSnapshot, getDoc } from 'firebase/firestore';
 import { db, logFirestoreError, OperationType } from '../firebase';
 
+export const DEFAULT_OFFICIAL_LOGO = '/logo-milad.png';
 export const CUSTOM_LOGO_STORAGE_KEY = 'custom_milad_logo';
 export const CUSTOM_LOGO_EVENT = 'custom_milad_logo_changed';
 
@@ -70,9 +71,11 @@ export async function optimizeImageForLogo(
  */
 export function getLocalCustomLogo(): string | null {
   try {
-    return localStorage.getItem(CUSTOM_LOGO_STORAGE_KEY);
+    const saved = localStorage.getItem(CUSTOM_LOGO_STORAGE_KEY);
+    if (saved && saved.trim()) return saved;
+    return DEFAULT_OFFICIAL_LOGO;
   } catch {
-    return null;
+    return DEFAULT_OFFICIAL_LOGO;
   }
 }
 

@@ -4,10 +4,22 @@
   "description": "Aplikasi Manajemen Operations Sie Penganugerahan: Pengelolaan Nominasi, Administrasi Kegiatan, Koordinasi Panitia, dan Laporan Keuangan.",
   "icons": [
     {
-      "src": "/icon.svg",
-      "type": "image/svg+xml",
-      "sizes": "any maskable",
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
       "purpose": "any maskable"
+    },
+    {
+      "src": "/logo-milad.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any"
     }
   ],
   "start_url": "/",

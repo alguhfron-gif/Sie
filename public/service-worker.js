@@ -1,8 +1,9 @@
-const CACHE_NAME = 'sie-penganugerahan-v2';
+const CACHE_NAME = 'sie-penganugerahan-v3';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
+  '/logo-milad.png',
   '/icon-192.png',
   '/icon-512.png',
   '/icon.svg'
