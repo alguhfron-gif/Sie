@@ -939,6 +939,7 @@ export default function App() {
                   onDeleteTransaction={handleDeleteTransaction}
                   isAddModalOpenDirectly={openAddTransactionDirectly}
                   onCloseAddModalDirectly={() => setOpenAddTransactionDirectly(false)}
+                  currentUser={currentUser}
                 />
               </ViewErrorBoundary>
             )}
@@ -953,13 +954,14 @@ export default function App() {
                   onUpdateTaskStatus={handleUpdateTaskStatus}
                   onDeleteTask={handleDeleteTask}
                   onAddInventory={handleAddInventory}
+                  currentUser={currentUser}
                 />
               </ViewErrorBoundary>
             )}
 
             {activeTab === 'sertifikat' && (
               <ViewErrorBoundary viewName="Cetak Sertifikat">
-                <CertificatesView nominations={nominations} categories={categories} />
+                <CertificatesView nominations={nominations} categories={categories} currentUser={currentUser} />
               </ViewErrorBoundary>
             )}
 

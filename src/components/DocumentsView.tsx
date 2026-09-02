@@ -238,16 +238,15 @@ export const cleanImportedText = (rawContent: string): { cleanBody: string; poin
 
 export const exportOfficialDocToWord = (
   doc: OfficialDocument,
-  ketua: string = 'UMAR CHAMDAN',
-  sekretaris: string = 'BIRRIL WALID',
+  ketua: string = 'H. Ahmad Arif Bahruddin',
+  sekretaris: string = 'Muhammad Sofyan Sauri',
   mengetahui: string = 'NAWAWY SADOELLAH'
 ) => {
   const contentHtml = `
     <div style="font-family: 'Times New Roman', serif; margin: 25px; color: #000;">
       <div style="border-bottom: 3px double #005a2b; padding-bottom: 10px; margin-bottom: 15px; text-align: center;">
-        <h2 style="color: #005a2b; margin: 0; font-size: 16pt; font-weight: bold; text-transform: uppercase;">PONDOK PESANTREN SIDOGIRI</h2>
-        <p style="margin: 2px 0; font-size: 11pt; color: #333;">Pasuruan Jawa Timur Indonesia</p>
-        <p style="margin: 0; font-size: 10pt; font-weight: bold; color: #005a2b;">Santri Merdeka! #MiladSidogiri289</p>
+        <h2 style="color: #005a2b; margin: 0; font-size: 14pt; font-weight: bold; text-transform: uppercase;">Milad Pondok Pesantren Sidogiri Ke-290 Tahun</h2>
+        <h3 style="color: #005a2b; margin: 2px 0; font-size: 13pt; font-weight: bold;">& Ikhtibar Madrasah Miftahul Ulum Ke 91 Tahun</h3>
       </div>
 
       <table style="width: 100%; font-size: 11pt; margin-bottom: 15px; border-collapse: collapse;">
@@ -267,8 +266,13 @@ export const exportOfficialDocToWord = (
         <p style="font-weight: bold; margin-bottom: 10px;">Assalamualaikum War Wab</p>
         <p style="margin-bottom: 10px;">Segala puji hanya milik Allah SWT, shalawat dan salam-Nya semoga tetap tercurahkan ke haribaan Nabi Muhammad SAW. Amin.</p>
         <div style="white-space: pre-wrap; margin: 15px 0; line-height: 1.6;">${doc.content}</div>
-        <p style="font-weight: bold; margin-top: 15px; margin-bottom: 5px;">Wasalam,</p>
-        <p style="font-weight: bold; margin: 0;">Panitia Peringatan Milad Pondok Pesantren Sidogiri 289 Tahun<br/>Dan Ikhtibar Madrasah Miftahul Ulum 90 Tahun</p>
+        <div style="text-align: center; margin-top: 20px; margin-bottom: 10px;">
+          <p style="font-weight: bold; margin: 0 0 8px 0; font-size: 11pt;">Wassalam,</p>
+          <p style="font-weight: bold; margin: 0; font-size: 11pt; line-height: 1.4;">
+            Panitia Peringatan Milad Pondok Pesantren Sidogiri Ke-290 Tahun<br/>
+            Dan Ikhtibar Madrasah Miftahul Ulum Ke 91 Tahun
+          </p>
+        </div>
       </div>
 
       <table style="width: 100%; margin-top: 35px; font-size: 11pt; text-align: center; border-collapse: collapse;">
@@ -289,6 +293,11 @@ export const exportOfficialDocToWord = (
           </td>
         </tr>
       </table>
+
+      <div style="border-top: 1px solid #ccc; margin-top: 35px; padding-top: 10px; text-align: center; font-size: 9pt; color: #005a2b;">
+        <p style="margin: 0; font-weight: bold;">MOTTO: &ldquo;SATU ARAH&rdquo;</p>
+        <p style="margin: 3px 0 0 0; font-weight: bold;">TEMA: &ldquo;SATU ARAH DALAM BERMANHAJ DAN BERMAZHAB&rdquo;</p>
+      </div>
     </div>
   `;
 
@@ -332,11 +341,15 @@ export const exportRegulationsToWord = (regulations: RegulationRule[]) => {
   const contentHtml = `
     <div style="font-family: 'Times New Roman', serif; margin: 25px; color: #000;">
       <div style="border-bottom: 3px double #005a2b; padding-bottom: 10px; margin-bottom: 20px; text-align: center;">
-        <h2 style="color: #005a2b; margin: 0; font-size: 18pt; text-transform: uppercase;">PONDOK PESANTREN SIDOGIRI</h2>
-        <h3 style="margin: 5px 0 0 0; font-size: 14pt;">Ketentuan & Kriteria Resmi Penganugerahan</h3>
-        <p style="margin: 2px 0 0 0; font-size: 10pt; color: #005a2b; font-weight: bold;">Panitia Milad Sidogiri 289 & Ikhtibar MMU 90</p>
+        <h2 style="color: #005a2b; margin: 0; font-size: 16pt; font-weight: bold; text-transform: uppercase;">Milad Pondok Pesantren Sidogiri Ke-290 Tahun</h2>
+        <h3 style="color: #005a2b; margin: 3px 0 0 0; font-size: 13pt; font-weight: bold;">& Ikhtibar Madrasah Miftahul Ulum Ke 91 Tahun</h3>
+        <p style="margin: 4px 0 0 0; font-size: 11pt; color: #333;">Ketentuan & Kriteria Resmi Penganugerahan</p>
       </div>
       ${regsHtml}
+      <div style="border-top: 1px solid #ccc; margin-top: 35px; padding-top: 10px; text-align: center; font-size: 9pt; color: #005a2b;">
+        <p style="margin: 0; font-weight: bold;">MOTTO: &ldquo;SATU ARAH&rdquo;</p>
+        <p style="margin: 3px 0 0 0; font-weight: bold;">TEMA: &ldquo;SATU ARAH DALAM BERMANHAJ DAN BERMAZHAB&rdquo;</p>
+      </div>
     </div>
   `;
 
@@ -585,8 +598,8 @@ export const OfficialLetterPaper: React.FC<OfficialLetterPaperProps> = ({
   showKop = true,
   showWatermark = true,
   showStamp = true,
-  ketuaName = 'UMAR CHAMDAN',
-  sekretarisName = 'BIRRIL WALID',
+  ketuaName = 'H. Ahmad Arif Bahruddin',
+  sekretarisName = 'Muhammad Sofyan Sauri',
   mengetahuiName = 'd. NAWAWY SADOELLAH',
   showAngket = false,
 }) => {
@@ -611,23 +624,17 @@ export const OfficialLetterPaper: React.FC<OfficialLetterPaperProps> = ({
                   <MiladLogo size="md" className="w-14 h-14 sm:w-16 sm:h-16 shrink-0" />
 
                   <div className="min-w-0">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-lg sm:text-xl font-bold font-serif text-[#005a2b] tracking-wider">
-                        MILAD SIDOGIRI
-                      </span>
-                      <span className="text-xs font-black text-emerald-800 tracking-wide">Sie Penganugerahan</span>
-                    </div>
-                    <h2 className="text-xs sm:text-sm font-extrabold text-[#005a2b] tracking-wide uppercase leading-tight mt-0.5">
-                      PONDOK PESANTREN SIDOGIRI
+                    <h2 className="text-xs sm:text-sm md:text-base font-extrabold text-[#005a2b] tracking-wide uppercase leading-tight font-serif">
+                      Milad Pondok Pesantren Sidogiri Ke-290 Tahun
                     </h2>
-                    <h3 className="text-[10px] sm:text-xs font-bold text-gray-700">
-                      Pasuruan Jawa Timur Indonesia
+                    <h3 className="text-[11px] sm:text-xs md:text-sm font-bold text-[#005a2b] leading-tight mt-0.5 font-serif">
+                      &amp; Ikhtibar Madrasah Miftahul Ulum Ke 91 Tahun
                     </h3>
                   </div>
                 </div>
 
                 {/* Hijri Date Display */}
-                <div className="text-right text-xs font-serif font-bold text-slate-800 bg-emerald-50/80 px-2.5 py-1 rounded-lg border border-emerald-200/80">
+                <div className="text-right text-xs font-serif font-bold text-slate-800 bg-emerald-50/80 px-2.5 py-1 rounded-lg border border-emerald-200/80 shrink-0">
                   {hijriDate}
                 </div>
               </div>
@@ -675,13 +682,16 @@ export const OfficialLetterPaper: React.FC<OfficialLetterPaperProps> = ({
               {content}
             </div>
 
-            <p className="font-bold text-gray-900 font-serif pt-1">
-              Wasalam,
-            </p>
-            <p className="font-bold text-xs text-slate-800">
-              Panitia Peringatan Milad Pondok Pesantren Sidogiri 289 Tahun<br/>
-              Dan Ikhtibar Madrasah Miftahul Ulum 90 Tahun
-            </p>
+            {/* PENUTUP SURAT: Wassalam dan Panitia Peringatan berada di tengah */}
+            <div className="pt-4 text-center space-y-2">
+              <p className="font-bold text-gray-900 font-serif text-sm sm:text-base">
+                Wassalam,
+              </p>
+              <p className="font-bold text-xs sm:text-sm text-slate-900 leading-snug">
+                Panitia Peringatan Milad Pondok Pesantren Sidogiri Ke-290 Tahun<br/>
+                Dan Ikhtibar Madrasah Miftahul Ulum Ke 91 Tahun
+              </p>
+            </div>
           </div>
 
           {/* 5. TTD PANITIA (2 KOLOM KETUA & SEKRETARIS + MENGETAHUI MAJELIS KELUARGA) */}
@@ -691,7 +701,7 @@ export const OfficialLetterPaper: React.FC<OfficialLetterPaperProps> = ({
               <div className="space-y-10">
                 <p className="font-bold text-slate-800">Ketua</p>
                 <p className="font-extrabold text-slate-900 uppercase border-b border-slate-400 inline-block px-4">
-                  {ketuaName || 'UMAR CHAMDAN'}
+                  {ketuaName || 'H. Ahmad Arif Bahruddin'}
                 </p>
               </div>
 
@@ -702,16 +712,16 @@ export const OfficialLetterPaper: React.FC<OfficialLetterPaperProps> = ({
                 {/* Stempel Over Signature */}
                 {showStamp && (
                   <div className="absolute top-2 left-4 pointer-events-none select-none z-20 opacity-80 rotate-[-12deg]">
-                    <div className="w-28 h-18 rounded-[50%] border-2 border-[#1e3a8a] p-1 flex flex-col items-center justify-center text-center text-[#1e3a8a] bg-white/20 backdrop-blur-3xs">
+                    <div className="w-30 h-20 rounded-[50%] border-2 border-[#1e3a8a] p-1 flex flex-col items-center justify-center text-center text-[#1e3a8a] bg-white/20 backdrop-blur-3xs">
                       <span className="text-[7px] font-black uppercase tracking-tighter leading-none text-[#1e3a8a]">PONDOK PESANTREN</span>
                       <span className="text-[9px] font-black uppercase text-[#1e3a8a] my-0.5 leading-none">SIDOGIRI</span>
-                      <span className="text-[6.5px] font-bold text-[#1e3a8a] leading-none">PANITIA MILAD 289</span>
+                      <span className="text-[6.5px] font-bold text-[#1e3a8a] leading-none">PANITIA MILAD 290</span>
                     </div>
                   </div>
                 )}
 
                 <p className="font-extrabold text-slate-900 uppercase border-b border-slate-400 inline-block px-4">
-                  {sekretarisName || 'BIRRIL WALID'}
+                  {sekretarisName || 'Muhammad Sofyan Sauri'}
                 </p>
               </div>
             </div>
@@ -730,9 +740,12 @@ export const OfficialLetterPaper: React.FC<OfficialLetterPaperProps> = ({
         </div>
 
         {/* FOOTER BAR */}
-        <div className="relative z-10 border-t border-gray-300 pt-2 mt-6 text-[9px] text-emerald-950 font-sans leading-tight text-center">
-          <p className="font-bold">
-            Santri Merdeka! #MiladSidogiri289
+        <div className="relative z-10 border-t border-gray-300 pt-2.5 mt-6 text-[9.5px] font-sans leading-snug text-center space-y-0.5">
+          <p className="font-bold text-slate-800 tracking-wider">
+            MOTTO: &ldquo;SATU ARAH&rdquo;
+          </p>
+          <p className="font-extrabold text-[#005a2b] tracking-wide">
+            TEMA: &ldquo;SATU ARAH DALAM BERMANHAJ DAN BERMAZHAB&rdquo;
           </p>
         </div>
       </div>
@@ -756,11 +769,11 @@ export const OfficialRegulationPaper: React.FC<{
   showKop = true,
   showWatermark = true,
   showStamp = true,
-  ketuaName = 'UMAR CHAMDAN',
-  sekretarisName = 'BIRRIL WALID',
+  ketuaName = 'H. Ahmad Arif Bahruddin',
+  sekretarisName = 'Muhammad Sofyan Sauri',
   mengetahuiName = 'd. NAWAWY SADOELLAH',
 }) => {
-  const permohonanText = `Segala puji hanya milik Allah جل جلاله, shalawat dan salam-Nya semoga tetap tercurahkan ke haribaan Nabi Muhammad صلى الله عليه وسلم. Amin.\n\nSehubungan dengan adanya rencana penganugerahan "Penghargaan Khidmah" oleh Pengasuh Pondok Pesantren Sidogiri di Malam Puncak Peringatan Milad Pondok Pesantren Sidogiri 289 Tahun dan Ikhtibar Madrasah Miftahul Ulum 90 Tahun, maka dengan ini kami berharap agar Bapak berkenan mengisi angket usulan nominator, dengan ketentuan sebagaimana terlampir.\n\nAngket usulan tersebut mohon disetorkan kepada panitia paling lambat pada hari Sabtu, tanggal 29 Jumadats Tsaniyah 1447 H | 20 Desember 2025 M.\n\nDemikian permohonan kami, atas perkenannya kami disampaikan terima kasih teriring doa jazakumullah ahsanal jaza.`;
+  const permohonanText = `Segala puji hanya milik Allah جل جلاله, shalawat dan salam-Nya semoga tetap tercurahkan ke haribaan Nabi Muhammad صلى الله عليه وسلم. Amin.\n\nSehubungan dengan adanya rencana penganugerahan "Penghargaan Khidmah" oleh Pengasuh Pondok Pesantren Sidogiri di Malam Puncak Peringatan Milad Pondok Pesantren Sidogiri Ke-290 Tahun dan Ikhtibar Madrasah Miftahul Ulum Ke 91 Tahun, maka dengan ini kami berharap agar Bapak berkenan mengisi angket usulan nominator, dengan ketentuan sebagaimana terlampir.\n\nAngket usulan tersebut mohon disetorkan kepada panitia paling lambat pada hari Sabtu, tanggal 29 Jumadats Tsaniyah 1447 H | 20 Desember 2025 M.\n\nDemikian permohonan kami, atas perkenannya kami disampaikan terima kasih teriring doa jazakumullah ahsanal jaza.`;
 
   return (
     <div className="space-y-6">
@@ -771,7 +784,7 @@ export const OfficialRegulationPaper: React.FC<{
         category={stripHtml(reg.section)}
         date="2025-12-20"
         hijriDate="02 Jumadats Tsaniyah 1447 H"
-        sender="Panitia Peringatan Milad Pondok Pesantren Sidogiri 289 Tahun Dan Ikhtibar Madrasah Miftahul Ulum 90 Tahun"
+        sender="Panitia Peringatan Milad Pondok Pesantren Sidogiri Ke-290 Tahun Dan Ikhtibar Madrasah Miftahul Ulum Ke 91 Tahun"
         recipient="Pengurus Harian dan Pengurus Pelaksana Pondok Pesantren Sidogiri"
         content={permohonanText}
         showKop={showKop}
@@ -821,7 +834,8 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'surat' | 'ketentuan'>('surat');
 
-  const isAdmin = !currentUser || currentUser.category === 'admin' || currentUser.role?.toLowerCase().includes('admin');
+  const isPetugas = currentUser?.category === 'petugas' || (currentUser?.role ? currentUser.role.toLowerCase().includes('petugas') : false);
+  const isAdmin = !isPetugas;
 
   // Search & Filter state for Documents
   const [searchDocQuery, setSearchDocQuery] = useState('');
@@ -843,8 +857,8 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
   const [showWatermark, setShowWatermark] = useState(true);
   const [showStamp, setShowStamp] = useState(true);
   const [showAngket, setShowAngket] = useState(true);
-  const [ketuaName, setKetuaName] = useState('UMAR CHAMDAN');
-  const [sekretarisName, setSekretarisName] = useState('BIRRIL WALID');
+  const [ketuaName, setKetuaName] = useState('H. Ahmad Arif Bahruddin');
+  const [sekretarisName, setSekretarisName] = useState('Muhammad Sofyan Sauri');
   const [mengetahuiName, setMengetahuiName] = useState('NAWAWY SADOELLAH');
 
   // Import Preview Modal State

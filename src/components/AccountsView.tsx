@@ -41,6 +41,9 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
   onLogout,
   onSwitchUser,
 }) => {
+  const isPetugas = currentUser?.category === 'petugas' || (currentUser?.role ? currentUser.role.toLowerCase().includes('petugas') : false);
+  const isAdmin = !isPetugas;
+
   const [activeTab, setActiveTab] = useState<'all' | 'admin' | 'petugas'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [presenceMap, setPresenceMap] = useState<Record<string, UserPresence>>({});
@@ -561,13 +564,15 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                   <Edit className="w-4 h-4" />
                 </button>
 
-                <button
-                  onClick={() => handleDelete(acc.id, acc.name)}
-                  className="p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl transition cursor-pointer"
-                  title="Hapus Akun"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {isAdmin && (
+                  <button
+                    onClick={() => handleDelete(acc.id, acc.name)}
+                    className="p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl transition cursor-pointer"
+                    title="Hapus Akun"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </div>
           );

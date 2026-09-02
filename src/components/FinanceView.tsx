@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { DollarSign, Plus, Search, Filter, TrendingUp, TrendingDown, Printer, FileSpreadsheet, Trash2, Calendar, FileText, CheckCircle2, Receipt, Upload, Image as ImageIcon, X, Eye, Download, ExternalLink, Loader2, Pencil } from 'lucide-react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
-import { Transaction, TransactionCategory, TransactionType } from '../types';
+import { Transaction, TransactionCategory, TransactionType, UserSession } from '../types';
 import { uploadReceiptImage } from '../services/storageService';
 import { sendWebhookPayload, exportToCSV } from '../services/webhookService';
 import { ContentHeader } from './ContentHeader';
@@ -14,6 +14,7 @@ interface FinanceViewProps {
   onDeleteTransaction: (id: string) => void;
   isAddModalOpenDirectly?: boolean;
   onCloseAddModalDirectly?: () => void;
+  currentUser?: UserSession | null;
 }
 
 export const FinanceView: React.FC<FinanceViewProps> = ({
@@ -23,7 +24,11 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
   onDeleteTransaction,
   isAddModalOpenDirectly = false,
   onCloseAddModalDirectly,
+  currentUser,
 }) => {
+  const isPetugas = currentUser?.category === 'petugas' || (currentUser?.role ? currentUser.role.toUpperCase().includes('PETUGAS') : false);
+  const isAdmin = !isPetugas;
+
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('ALL');
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
@@ -563,13 +568,15 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                         <Pencil className="w-3 h-3 text-emerald-700" />
                         <span>Edit</span>
                       </button>
-                      <button
-                        onClick={() => onDeleteTransaction(t.id)}
-                        className="p-1 text-rose-600 hover:text-rose-700 font-bold text-[11px] cursor-pointer"
-                        title="Hapus Transaksi"
-                      >
-                        Hapus
-                      </button>
+                      {isAdmin && (
+                        <button
+                          onClick={() => onDeleteTransaction(t.id)}
+                          className="p-1 text-rose-600 hover:text-rose-700 font-bold text-[11px] cursor-pointer"
+                          title="Hapus Transaksi"
+                        >
+                          Hapus
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -639,13 +646,15 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                           >
                             <Pencil className="w-4 h-4" />
                           </button>
-                          <button
-                            onClick={() => onDeleteTransaction(t.id)}
-                            className="p-1.5 text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl transition cursor-pointer"
-                            title="Hapus Transaksi"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {isAdmin && (
+                            <button
+                              onClick={() => onDeleteTransaction(t.id)}
+                              className="p-1.5 text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl transition cursor-pointer"
+                              title="Hapus Transaksi"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

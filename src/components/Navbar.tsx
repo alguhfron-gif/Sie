@@ -119,8 +119,8 @@ export const Navbar: React.FC<NavbarProps> = ({
     });
   };
 
-  const isAdmin = currentUser?.category === 'admin' || (currentUser?.role && currentUser.role.toUpperCase().includes('ADMIN'));
-  const isPetugas = !isAdmin && (currentUser?.category === 'petugas' || (currentUser?.role && currentUser.role.toUpperCase().includes('PETUGAS')));
+  const isPetugas = currentUser?.category === 'petugas' || (currentUser?.role ? currentUser.role.toUpperCase().includes('PETUGAS') : false);
+  const isAdmin = !isPetugas;
 
   const allNavItems: { id: ActiveTab; label: string; icon: React.ReactNode }[] = [
     { id: 'dashboard', label: 'Dasbor', icon: <LayoutDashboard className="w-4 h-4" /> },
@@ -156,17 +156,23 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
 
             <div className="flex items-center space-x-2.5">
-              <button
-                type="button"
-                onClick={() => setLogoModalOpen(true)}
-                title="Klik untuk Mengatur / Mengganti Logo Milad"
-                className="group relative cursor-pointer focus:outline-none"
-              >
-                <MiladLogo size="sm" className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 transition-transform group-hover:scale-105" />
-                <span className="absolute -bottom-1 -right-1 bg-amber-400 text-slate-950 p-0.5 rounded-full text-[8px] opacity-0 group-hover:opacity-100 transition shadow">
-                  <ImageIcon className="w-2.5 h-2.5" />
-                </span>
-              </button>
+              {!isPetugas ? (
+                <button
+                  type="button"
+                  onClick={() => setLogoModalOpen(true)}
+                  title="Klik untuk Mengatur / Mengganti Logo Milad"
+                  className="group relative cursor-pointer focus:outline-none"
+                >
+                  <MiladLogo size="sm" className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 transition-transform group-hover:scale-105" />
+                  <span className="absolute -bottom-1 -right-1 bg-amber-400 text-slate-950 p-0.5 rounded-full text-[8px] opacity-0 group-hover:opacity-100 transition shadow">
+                    <ImageIcon className="w-2.5 h-2.5" />
+                  </span>
+                </button>
+              ) : (
+                <div className="relative shrink-0">
+                  <MiladLogo size="sm" className="w-8 h-8 sm:w-9 sm:h-9 shrink-0" />
+                </div>
+              )}
               <div className="cursor-pointer" onClick={() => setActiveTab('dashboard')}>
                 <div className="flex items-center space-x-1.5">
                   <span className="font-extrabold text-xs sm:text-base tracking-tight text-white whitespace-nowrap">
@@ -263,18 +269,20 @@ export const Navbar: React.FC<NavbarProps> = ({
                         </div>
                       </div>
 
-                      {/* Button Atur / Unggah Logo */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setUserDropdownOpen(false);
-                          setLogoModalOpen(true);
-                        }}
-                        className="w-full flex items-center space-x-2 text-xs font-bold text-amber-200 hover:text-amber-100 bg-amber-950/40 hover:bg-amber-950/70 p-2.5 rounded-lg transition cursor-pointer border border-amber-500/30"
-                      >
-                        <ImageIcon className="w-4 h-4 text-amber-400" />
-                        <span>Atur / Unggah Logo Milad</span>
-                      </button>
+                      {/* Button Atur / Unggah Logo (Khusus Admin) */}
+                      {!isPetugas && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setUserDropdownOpen(false);
+                            setLogoModalOpen(true);
+                          }}
+                          className="w-full flex items-center space-x-2 text-xs font-bold text-amber-200 hover:text-amber-100 bg-amber-950/40 hover:bg-amber-950/70 p-2.5 rounded-lg transition cursor-pointer border border-amber-500/30"
+                        >
+                          <ImageIcon className="w-4 h-4 text-amber-400" />
+                          <span>Atur / Unggah Logo Milad</span>
+                        </button>
+                      )}
 
                       {onOpenWebhookModal && (
                         <button
@@ -470,16 +478,18 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Action Buttons in Drawer */}
           <div className="pt-2 border-t border-emerald-100 space-y-2">
-            <button
-              onClick={() => {
-                setMobileMenuOpen(false);
-                setLogoModalOpen(true);
-              }}
-              className="w-full py-2.5 px-3 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-xs flex items-center justify-center space-x-1.5 cursor-pointer shadow-xs"
-            >
-              <ImageIcon className="w-3.5 h-3.5 text-amber-700" />
-              <span>Atur / Unggah Logo Milad</span>
-            </button>
+            {!isPetugas && (
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setLogoModalOpen(true);
+                }}
+                className="w-full py-2.5 px-3 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-xs flex items-center justify-center space-x-1.5 cursor-pointer shadow-xs"
+              >
+                <ImageIcon className="w-3.5 h-3.5 text-amber-700" />
+                <span>Atur / Unggah Logo Milad</span>
+              </button>
+            )}
 
             {currentUser && onLogout ? (
               <button

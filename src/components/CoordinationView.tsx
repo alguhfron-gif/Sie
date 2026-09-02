@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Users, CheckCircle2, Clock, Plus, PackageCheck, AlertCircle, Edit2, Trash2, ShieldCheck, UserCheck, FileText, Code, Box, Image, ChevronRight, FileSpreadsheet } from 'lucide-react';
-import { CommitteeTask, InventoryItem, RundownItem, TaskStatus } from '../types';
+import { CommitteeTask, InventoryItem, RundownItem, TaskStatus, UserSession } from '../types';
 import { sendWebhookPayload, exportToCSV } from '../services/webhookService';
 import { ContentHeader } from './ContentHeader';
 import { CollapsibleSection } from './CollapsibleSection';
@@ -13,6 +13,7 @@ interface CoordinationViewProps {
   onUpdateTaskStatus: (id: string, status: TaskStatus) => void;
   onDeleteTask: (id: string) => void;
   onAddInventory: (inv: Omit<InventoryItem, 'id'>) => void;
+  currentUser?: UserSession | null;
 }
 
 interface CommitteeRole {
@@ -145,7 +146,11 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
   onUpdateTaskStatus,
   onDeleteTask,
   onAddInventory,
+  currentUser,
 }) => {
+  const isPetugas = currentUser?.category === 'petugas' || (currentUser?.role ? currentUser.role.toUpperCase().includes('PETUGAS') : false);
+  const isAdmin = !isPetugas;
+
   const [subTab, setSubTab] = useState<'structure' | 'tasks' | 'inventory' | 'rundown'>('structure');
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isInvModalOpen, setIsInvModalOpen] = useState(false);
@@ -476,12 +481,14 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
                               <option value="Selesai">Selesai ✓</option>
                             </select>
 
-                            <button
-                              onClick={() => onDeleteTask(t.id)}
-                              className="text-rose-600 hover:text-rose-700 text-[10px] font-semibold underline cursor-pointer"
-                            >
-                              Hapus
-                            </button>
+                            {isAdmin && (
+                              <button
+                                onClick={() => onDeleteTask(t.id)}
+                                className="text-rose-600 hover:text-rose-700 text-[10px] font-semibold underline cursor-pointer"
+                              >
+                                Hapus
+                              </button>
+                            )}
                           </div>
                         </div>
                       ))}

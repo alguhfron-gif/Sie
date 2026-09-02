@@ -28,8 +28,8 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
   onCloseAddModalDirectly,
   currentUser,
 }) => {
-  const isAdmin = !currentUser || currentUser.category === 'admin' || (currentUser?.role && currentUser.role.toUpperCase().includes('ADMIN'));
-  const isPetugas = !isAdmin;
+  const isPetugas = currentUser?.category === 'petugas' || (currentUser?.role ? currentUser.role.toUpperCase().includes('PETUGAS') : false);
+  const isAdmin = !isPetugas;
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');

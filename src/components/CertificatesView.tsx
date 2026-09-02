@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { FileCheck, Printer, Award, Shield, Sparkles, UserCheck, FileSpreadsheet, Check, ChevronDown, Image as ImageIcon } from 'lucide-react';
-import { AwardCategory, Nomination } from '../types';
+import { AwardCategory, Nomination, UserSession } from '../types';
 import { sendWebhookPayload, exportToCSV } from '../services/webhookService';
 import { addCertificateRecordToFirestore } from '../services/certificatesService';
 import { ContentHeader } from './ContentHeader';
@@ -20,9 +20,13 @@ export const AWARD_LETTER_OPTIONS = [
 interface CertificatesViewProps {
   nominations: Nomination[];
   categories: AwardCategory[];
+  currentUser?: UserSession | null;
 }
 
-export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations, categories }) => {
+export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations, categories, currentUser }) => {
+  const isPetugas = currentUser?.category === 'petugas' || (currentUser?.role ? currentUser.role.toUpperCase().includes('PETUGAS') : false);
+  const isAdmin = !isPetugas;
+
   const winners = nominations.filter((n) => n.status === 'Pemenang' || n.status === 'Disetujui');
 
   // Certificate Form State
@@ -159,14 +163,16 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
         icon={<UserCheck className="w-4 h-4 text-emerald-600" />}
         badge={
           <div className="flex items-center space-x-3 text-xs font-semibold text-slate-600 print:hidden">
-            <button
-              type="button"
-              onClick={() => setIsLogoModalOpen(true)}
-              className="text-[11px] font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-300 px-2.5 py-0.5 rounded-lg flex items-center space-x-1 cursor-pointer transition"
-            >
-              <ImageIcon className="w-3 h-3 text-amber-600" />
-              <span>Ganti / Upload Logo</span>
-            </button>
+            {!isPetugas && (
+              <button
+                type="button"
+                onClick={() => setIsLogoModalOpen(true)}
+                className="text-[11px] font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-300 px-2.5 py-0.5 rounded-lg flex items-center space-x-1 cursor-pointer transition"
+              >
+                <ImageIcon className="w-3 h-3 text-amber-600" />
+                <span>Ganti / Upload Logo</span>
+              </button>
+            )}
             <label className="flex items-center space-x-1 cursor-pointer">
               <input
                 type="checkbox"
