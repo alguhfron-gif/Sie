@@ -65,10 +65,32 @@ import { AccountsView } from './components/AccountsView';
 
 import { LoginView } from './components/LoginView';
 import { WebhookModal } from './components/WebhookModal';
-import { ErrorBoundary } from './components/ErrorBoundary';
+import { ErrorBoundary, ViewErrorBoundary } from './components/ErrorBoundary';
 import { fetchWebhookUrlFromFirestore } from './services/webhookService';
+import {
+  registerGlobalSelfHealingInterceptor,
+  safeJSONParse,
+  sanitizeNomination,
+  sanitizeTransaction,
+  sanitizeTask,
+  sanitizeInventory,
+  sanitizeDocument,
+  sanitizeRegulation,
+} from './services/errorRecoveryService';
+import { ShieldCheck, CheckCircle } from 'lucide-react';
 
 export default function App() {
+  // Self-Healing toast message state for non-intrusive recovery notice
+  const [recoveryToast, setRecoveryToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Initialize global unhandled error interceptor
+    registerGlobalSelfHealingInterceptor((msg) => {
+      setRecoveryToast(msg);
+      setTimeout(() => setRecoveryToast(null), 3500);
+    });
+  }, []);
+
   // Safe initialization of activeTab from localStorage
   const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
     try {
@@ -258,11 +280,12 @@ export default function App() {
     logoutFirebase().catch((err) => console.warn('Failed to logout Firebase:', err));
   };
 
-  // LocalStorage helper initialization with try...catch
+  // LocalStorage helper initialization with try...catch and automated self-healing
   const [transactions, setTransactions] = useState<Transaction[]>(() => {
     try {
       const saved = localStorage.getItem('sie_transactions');
-      return saved ? JSON.parse(saved) : INITIAL_TRANSACTIONS;
+      const parsed = saved ? JSON.parse(saved) : INITIAL_TRANSACTIONS;
+      return Array.isArray(parsed) ? parsed.map(sanitizeTransaction) : INITIAL_TRANSACTIONS;
     } catch (e) {
       return INITIAL_TRANSACTIONS;
     }
@@ -271,7 +294,8 @@ export default function App() {
   const [nominations, setNominations] = useState<Nomination[]>(() => {
     try {
       const saved = localStorage.getItem('sie_nominations');
-      return saved ? JSON.parse(saved) : INITIAL_NOMINATIONS;
+      const parsed = saved ? JSON.parse(saved) : INITIAL_NOMINATIONS;
+      return Array.isArray(parsed) ? parsed.map(sanitizeNomination) : INITIAL_NOMINATIONS;
     } catch (e) {
       return INITIAL_NOMINATIONS;
     }
@@ -289,7 +313,8 @@ export default function App() {
   const [tasks, setTasks] = useState<CommitteeTask[]>(() => {
     try {
       const saved = localStorage.getItem('sie_tasks');
-      return saved ? JSON.parse(saved) : INITIAL_TASKS;
+      const parsed = saved ? JSON.parse(saved) : INITIAL_TASKS;
+      return Array.isArray(parsed) ? parsed.map(sanitizeTask) : INITIAL_TASKS;
     } catch (e) {
       return INITIAL_TASKS;
     }
@@ -298,7 +323,8 @@ export default function App() {
   const [inventory, setInventory] = useState<InventoryItem[]>(() => {
     try {
       const saved = localStorage.getItem('sie_inventory');
-      return saved ? JSON.parse(saved) : INITIAL_INVENTORY;
+      const parsed = saved ? JSON.parse(saved) : INITIAL_INVENTORY;
+      return Array.isArray(parsed) ? parsed.map(sanitizeInventory) : INITIAL_INVENTORY;
     } catch (e) {
       return INITIAL_INVENTORY;
     }
@@ -325,7 +351,8 @@ export default function App() {
   const [documents, setDocuments] = useState<OfficialDocument[]>(() => {
     try {
       const saved = localStorage.getItem('sie_documents');
-      return saved ? JSON.parse(saved) : INITIAL_DOCUMENTS;
+      const parsed = saved ? JSON.parse(saved) : INITIAL_DOCUMENTS;
+      return Array.isArray(parsed) ? parsed.map(sanitizeDocument) : INITIAL_DOCUMENTS;
     } catch (e) {
       return INITIAL_DOCUMENTS;
     }
@@ -334,7 +361,8 @@ export default function App() {
   const [regulations, setRegulations] = useState<RegulationRule[]>(() => {
     try {
       const saved = localStorage.getItem('sie_regulations');
-      return saved ? JSON.parse(saved) : INITIAL_REGULATIONS;
+      const parsed = saved ? JSON.parse(saved) : INITIAL_REGULATIONS;
+      return Array.isArray(parsed) ? parsed.map(sanitizeRegulation) : INITIAL_REGULATIONS;
     } catch (e) {
       return INITIAL_REGULATIONS;
     }
@@ -408,42 +436,42 @@ export default function App() {
   const [openAddTransactionDirectly, setOpenAddTransactionDirectly] = useState(false);
   const [isWebhookModalOpen, setIsWebhookModalOpen] = useState(false);
 
-  // Subscribe to Cloud Firestore Nominations Real-time Updates
+  // Subscribe to Cloud Firestore Nominations Real-time Updates with Auto-Sanitization
   useEffect(() => {
     const unsubscribe = subscribeNominations(
       (firestoreItems) => {
         if (firestoreItems && firestoreItems.length >= 0) {
-          setNominations(firestoreItems);
+          setNominations(firestoreItems.map(sanitizeNomination));
         }
       },
       (error) => {
-        console.warn('Realtime Firestore nominations synchronization notice:', error);
+        console.warn('Realtime Firestore nominations notice:', error);
       }
     );
     return () => unsubscribe();
   }, []);
 
-  // Subscribe to Cloud Firestore Transactions Real-time Updates
+  // Subscribe to Cloud Firestore Transactions Real-time Updates with Auto-Sanitization
   useEffect(() => {
     const unsubscribe = subscribeTransactions(
       (firestoreItems) => {
         if (firestoreItems && firestoreItems.length >= 0) {
-          setTransactions(firestoreItems);
+          setTransactions(firestoreItems.map(sanitizeTransaction));
         }
       },
       (error) => {
-        console.warn('Realtime Firestore transactions synchronization notice:', error);
+        console.warn('Realtime Firestore transactions notice:', error);
       }
     );
     return () => unsubscribe();
   }, []);
 
-  // Subscribe to Cloud Firestore Committee Tasks Real-time Updates
+  // Subscribe to Cloud Firestore Committee Tasks Real-time Updates with Auto-Sanitization
   useEffect(() => {
     const unsubscribe = subscribeCommitteeTasks(
       (firestoreItems) => {
         if (firestoreItems && firestoreItems.length >= 0) {
-          setTasks(firestoreItems);
+          setTasks(firestoreItems.map(sanitizeTask));
         }
       },
       (error) => {
@@ -453,12 +481,12 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // Subscribe to Cloud Firestore Inventory Real-time Updates
+  // Subscribe to Cloud Firestore Inventory Real-time Updates with Auto-Sanitization
   useEffect(() => {
     const unsubscribe = subscribeInventory(
       (firestoreItems) => {
         if (firestoreItems && firestoreItems.length >= 0) {
-          setInventory(firestoreItems);
+          setInventory(firestoreItems.map(sanitizeInventory));
         }
       },
       (error) => {
@@ -498,12 +526,12 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // Subscribe to Cloud Firestore Official Documents Real-time Updates
+  // Subscribe to Cloud Firestore Official Documents Real-time Updates with Auto-Sanitization
   useEffect(() => {
     const unsubscribe = subscribeOfficialDocuments(
       (firestoreItems) => {
         if (firestoreItems && firestoreItems.length >= 0) {
-          setDocuments(firestoreItems);
+          setDocuments(firestoreItems.map(sanitizeDocument));
         }
       },
       (error) => {
@@ -513,12 +541,12 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // Subscribe to Cloud Firestore Regulations Real-time Updates
+  // Subscribe to Cloud Firestore Regulations Real-time Updates with Auto-Sanitization
   useEffect(() => {
     const unsubscribe = subscribeRegulations(
       (firestoreItems) => {
         if (firestoreItems && firestoreItems.length >= 0) {
-          setRegulations(firestoreItems);
+          setRegulations(firestoreItems.map(sanitizeRegulation));
         }
       },
       (error) => {
@@ -825,107 +853,129 @@ export default function App() {
           onOpenWebhookModal={() => setIsWebhookModalOpen(true)}
         />
 
-        {/* Main Content Area wrapped in ErrorBoundary */}
+        {/* Main Content Area wrapped in ErrorBoundary & View-specific boundaries */}
         <main className="flex-1 p-3 sm:p-6 pb-28 md:pb-12 min-w-0">
+          {/* Non-intrusive self-healing auto-repair toast */}
+          {recoveryToast && (
+            <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-emerald-900/95 backdrop-blur-md text-emerald-100 text-xs font-black px-4 py-2.5 rounded-2xl shadow-2xl border border-emerald-400/50 flex items-center space-x-2.5 animate-bounce">
+              <ShieldCheck className="w-4 h-4 text-emerald-300 animate-pulse" />
+              <span>{recoveryToast}</span>
+            </div>
+          )}
+
           <ErrorBoundary>
             {activeTab === 'dashboard' && (
-              <DashboardView
-                setActiveTab={setActiveTab}
-                transactions={transactions}
-                nominations={nominations}
-                categories={categories}
-                tasks={tasks}
-                currentUser={currentUser}
-                onOpenAddNomination={() => {
-                  setActiveTab('nominasi');
-                  setOpenAddNominationDirectly(true);
-                }}
-                onOpenAddTransaction={() => {
-                  setActiveTab('keuangan');
-                  setOpenAddTransactionDirectly(true);
-                }}
-                onOpenWebhookModal={() => setIsWebhookModalOpen(true)}
-              />
+              <ViewErrorBoundary viewName="Dasbor Utama">
+                <DashboardView
+                  setActiveTab={setActiveTab}
+                  transactions={transactions}
+                  nominations={nominations}
+                  categories={categories}
+                  tasks={tasks}
+                  currentUser={currentUser}
+                  onOpenAddNomination={() => {
+                    setActiveTab('nominasi');
+                    setOpenAddNominationDirectly(true);
+                  }}
+                  onOpenAddTransaction={() => {
+                    setActiveTab('keuangan');
+                    setOpenAddTransactionDirectly(true);
+                  }}
+                  onOpenWebhookModal={() => setIsWebhookModalOpen(true)}
+                />
+              </ViewErrorBoundary>
             )}
 
             {activeTab === 'nominasi' && (
-              <NominationsView
-                nominations={nominations}
-                categories={categories}
-                onAddNomination={handleAddNomination}
-                onUpdateNomination={handleUpdateNomination}
-                onDeleteNomination={handleDeleteNomination}
-                isAddModalOpenOpenDirectly={openAddNominationDirectly}
-                onCloseAddModalDirectly={() => setOpenAddNominationDirectly(false)}
-                currentUser={currentUser}
-              />
+              <ViewErrorBoundary viewName="Data Nominasi">
+                <NominationsView
+                  nominations={nominations}
+                  categories={categories}
+                  onAddNomination={handleAddNomination}
+                  onUpdateNomination={handleUpdateNomination}
+                  onDeleteNomination={handleDeleteNomination}
+                  isAddModalOpenOpenDirectly={openAddNominationDirectly}
+                  onCloseAddModalDirectly={() => setOpenAddNominationDirectly(false)}
+                  currentUser={currentUser}
+                />
+              </ViewErrorBoundary>
             )}
 
             {activeTab === 'keuangan' && (
-              <FinanceView
-                transactions={transactions}
-                onAddTransaction={handleAddTransaction}
-                onUpdateTransaction={handleUpdateTransaction}
-                onDeleteTransaction={handleDeleteTransaction}
-                isAddModalOpenDirectly={openAddTransactionDirectly}
-                onCloseAddModalDirectly={() => setOpenAddTransactionDirectly(false)}
-              />
+              <ViewErrorBoundary viewName="Laporan Keuangan">
+                <FinanceView
+                  transactions={transactions}
+                  onAddTransaction={handleAddTransaction}
+                  onUpdateTransaction={handleUpdateTransaction}
+                  onDeleteTransaction={handleDeleteTransaction}
+                  isAddModalOpenDirectly={openAddTransactionDirectly}
+                  onCloseAddModalDirectly={() => setOpenAddTransactionDirectly(false)}
+                />
+              </ViewErrorBoundary>
             )}
 
             {activeTab === 'koordinasi' && (
-              <CoordinationView
-                tasks={tasks}
-                inventory={inventory}
-                rundown={rundown}
-                onAddTask={handleAddTask}
-                onUpdateTaskStatus={handleUpdateTaskStatus}
-                onDeleteTask={handleDeleteTask}
-                onAddInventory={handleAddInventory}
-              />
+              <ViewErrorBoundary viewName="Koordinasi & Tugas">
+                <CoordinationView
+                  tasks={tasks}
+                  inventory={inventory}
+                  rundown={rundown}
+                  onAddTask={handleAddTask}
+                  onUpdateTaskStatus={handleUpdateTaskStatus}
+                  onDeleteTask={handleDeleteTask}
+                  onAddInventory={handleAddInventory}
+                />
+              </ViewErrorBoundary>
             )}
 
             {activeTab === 'sertifikat' && (
-              <CertificatesView nominations={nominations} categories={categories} />
+              <ViewErrorBoundary viewName="Cetak Sertifikat">
+                <CertificatesView nominations={nominations} categories={categories} />
+              </ViewErrorBoundary>
             )}
 
             {activeTab === 'surat' && (
-              <DocumentsView
-                documents={documents}
-                regulations={regulations}
-                onAddDocument={handleAddDocument}
-                onUpdateDocument={handleUpdateDocument}
-                onDeleteDocument={handleDeleteDocument}
-                onAddRegulation={handleAddRegulation}
-                onUpdateRegulation={handleUpdateRegulation}
-                onDeleteRegulation={handleDeleteRegulation}
-                currentUser={currentUser}
-                onNavigateToNominees={() => {
-                  setActiveTab('nominasi');
-                  setOpenAddNominationDirectly(true);
-                }}
-              />
+              <ViewErrorBoundary viewName="Surat & Ketentuan">
+                <DocumentsView
+                  documents={documents}
+                  regulations={regulations}
+                  onAddDocument={handleAddDocument}
+                  onUpdateDocument={handleUpdateDocument}
+                  onDeleteDocument={handleDeleteDocument}
+                  onAddRegulation={handleAddRegulation}
+                  onUpdateRegulation={handleUpdateRegulation}
+                  onDeleteRegulation={handleDeleteRegulation}
+                  currentUser={currentUser}
+                  onNavigateToNominees={() => {
+                    setActiveTab('nominasi');
+                    setOpenAddNominationDirectly(true);
+                  }}
+                />
+              </ViewErrorBoundary>
             )}
 
             {activeTab === 'akun' && (
-              <AccountsView
-                accounts={accounts}
-                onAddAccount={handleAddAccount}
-                onDeleteAccount={handleDeleteAccount}
-                onUpdateAccount={handleUpdateAccount}
-                currentUser={currentUser}
-                onLogout={handleLogout}
-                onSwitchUser={(acc) => {
-                  const session: UserSession = {
-                    id: acc.id,
-                    name: acc.name,
-                    role: `${acc.role} (${acc.category === 'admin' ? 'ADMIN' : 'PETUGAS'})`,
-                    category: acc.category,
-                    email: `${acc.name.toLowerCase().replace(/[^a-z]/g, '')}@penganugerahan.id`,
-                    loginTime: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
-                  };
-                  handleLoginSuccess(session);
-                }}
-              />
+              <ViewErrorBoundary viewName="Manajemen Akun">
+                <AccountsView
+                  accounts={accounts}
+                  onAddAccount={handleAddAccount}
+                  onDeleteAccount={handleDeleteAccount}
+                  onUpdateAccount={handleUpdateAccount}
+                  currentUser={currentUser}
+                  onLogout={handleLogout}
+                  onSwitchUser={(acc) => {
+                    const session: UserSession = {
+                      id: acc.id,
+                      name: acc.name,
+                      role: `${acc.role} (${acc.category === 'admin' ? 'ADMIN' : 'PETUGAS'})`,
+                      category: acc.category,
+                      email: `${acc.name.toLowerCase().replace(/[^a-z]/g, '')}@penganugerahan.id`,
+                      loginTime: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+                    };
+                    handleLoginSuccess(session);
+                  }}
+                />
+              </ViewErrorBoundary>
             )}
           </ErrorBoundary>
         </main>
