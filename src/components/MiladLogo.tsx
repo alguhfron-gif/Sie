@@ -1,23 +1,20 @@
 import React, { useState, useEffect } from 'react';
+import {
+  CUSTOM_LOGO_STORAGE_KEY,
+  CUSTOM_LOGO_EVENT,
+  getLocalCustomLogo,
+  saveCustomLogo,
+  subscribeCustomLogo,
+} from '../services/logoService';
 
-export const CUSTOM_LOGO_STORAGE_KEY = 'custom_milad_logo';
-export const CUSTOM_LOGO_EVENT = 'custom_milad_logo_changed';
-
-export const setCustomLogo = (dataUrlOrLink: string | null) => {
-  if (dataUrlOrLink) {
-    localStorage.setItem(CUSTOM_LOGO_STORAGE_KEY, dataUrlOrLink);
-  } else {
-    localStorage.removeItem(CUSTOM_LOGO_STORAGE_KEY);
-  }
-  window.dispatchEvent(new Event(CUSTOM_LOGO_EVENT));
-};
+export { CUSTOM_LOGO_STORAGE_KEY, CUSTOM_LOGO_EVENT };
 
 export const getCustomLogo = (): string | null => {
-  try {
-    return localStorage.getItem(CUSTOM_LOGO_STORAGE_KEY);
-  } catch {
-    return null;
-  }
+  return getLocalCustomLogo();
+};
+
+export const setCustomLogo = (dataUrlOrLink: string | null) => {
+  saveCustomLogo(dataUrlOrLink);
 };
 
 interface MiladLogoProps {
@@ -37,21 +34,30 @@ export const MiladLogo: React.FC<MiladLogoProps> = ({
   overrideSrc,
   onClick,
 }) => {
-  const [customLogo, setCustomLogoState] = useState<string | null>(overrideSrc || getCustomLogo());
+  const [customLogo, setCustomLogoState] = useState<string | null>(overrideSrc || getLocalCustomLogo());
 
   useEffect(() => {
     if (overrideSrc !== undefined) {
       setCustomLogoState(overrideSrc);
       return;
     }
+
+    // 1. Local events listener
     const updateLogo = () => {
-      setCustomLogoState(getCustomLogo());
+      setCustomLogoState(getLocalCustomLogo());
     };
     window.addEventListener(CUSTOM_LOGO_EVENT, updateLogo);
     window.addEventListener('storage', updateLogo);
+
+    // 2. Real-time Firestore Cloud listener across all devices
+    const unsubscribeCloud = subscribeCustomLogo((cloudLogo) => {
+      setCustomLogoState(cloudLogo);
+    });
+
     return () => {
       window.removeEventListener(CUSTOM_LOGO_EVENT, updateLogo);
       window.removeEventListener('storage', updateLogo);
+      unsubscribeCloud();
     };
   }, [overrideSrc]);
 

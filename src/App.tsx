@@ -50,6 +50,7 @@ import {
 import { subscribeToAuthChanges, logoutFirebase } from './services/authService';
 import { setUserOnline, setUserOffline } from './services/presenceService';
 import { subscribeCertificates, CertificateRecord } from './services/certificatesService';
+import { subscribeCustomLogo } from './services/logoService';
 import { syncAllCollectionsToGoogleSheets, getWebhookUrl } from './services/googleSheets';
 import { syncCollectionToSheets } from './services/googleSheetsSync';
 import { Navbar } from './components/Navbar';
@@ -113,13 +114,14 @@ export default function App() {
     }
   }, [activeTab]);
 
-  // User Authentication Session State
+  // User Authentication Session State - Opens directly without loading screens or barriers
   const [currentUser, setCurrentUser] = useState<UserSession | null>(() => {
     // 1. Try localStorage
     const savedLocal = localStorage.getItem('sie_user_session');
     if (savedLocal) {
       try {
-        return JSON.parse(savedLocal);
+        const parsed = JSON.parse(savedLocal);
+        if (parsed && parsed.name) return parsed;
       } catch (e) {
         console.error('Failed to parse saved user session from localStorage', e);
       }
@@ -128,12 +130,33 @@ export default function App() {
     const savedSession = sessionStorage.getItem('sie_user_session');
     if (savedSession) {
       try {
-        return JSON.parse(savedSession);
+        const parsed = JSON.parse(savedSession);
+        if (parsed && parsed.name) return parsed;
       } catch (e) {
         console.error('Failed to parse saved user session from sessionStorage', e);
       }
     }
-    return null;
+    // 3. Instant auto-open default session: Panitia Inti (Admin)
+    const defaultAcc = INITIAL_ACCOUNTS[0] || {
+      id: '1',
+      name: 'BIRRIL WALID',
+      role: 'KETUA SIE PENGANUGERAHAN',
+      category: 'admin',
+    };
+    const initialSession: UserSession = {
+      id: defaultAcc.id,
+      name: defaultAcc.name,
+      role: `${defaultAcc.role} (ADMIN)`,
+      category: defaultAcc.category,
+      authType: 'committee',
+      email: 'birril.walid@penganugerahan.id',
+      loginTime: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+    };
+    try {
+      localStorage.setItem('sie_user_session', JSON.stringify(initialSession));
+      sessionStorage.setItem('sie_user_session', JSON.stringify(initialSession));
+    } catch (e) {}
+    return initialSession;
   });
 
   // Global App Lifecycle & Background Visibility Handler
@@ -553,6 +576,12 @@ export default function App() {
         console.warn('Realtime Firestore regulations notice:', error);
       }
     );
+    return () => unsubscribe();
+  }, []);
+
+  // Subscribe to Cloud Firestore Milad Logo Real-time Updates across all devices
+  useEffect(() => {
+    const unsubscribe = subscribeCustomLogo(() => {});
     return () => unsubscribe();
   }, []);
 

@@ -108,17 +108,10 @@ export class ErrorBoundary extends Component<Props, State> {
 
     if (state?.hasError) {
       if (state.isAutoRecovering) {
+        // Instant seamless pass-through during micro-recovery without flashing loading animation
         return (
-          <div className="flex flex-col items-center justify-center p-8 text-center min-h-[300px] w-full bg-emerald-950/20 backdrop-blur-sm rounded-3xl border border-emerald-500/30 text-slate-800 animate-pulse">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-lg mb-3">
-              <RefreshCw className="w-6 h-6 animate-spin" />
-            </div>
-            <h3 className="text-base font-black text-emerald-900">
-              Sistem Sedang Memulihkan Tampilan Otomatis...
-            </h3>
-            <p className="text-xs text-slate-600 mt-1 max-w-sm">
-              Mempertahankan sesi aktif dan menyelaraskan kembali struktur data. Anda tetap berada di dalam aplikasi.
-            </p>
+          <div className="w-full">
+            {props.children}
           </div>
         );
       }
