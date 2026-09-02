@@ -5,7 +5,7 @@ export const INITIAL_CATEGORIES: AwardCategory[] = [
     id: 'cat-1',
     title: 'Insan Berprestasi Utama',
     description: 'Penghargaan untuk individu dengan kontribusi akademik/non-akademik tertinggi.',
-    badgeColor: 'bg-amber-100 text-amber-800 border-amber-300',
+    badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-300',
     quota: 3,
   },
   {
@@ -19,7 +19,7 @@ export const INITIAL_CATEGORIES: AwardCategory[] = [
     id: 'cat-3',
     title: 'Panitia Duta Dedikasi',
     description: 'Apresiasi kerja keras panitia dengan loyalitas dan efisiensi terbaik.',
-    badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+    badgeColor: 'bg-teal-100 text-teal-800 border-teal-300',
     quota: 5,
   },
   {
@@ -276,7 +276,7 @@ export const INITIAL_ACCOUNTS: CommitteeAccount[] = [
     category: 'admin',
     defaultPin: '12345678',
     badge: 'Ketua / Admin',
-    avatarBg: 'bg-amber-500 text-slate-950 font-black',
+    avatarBg: 'bg-emerald-600 text-white font-black',
     createdAt: '2026-07-01',
   },
   {
@@ -286,7 +286,7 @@ export const INITIAL_ACCOUNTS: CommitteeAccount[] = [
     category: 'admin',
     defaultPin: '12345678',
     badge: 'Wakil / Admin',
-    avatarBg: 'bg-amber-400 text-slate-900 font-extrabold',
+    avatarBg: 'bg-emerald-700 text-white font-extrabold',
     createdAt: '2026-07-01',
   },
   {
@@ -296,7 +296,7 @@ export const INITIAL_ACCOUNTS: CommitteeAccount[] = [
     category: 'admin',
     defaultPin: '12345678',
     badge: 'Sekretaris / Admin',
-    avatarBg: 'bg-amber-300 text-slate-950 font-bold',
+    avatarBg: 'bg-teal-600 text-white font-bold',
     createdAt: '2026-07-01',
   },
 

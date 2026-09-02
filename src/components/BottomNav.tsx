@@ -27,7 +27,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, c
     : allNavItems;
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200 text-slate-500 px-1.5 py-1 shadow-lg">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-emerald-100 text-slate-500 px-1.5 py-1 shadow-lg">
       <div className={`flex items-center overflow-x-auto touch-scroll-x no-scrollbar space-x-1 px-0.5 py-0.5 ${
         isPetugas ? 'justify-around max-w-md mx-auto' : 'justify-between sm:justify-around'
       }`}>
@@ -38,12 +38,12 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, c
               key={item.id}
               onClick={() => setActiveTab(item.id)}
               className={`flex-1 min-w-[56px] max-w-[80px] shrink-0 flex flex-col items-center justify-center py-1 px-1 rounded-xl transition cursor-pointer ${
-                isActive ? 'text-amber-700 font-bold bg-amber-50 border border-amber-200 shadow-2xs' : 'hover:text-slate-800'
+                isActive ? 'text-emerald-800 font-bold bg-emerald-50 border border-emerald-200 shadow-2xs' : 'hover:text-emerald-900'
               }`}
             >
               <div
                 className={`p-1 rounded-lg transition ${
-                  isActive ? 'bg-amber-500/20 text-amber-700' : 'bg-transparent'
+                  isActive ? 'bg-emerald-500/20 text-emerald-700' : 'bg-transparent'
                 }`}
               >
                 {item.icon}
@@ -56,4 +56,3 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, c
     </div>
   );
 };
-

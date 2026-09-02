@@ -134,7 +134,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     : allNavItems;
 
   return (
-    <header className="sticky top-0 z-40 bg-[#222d32] text-white border-b border-[#1a2226] shadow-md">
+    <header className="sticky top-0 z-40 bg-[#16221b] text-white border-b border-[#23382c] shadow-md">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         {/* Row 1: Brand Logo, Tanggal Hijriyah, Sync Cloud & User Profile Dropdown */}
         <div className="flex items-center justify-between h-14 sm:h-16 gap-2 sm:gap-4">
@@ -147,21 +147,21 @@ export const Navbar: React.FC<NavbarProps> = ({
                 setMobileMenuOpen(!mobileMenuOpen);
               }}
               title="Buka/Tutup Navigasi Sidebar"
-              className="p-2 rounded border border-[#1a2226] bg-[#1e282c] hover:bg-[#1a2226] text-amber-400 transition cursor-pointer shrink-0 shadow-2xs active:scale-95"
+              className="p-2 rounded-lg border border-[#23382c] bg-[#1e2e25] hover:bg-[#283f33] text-emerald-400 transition cursor-pointer shrink-0 shadow-2xs active:scale-95"
             >
-              <Menu className="w-5 h-5 text-amber-400" />
+              <Menu className="w-5 h-5 text-emerald-400" />
             </button>
 
             <div className="flex items-center space-x-2.5 cursor-pointer" onClick={() => setActiveTab('dashboard')}>
-              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded bg-[#f39c12] flex items-center justify-center text-slate-950 font-black shadow ring-1 ring-amber-300 shrink-0">
-                <Award className="w-4 h-4 sm:w-5 sm:h-5 text-slate-950" />
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center text-white font-black shadow border border-emerald-400/40 shrink-0">
+                <Award className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
               <div>
                 <div className="flex items-center space-x-1.5">
                   <span className="font-extrabold text-xs sm:text-base tracking-tight text-white whitespace-nowrap">
                     SIE PENGANUGERAHAN
                   </span>
-                  <span className="hidden xl:inline-flex items-center space-x-1.5 bg-[#1a2226] text-amber-400 border border-amber-500/40 px-2 py-0.5 rounded text-[9px] font-black tracking-wide">
+                  <span className="hidden xl:inline-flex items-center space-x-1.5 bg-[#1e2e25] text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded text-[9px] font-black tracking-wide">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#00a65a] animate-pulse shrink-0"></span>
                     <span>SIDOGIRI SYSTEM</span>
                   </span>
@@ -173,8 +173,8 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Header Actions - Desktop Right */}
           <div className="hidden md:flex items-center space-x-2.5 shrink-0">
             {/* Tanggal Hijriyah & Masehi */}
-            <div className="flex items-center space-x-1.5 bg-[#1a2226] text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded text-xs font-extrabold shadow-2xs">
-              <Moon className="w-3.5 h-3.5 text-amber-400 fill-amber-400/20 shrink-0" />
+            <div className="flex items-center space-x-1.5 bg-[#1e2e25] text-emerald-300 border border-emerald-500/30 px-3 py-1.5 rounded-lg text-xs font-extrabold shadow-2xs">
+              <Moon className="w-3.5 h-3.5 text-emerald-400 fill-emerald-400/20 shrink-0" />
               <span className="text-[11px] font-extrabold tracking-tight">
                 {getHijriDate(currentUser?.loginTime)}
               </span>
@@ -184,9 +184,9 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               onClick={handleRefresh}
               title="Segarkan & Sinkronkan Data Cloud Firestore"
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded border border-[#367fa9] bg-[#3c8dbc] hover:bg-[#367fa9] text-white text-xs font-bold transition shadow-2xs cursor-pointer shrink-0"
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-emerald-700/60 bg-[#005a2b] hover:bg-[#004220] text-emerald-100 hover:text-white text-xs font-bold transition shadow-2xs cursor-pointer shrink-0"
             >
-              <RefreshCw className={`w-3.5 h-3.5 text-white ${isRefreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 text-emerald-300 ${isRefreshing ? 'animate-spin' : ''}`} />
               <span>Sync Data</span>
             </button>
 
@@ -195,7 +195,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 onClick={onOpenWebhookModal}
                 title="Tempel URL Web App Google Sheets untuk Sinkronisasi Otomatis"
-                className="flex items-center space-x-1.5 px-3 py-1.5 rounded border border-[#008d4c] bg-[#00a65a] hover:bg-[#008d4c] text-white text-xs font-bold transition shadow-2xs cursor-pointer shrink-0"
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-emerald-600 bg-[#00a65a] hover:bg-[#008d4c] text-white text-xs font-bold transition shadow-2xs cursor-pointer shrink-0"
               >
                 <FileSpreadsheet className="w-3.5 h-3.5 text-white" />
                 <span className="hidden lg:inline">Tempel Web App URL</span>
@@ -208,25 +208,25 @@ export const Navbar: React.FC<NavbarProps> = ({
               <div ref={desktopDropdownRef} className="relative shrink-0">
                 <button
                   onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                  className="flex items-center space-x-2 bg-[#1e282c] hover:bg-[#1a2226] border border-[#1a2226] text-white px-3 py-1.5 rounded text-xs font-bold transition cursor-pointer shadow-2xs"
+                  className="flex items-center space-x-2 bg-[#1e2e25] hover:bg-[#283f33] border border-[#23382c] text-white px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer shadow-2xs"
                 >
-                  <div className="w-6 h-6 rounded bg-[#f39c12] font-black text-[11px] flex items-center justify-center text-slate-950 shrink-0 shadow-xs">
+                  <div className="w-6 h-6 rounded-md bg-gradient-to-br from-emerald-500 to-emerald-700 font-black text-[11px] flex items-center justify-center text-white shrink-0 shadow-xs border border-emerald-400/40">
                     {currentUser.name.charAt(0)}
                   </div>
                   <div className="text-left leading-tight hidden sm:block">
                     <p className="font-extrabold text-[11px] text-white truncate max-w-[120px]">{currentUser.name}</p>
-                    <p className="text-[9px] text-amber-400 font-bold">{currentUser.role.split(' ')[0]}</p>
+                    <p className="text-[9px] text-emerald-400 font-bold">{currentUser.role.split(' ')[0]}</p>
                   </div>
-                  <ChevronDown className={`w-3.5 h-3.5 text-amber-400 transition-transform ${userDropdownOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-3.5 h-3.5 text-emerald-400 transition-transform ${userDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 {/* User Dropdown Menu */}
                 {userDropdownOpen && (
                   <>
                     <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-[0.5px]" onClick={() => setUserDropdownOpen(false)} />
-                    <div className="absolute right-0 mt-2 w-72 bg-[#222d32] border border-[#1a2226] rounded shadow-2xl p-4 z-50 space-y-3 animate-in fade-in slide-in-from-top-2 text-white">
-                      <div className="flex items-center space-x-3 pb-3 border-b border-[#1a2226]">
-                        <div className="w-10 h-10 rounded bg-[#f39c12] font-black text-slate-950 flex items-center justify-center text-sm shadow ring-2 ring-amber-400 shrink-0">
+                    <div className="absolute right-0 mt-2 w-72 bg-[#1e2e25] border border-[#23382c] rounded-xl shadow-2xl p-4 z-50 space-y-3 animate-in fade-in slide-in-from-top-2 text-white">
+                      <div className="flex items-center space-x-3 pb-3 border-b border-[#23382c]">
+                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-700 font-black text-white flex items-center justify-center text-sm shadow ring-2 ring-emerald-400 shrink-0 border border-emerald-400/40">
                           {currentUser.name.charAt(0)}
                         </div>
                         <div className="min-w-0 flex-1">
@@ -237,17 +237,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                         </div>
                       </div>
 
-                      <div className="space-y-2 text-xs bg-[#1a2226] p-2.5 rounded border border-[#222d32]">
-                        <div className="flex items-center space-x-2 text-amber-400 font-extrabold">
-                          <Moon className="w-3.5 h-3.5 text-amber-400 shrink-0 fill-amber-400/20" />
+                      <div className="space-y-2 text-xs bg-[#16221b] p-2.5 rounded-lg border border-[#23382c]">
+                        <div className="flex items-center space-x-2 text-emerald-300 font-extrabold">
+                          <Moon className="w-3.5 h-3.5 text-emerald-400 shrink-0 fill-emerald-400/20" />
                           <span className="text-[11px]">Hijriyah: {getHijriDate(currentUser.loginTime)}</span>
                         </div>
-                        <div className="flex items-center space-x-2 text-gray-300 font-medium">
-                          <Clock className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                        <div className="flex items-center space-x-2 text-emerald-100/70 font-medium">
+                          <Clock className="w-3.5 h-3.5 text-emerald-300/70 shrink-0" />
                           <span className="text-[11px]">Waktu Login: {formatLoginTime(currentUser.loginTime)}</span>
                         </div>
-                        <div className="flex items-center space-x-2 text-[#00c0ef] font-bold">
-                          <Cloud className="w-3.5 h-3.5 text-[#00c0ef] shrink-0" />
+                        <div className="flex items-center space-x-2 text-emerald-300 font-bold">
+                          <Cloud className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                           <span className="text-[11px]">Sync: Cloud Firestore Terhubung</span>
                         </div>
                       </div>
@@ -259,7 +259,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                             setUserDropdownOpen(false);
                             onOpenWebhookModal();
                           }}
-                          className="w-full flex items-center space-x-2 text-xs font-bold text-gray-200 hover:text-white bg-[#1e282c] hover:bg-[#1a2226] p-2 rounded transition cursor-pointer"
+                          className="w-full flex items-center space-x-2 text-xs font-bold text-emerald-100 hover:text-white bg-[#16221b] hover:bg-[#283f33] p-2.5 rounded-lg transition cursor-pointer border border-[#23382c]"
                         >
                           <FileSpreadsheet className="w-4 h-4 text-[#00a65a]" />
                           <span>Pengaturan Webhook Sheets</span>
@@ -273,9 +273,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                             setUserDropdownOpen(false);
                             onLogout();
                           }}
-                          className="w-full flex items-center justify-center space-x-2 py-2.5 rounded bg-[#dd4b39] hover:bg-[#c9302c] text-white font-extrabold text-xs transition shadow cursor-pointer"
+                          className="w-full flex items-center justify-center space-x-2 py-2.5 rounded-lg bg-[#005a2b] hover:bg-[#004220] border border-emerald-600/40 text-white font-extrabold text-xs transition shadow cursor-pointer"
                         >
-                          <LogOut className="w-4 h-4 text-white" />
+                          <LogOut className="w-4 h-4 text-emerald-300" />
                           <span>Keluar Akun (Logout)</span>
                         </button>
                       )}
@@ -286,7 +286,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             ) : (
               <button
                 onClick={onLogin}
-                className="flex items-center space-x-1.5 px-4 py-1.5 rounded bg-[#f39c12] hover:bg-[#e08e0b] text-slate-950 text-xs font-black shadow transition cursor-pointer"
+                className="flex items-center space-x-1.5 px-4 py-1.5 rounded-lg bg-[#00a65a] hover:bg-[#008d4c] text-white text-xs font-black shadow transition cursor-pointer border border-emerald-400/40"
               >
                 <LogIn className="w-4 h-4" />
                 <span>Masuk</span>
@@ -297,8 +297,8 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Header Actions - Mobile Header */}
           <div className="md:hidden flex items-center space-x-1.5 shrink-0">
             {/* Tanggal Hijriyah Mobile Pill */}
-            <div className="flex items-center space-x-1 bg-[#1a2226] text-amber-400 border border-amber-500/30 px-2 py-1 rounded text-[10px] font-extrabold shadow-2xs">
-              <Moon className="w-3 h-3 text-amber-400 fill-amber-400/20 shrink-0" />
+            <div className="flex items-center space-x-1 bg-[#1e2e25] text-emerald-300 border border-emerald-500/30 px-2 py-1 rounded text-[10px] font-extrabold shadow-2xs">
+              <Moon className="w-3 h-3 text-emerald-400 fill-emerald-400/20 shrink-0" />
               <span className="truncate max-w-[95px]">{getHijriDate(currentUser?.loginTime)}</span>
             </div>
 
@@ -306,9 +306,9 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               onClick={handleRefresh}
               title="Segarkan & Sinkronkan Data Cloud"
-              className="flex items-center space-x-1 px-2 py-1 rounded bg-[#3c8dbc] text-white font-extrabold text-[10px] shadow-2xs cursor-pointer shrink-0"
+              className="flex items-center space-x-1 px-2 py-1 rounded bg-[#005a2b] text-white font-extrabold text-[10px] shadow-2xs cursor-pointer shrink-0 border border-emerald-600/40"
             >
-              <RefreshCw className={`w-3 h-3 text-white ${isRefreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-3 h-3 text-emerald-300 ${isRefreshing ? 'animate-spin' : ''}`} />
               <span>Sync</span>
             </button>
 
@@ -320,7 +320,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 className="flex items-center space-x-1 px-2 py-1 rounded bg-[#00a65a] text-white font-extrabold text-[10px] shadow-2xs cursor-pointer shrink-0"
               >
                 <FileSpreadsheet className="w-3 h-3 text-white" />
-                <span>URL Sheets</span>
+                <span>URL</span>
               </button>
             )}
 
@@ -328,29 +328,29 @@ export const Navbar: React.FC<NavbarProps> = ({
               <div ref={mobileDropdownRef} className="relative">
                 <button
                   onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                  className="flex items-center space-x-1 bg-[#f39c12] text-slate-950 px-2 py-1 rounded text-[11px] font-bold cursor-pointer"
+                  className="flex items-center space-x-1 bg-[#00a65a] text-white px-2 py-1 rounded text-[11px] font-bold cursor-pointer shadow-xs border border-emerald-400/40"
                 >
-                  <User className="w-3.5 h-3.5 text-amber-700" />
+                  <User className="w-3.5 h-3.5 text-white" />
                   <span className="truncate max-w-[65px] font-extrabold">{currentUser.name.split(' ')[0]}</span>
-                  <ChevronDown className="w-3 h-3 text-amber-800" />
+                  <ChevronDown className="w-3 h-3 text-white" />
                 </button>
 
                 {/* Mobile User Dropdown Menu */}
                 {userDropdownOpen && (
                   <>
                     <div className="fixed inset-0 z-40 bg-slate-900/10 backdrop-blur-[0.5px]" onClick={() => setUserDropdownOpen(false)} />
-                    <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl border border-slate-200 shadow-2xl p-3 z-50 space-y-2.5 animate-in fade-in slide-in-from-top-2">
-                      <div className="flex items-center space-x-2.5 pb-2 border-b border-slate-100">
-                        <div className="w-8 h-8 rounded-xl bg-amber-500 font-bold text-slate-950 flex items-center justify-center text-xs">
+                    <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl border border-emerald-100 shadow-2xl p-3 z-50 space-y-2.5 animate-in fade-in slide-in-from-top-2">
+                      <div className="flex items-center space-x-2.5 pb-2 border-b border-emerald-100">
+                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 font-bold text-white flex items-center justify-center text-xs shadow">
                           {currentUser.name.charAt(0)}
                         </div>
                         <div className="min-w-0">
                           <p className="font-extrabold text-xs text-slate-900 truncate">{currentUser.name}</p>
-                          <p className="text-[10px] text-amber-800 font-semibold">{currentUser.role}</p>
+                          <p className="text-[10px] text-emerald-700 font-semibold">{currentUser.role}</p>
                         </div>
                       </div>
 
-                      <div className="space-y-1.5 text-[11px] bg-slate-50 p-2 rounded-xl border border-slate-100">
+                      <div className="space-y-1.5 text-[11px] bg-emerald-50/60 p-2 rounded-xl border border-emerald-100">
                         <p className="font-extrabold text-emerald-800">🌙 {getHijriDate(currentUser.loginTime)}</p>
                         <p className="text-slate-600 font-medium">🕒 Login: {formatLoginTime(currentUser.loginTime)}</p>
                       </div>
@@ -362,9 +362,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                             setUserDropdownOpen(false);
                             onLogout();
                           }}
-                          className="w-full py-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-extrabold text-xs rounded-xl flex items-center justify-center space-x-1.5 cursor-pointer"
+                          className="w-full py-2 bg-emerald-700 hover:bg-emerald-800 border border-emerald-800 text-white font-extrabold text-xs rounded-xl flex items-center justify-center space-x-1.5 cursor-pointer shadow-xs"
                         >
-                          <LogOut className="w-3.5 h-3.5 text-rose-600" />
+                          <LogOut className="w-3.5 h-3.5 text-emerald-200" />
                           <span>Keluar (Logout)</span>
                         </button>
                       )}
@@ -375,7 +375,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             ) : (
               <button
                 onClick={onLogin}
-                className="flex items-center space-x-1 px-2.5 py-1 rounded-xl bg-amber-500 text-slate-950 font-black text-[11px] shadow-sm cursor-pointer"
+                className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-[#00a65a] text-white font-black text-[11px] shadow-sm cursor-pointer"
               >
                 <LogIn className="w-3.5 h-3.5" />
                 <span>Masuk</span>
@@ -387,16 +387,16 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Mobile Menu Drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-white/98 border-b border-slate-200 px-4 pt-3 pb-5 space-y-3 backdrop-blur-xl shadow-xl">
+        <div className="md:hidden bg-white/98 border-b border-emerald-100 px-4 pt-3 pb-5 space-y-3 backdrop-blur-xl shadow-xl">
           {currentUser ? (
-            <div className="p-3 bg-amber-50 rounded-2xl border border-amber-200/80 flex items-center justify-between text-xs">
+            <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-200/80 flex items-center justify-between text-xs">
               <div className="flex items-center space-x-2.5">
-                <div className="w-8 h-8 rounded-xl bg-amber-500 font-bold text-slate-950 flex items-center justify-center text-xs">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 font-bold text-white flex items-center justify-center text-xs shadow">
                   {currentUser.name.charAt(0)}
                 </div>
                 <div>
                   <p className="font-extrabold text-slate-900 text-xs">{currentUser.name}</p>
-                  <p className="text-[10px] text-amber-800 font-semibold">{currentUser.role}</p>
+                  <p className="text-[10px] text-emerald-700 font-semibold">{currentUser.role}</p>
                   <p className="text-[10px] text-emerald-800 font-bold mt-0.5">🌙 {getHijriDate(currentUser.loginTime)}</p>
                 </div>
               </div>
@@ -412,7 +412,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   setMobileMenuOpen(false);
                   if (onLogin) onLogin();
                 }}
-                className="w-full py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs rounded-xl shadow-sm flex items-center justify-center space-x-1.5 cursor-pointer"
+                className="w-full py-2 bg-[#00a65a] hover:bg-[#008d4c] text-white font-extrabold text-xs rounded-xl shadow-sm flex items-center justify-center space-x-1.5 cursor-pointer"
               >
                 <LogIn className="w-4 h-4" />
                 <span>Masuk Sekarang</span>
@@ -433,8 +433,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                   }}
                   className={`w-full flex items-center space-x-3 px-4 py-2.5 rounded-2xl text-xs font-bold transition ${
                     isActive
-                      ? 'bg-amber-500 text-slate-950 font-black shadow-sm'
-                      : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100'
+                      ? 'bg-[#00a65a] text-white font-black shadow-sm'
+                      : 'text-slate-700 hover:text-slate-900 hover:bg-emerald-50'
                   }`}
                 >
                   {item.icon}
@@ -445,16 +445,16 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* Action Buttons in Drawer */}
-          <div className="pt-2 border-t border-slate-200">
+          <div className="pt-2 border-t border-emerald-100">
             {currentUser && onLogout ? (
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
                   onLogout();
                 }}
-                className="w-full py-2.5 px-3 rounded-xl border border-rose-300 bg-rose-100 hover:bg-rose-200 text-rose-800 font-extrabold text-xs flex items-center justify-center space-x-1.5 cursor-pointer"
+                className="w-full py-2.5 px-3 rounded-xl border border-emerald-700/40 bg-[#005a2b] hover:bg-[#004220] text-white font-extrabold text-xs flex items-center justify-center space-x-1.5 cursor-pointer shadow-xs"
               >
-                <LogOut className="w-3.5 h-3.5 text-rose-700" />
+                <LogOut className="w-3.5 h-3.5 text-emerald-300" />
                 <span>Keluar Akun</span>
               </button>
             ) : (
@@ -463,7 +463,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   setMobileMenuOpen(false);
                   if (onLogin) onLogin();
                 }}
-                className="w-full py-2.5 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs flex items-center justify-center space-x-1.5 cursor-pointer"
+                className="w-full py-2.5 px-3 rounded-xl bg-[#00a65a] hover:bg-[#008d4c] text-white font-black text-xs flex items-center justify-center space-x-1.5 cursor-pointer shadow-sm"
               >
                 <LogIn className="w-3.5 h-3.5" />
                 <span>Masuk Akun</span>
@@ -475,6 +475,3 @@ export const Navbar: React.FC<NavbarProps> = ({
     </header>
   );
 };
-
-
-

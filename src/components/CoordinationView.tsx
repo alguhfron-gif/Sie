@@ -31,7 +31,7 @@ const COMMITTEE_STRUCTURE: CommitteeRole[] = [
     name: 'BIRRIL WALID',
     title: 'KETUA',
     badge: 'Pimpinan Utama',
-    color: 'bg-amber-100 text-amber-900 border-amber-300',
+    color: 'bg-emerald-100 text-emerald-900 border-emerald-300',
     responsibilities: [
       'Mengarahkan dan mengoordinasikan seluruh anggota Sie Penganugerahan.',
       'Memastikan seluruh tugas berjalan sesuai dengan SOP Sie Penganugerahan.',
@@ -45,7 +45,7 @@ const COMMITTEE_STRUCTURE: CommitteeRole[] = [
     name: 'LAILUR MUBAROK',
     title: 'WAKIL KETUA',
     badge: 'Wakil Pimpinan',
-    color: 'bg-amber-100 text-amber-800 border-amber-200',
+    color: 'bg-emerald-100 text-emerald-800 border-emerald-200',
     responsibilities: [
       'Membantu Ketua dalam mengoordinasikan pelaksanaan tugas sie.',
       'Bertanggung jawab atas pengadaan barang yang dibutuhkan oleh sie.',
@@ -242,10 +242,10 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
       />
 
       {/* Top Header Box */}
-      <div className="admin-box border-t-4 border-t-[#f39c12] p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="admin-box border-t-4 border-t-[#00a65a] p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center space-x-2">
-            <Users className="w-5 h-5 text-[#f39c12]" />
+            <Users className="w-5 h-5 text-[#00a65a]" />
             <h1 className="text-base font-extrabold text-gray-800">Koordinasi Panitia & Operasional Acara</h1>
           </div>
           <p className="text-xs text-gray-500 mt-1">
@@ -268,7 +268,7 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
             <button
               onClick={() => setSubTab('structure')}
               className={`px-3 py-1.5 rounded-xl transition cursor-pointer ${
-                subTab === 'structure' ? 'bg-amber-500 text-slate-950 shadow-sm font-extrabold' : 'text-slate-600 hover:text-slate-900'
+                subTab === 'structure' ? 'bg-[#00a65a] text-white shadow-sm font-extrabold' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               Struktur Panitia
@@ -276,7 +276,7 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
             <button
               onClick={() => setSubTab('tasks')}
               className={`px-3 py-1.5 rounded-xl transition cursor-pointer ${
-                subTab === 'tasks' ? 'bg-amber-500 text-slate-950 shadow-sm font-extrabold' : 'text-slate-600 hover:text-slate-900'
+                subTab === 'tasks' ? 'bg-[#00a65a] text-white shadow-sm font-extrabold' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               Tugas Panitia
@@ -284,7 +284,7 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
             <button
               onClick={() => setSubTab('inventory')}
               className={`px-3 py-1.5 rounded-xl transition cursor-pointer ${
-                subTab === 'inventory' ? 'bg-amber-500 text-slate-950 shadow-sm font-extrabold' : 'text-slate-600 hover:text-slate-900'
+                subTab === 'inventory' ? 'bg-[#00a65a] text-white shadow-sm font-extrabold' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               Perlengkapan
@@ -292,7 +292,7 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
             <button
               onClick={() => setSubTab('rundown')}
               className={`px-3 py-1.5 rounded-xl transition cursor-pointer ${
-                subTab === 'rundown' ? 'bg-amber-500 text-slate-950 shadow-sm font-extrabold' : 'text-slate-600 hover:text-slate-900'
+                subTab === 'rundown' ? 'bg-[#00a65a] text-white shadow-sm font-extrabold' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               Rundown Acara
@@ -307,17 +307,17 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
           sectionId="coordination_structure_section"
           title="Struktur Organisasi & Pembagian Tugas Panitia"
           subtitle="Rincian wewenang, penanggung jawab (PIC), dan lingkup kerja panitia Sie Penganugerahan"
-          icon={<Users className="w-4 h-4 text-amber-600" />}
+          icon={<Users className="w-4 h-4 text-emerald-600" />}
           badge={
-            <span className="text-[10px] font-extrabold bg-amber-100 text-amber-900 border border-amber-200 px-2.5 py-0.5 rounded-full">
+            <span className="text-[10px] font-extrabold bg-emerald-100 text-emerald-900 border border-emerald-200 px-2.5 py-0.5 rounded-full">
               {COMMITTEE_STRUCTURE.length} Jabatan
             </span>
           }
         >
           <div className="space-y-6">
-            <div className="bg-amber-50 border border-amber-200 p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="bg-emerald-50 border border-emerald-200 p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <span className="text-[10px] font-black uppercase tracking-wider text-amber-800 bg-amber-200/60 px-2.5 py-1 rounded-lg">
+                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800 bg-emerald-200/60 px-2.5 py-1 rounded-lg">
                   Struktur Organisasi Resmi
                 </span>
                 <h2 className="text-base font-extrabold text-slate-900 mt-2">
@@ -330,7 +330,7 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
 
               <button
                 onClick={() => setSubTab('tasks')}
-                className="inline-flex items-center space-x-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 px-4 py-2 rounded-2xl text-xs font-extrabold transition shadow-sm shrink-0 cursor-pointer"
+                className="inline-flex items-center space-x-1.5 bg-[#00a65a] hover:bg-[#008d4c] text-white px-4 py-2 rounded-2xl text-xs font-extrabold transition shadow-sm shrink-0 cursor-pointer"
               >
                 <span>Lihat Papan Tugas</span>
                 <ChevronRight className="w-4 h-4" />
@@ -350,7 +350,7 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
                         <h3 className="text-base font-black text-slate-900 tracking-tight leading-tight mt-0.5">
                           {role.name}
                         </h3>
-                        <p className="text-xs font-bold text-amber-700 mt-0.5">
+                        <p className="text-xs font-bold text-emerald-700 mt-0.5">
                           {role.title} {role.field ? `— ${role.field}` : ''}
                         </p>
                       </div>
@@ -365,7 +365,7 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
                       <ul className="space-y-1.5">
                         {role.responsibilities.map((resp, rIdx) => (
                           <li key={rIdx} className="text-xs text-slate-700 flex items-start space-x-2">
-                            <span className="text-amber-500 font-bold shrink-0">•</span>
+                            <span className="text-emerald-500 font-bold shrink-0">•</span>
                             <span>{resp}</span>
                           </li>
                         ))}
@@ -381,7 +381,7 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
                         setSubTab('tasks');
                         setIsTaskModalOpen(true);
                       }}
-                      className="text-amber-700 font-extrabold hover:underline cursor-pointer"
+                      className="text-emerald-700 font-extrabold hover:underline cursor-pointer"
                     >
                       + Tambah Tugas PIC
                     </button>
@@ -411,7 +411,7 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
               <h3 className="text-sm font-bold text-slate-900">Daftar Tugas Panitia Sie Penganugerahan</h3>
               <button
                 onClick={() => setIsTaskModalOpen(true)}
-                className="flex items-center space-x-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 px-4 py-2 rounded-2xl text-xs font-extrabold transition shadow-sm cursor-pointer"
+                className="flex items-center space-x-1.5 bg-[#00a65a] hover:bg-[#008d4c] text-white px-4 py-2 rounded-2xl text-xs font-extrabold transition shadow-sm cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>Tambah Tugas</span>
@@ -430,13 +430,13 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
                             colStatus === 'Selesai'
                               ? 'bg-emerald-500'
                               : colStatus === 'Berjalan'
-                              ? 'bg-amber-500'
+                              ? 'bg-teal-500'
                               : 'bg-slate-400'
                           }`}
                         ></span>
                         <span>{colStatus}</span>
                       </span>
-                      <span className="bg-amber-100 border border-amber-200 text-amber-900 text-[10px] font-extrabold px-2 py-0.5 rounded-full">
+                      <span className="bg-emerald-100 border border-emerald-200 text-emerald-900 text-[10px] font-extrabold px-2 py-0.5 rounded-full">
                         {columnTasks.length}
                       </span>
                     </div>
@@ -449,9 +449,9 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
                             <span
                               className={`text-[9px] font-black px-2 py-0.5 rounded-md border ${
                                 t.priority === 'Tinggi'
-                                  ? 'bg-rose-100 text-rose-800 border-rose-200'
+                                   ? 'bg-rose-100 text-rose-800 border-rose-200'
                                   : t.priority === 'Sedang'
-                                  ? 'bg-amber-100 text-amber-800 border-amber-200'
+                                  ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
                                   : 'bg-slate-200 text-slate-700 border-slate-300'
                               }`}
                             >
@@ -516,7 +516,7 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
               <h3 className="text-sm font-bold text-slate-900">Inventaris & Logistik Sie Penganugerahan</h3>
               <button
                 onClick={() => setIsInvModalOpen(true)}
-                className="flex items-center space-x-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 px-4 py-2 rounded-2xl text-xs font-extrabold transition shadow-sm cursor-pointer"
+                className="flex items-center space-x-1.5 bg-[#00a65a] hover:bg-[#008d4c] text-white px-4 py-2 rounded-2xl text-xs font-extrabold transition shadow-sm cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>Tambah Perlengkapan</span>
@@ -530,7 +530,7 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
                     <div>
                       <h4 className="font-extrabold text-slate-900 text-sm">{inv.itemName}</h4>
                       <p className="text-xs text-slate-500 mt-0.5">
-                        Jumlah: <strong className="text-amber-800 font-bold">{inv.quantity} {inv.unit}</strong>
+                        Jumlah: <strong className="text-emerald-800 font-bold">{inv.quantity} {inv.unit}</strong>
                       </p>
                     </div>
                     <span
@@ -538,7 +538,7 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
                         inv.status === 'Tersedia'
                           ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
                           : inv.status === 'Menunggu Pesanan'
-                          ? 'bg-amber-100 text-amber-800 border-amber-200'
+                          ? 'bg-teal-100 text-teal-800 border-teal-200'
                           : 'bg-rose-100 text-rose-800 border-rose-200'
                       }`}
                     >
@@ -564,9 +564,9 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
           sectionId="coordination_rundown_section"
           title="Rundown & Susunan Acara Malam Penganugerahan"
           subtitle="Jadwal waktu, alur acara, dan pembagian tugas PIC saat gelaran Malam Penganugerahan"
-          icon={<Clock className="w-4 h-4 text-amber-600" />}
+          icon={<Clock className="w-4 h-4 text-emerald-600" />}
           badge={
-            <span className="text-[10px] font-extrabold bg-amber-100 text-amber-900 border border-amber-200 px-2.5 py-0.5 rounded-full">
+            <span className="text-[10px] font-extrabold bg-emerald-100 text-emerald-900 border border-emerald-200 px-2.5 py-0.5 rounded-full">
               {rundown.length} Sesi
             </span>
           }
@@ -576,12 +576,12 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
             <div className="space-y-3">
               {rundown.map((rd, idx) => (
                 <div key={rd.id} className="flex items-start space-x-4 p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
-                  <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 border border-amber-200 flex items-center justify-center font-bold text-xs shrink-0">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center justify-center font-bold text-xs shrink-0">
                     {idx + 1}
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
-                      <span className="font-mono text-xs font-extrabold text-amber-900 bg-amber-100 px-2.5 py-0.5 rounded-lg border border-amber-200">
+                      <span className="font-mono text-xs font-extrabold text-emerald-900 bg-emerald-100 px-2.5 py-0.5 rounded-lg border border-emerald-200">
                         {rd.timeSlot}
                       </span>
                       <span className="text-xs font-semibold text-slate-500">PIC: <strong className="text-slate-800">{rd.pic}</strong></span>
@@ -613,7 +613,7 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
                   placeholder="Contoh: Inspeksi Cetak Sertifikat Gold Foil"
                   value={taskTitle}
                   onChange={(e) => setTaskTitle(e.target.value)}
-                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-amber-500/50 focus:outline-none"
+                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none"
                 />
               </div>
 
@@ -625,7 +625,7 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
                     placeholder="Birril / Majid / Muzammil..."
                     value={assignee}
                     onChange={(e) => setAssignee(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:ring-2 focus:ring-amber-500/50 focus:outline-none"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none"
                   />
                 </div>
 
@@ -634,7 +634,7 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
                   <select
                     value={priority}
                     onChange={(e) => setPriority(e.target.value as any)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl text-xs focus:ring-2 focus:ring-amber-500/50 focus:outline-none"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500/50 focus:outline-none"
                   >
                     <option value="Rendah">Rendah</option>
                     <option value="Sedang">Sedang</option>
@@ -653,7 +653,7 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-xs font-extrabold shadow-sm cursor-pointer"
+                  className="px-5 py-2 bg-[#00a65a] hover:bg-[#008d4c] text-white rounded-xl text-xs font-extrabold shadow-sm cursor-pointer"
                 >
                   Simpan Tugas
                 </button>
@@ -680,7 +680,7 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
                   placeholder="Contoh: Map Beludru Emboss Emas"
                   value={itemName}
                   onChange={(e) => setItemName(e.target.value)}
-                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-amber-500/50 focus:outline-none"
+                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none"
                 />
               </div>
 
@@ -692,7 +692,7 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
                     min="1"
                     value={quantity}
                     onChange={(e) => setQuantity(Number(e.target.value))}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:ring-2 focus:ring-amber-500/50 focus:outline-none"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none"
                   />
                 </div>
 
@@ -703,7 +703,7 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
                     placeholder="Pcs / Set / Unit"
                     value={unit}
                     onChange={(e) => setUnit(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:ring-2 focus:ring-amber-500/50 focus:outline-none"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none"
                   />
                 </div>
               </div>
@@ -713,7 +713,7 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
                 <select
                   value={invStatus}
                   onChange={(e) => setInvStatus(e.target.value as any)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl text-xs focus:ring-2 focus:ring-amber-500/50 focus:outline-none"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500/50 focus:outline-none"
                 >
                   <option value="Tersedia">Tersedia</option>
                   <option value="Menunggu Pesanan">Menunggu Pesanan</option>
@@ -731,7 +731,7 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-xs font-extrabold shadow-sm cursor-pointer"
+                  className="px-5 py-2 bg-[#00a65a] hover:bg-[#008d4c] text-white rounded-xl text-xs font-extrabold shadow-sm cursor-pointer"
                 >
                   Simpan Barang
                 </button>

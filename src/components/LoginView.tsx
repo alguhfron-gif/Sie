@@ -229,8 +229,8 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex items-center justify-center p-4 relative overflow-hidden font-sans">
       {/* Background Decorative Lighting */}
-      <div className="absolute -top-32 -left-32 w-96 h-96 bg-amber-500/20 rounded-full blur-3xl pointer-events-none"></div>
-      <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-sky-500/20 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="absolute -top-32 -left-32 w-96 h-96 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-teal-500/20 rounded-full blur-3xl pointer-events-none"></div>
 
       {/* Instant Notification Popup Banner when Account Added */}
       {addedToast && (
@@ -256,12 +256,12 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
           <div className="bg-slate-950/80 p-3 rounded-2xl border border-slate-800 space-y-2 text-xs">
             <div className="flex items-center justify-between">
               <span className="text-[10px] uppercase font-bold text-slate-400">Nama User:</span>
-              <span className="font-black text-amber-400">{addedToast.name}</span>
+              <span className="font-black text-emerald-400">{addedToast.name}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-[10px] uppercase font-bold text-slate-400">Hak Akses:</span>
               <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${
-                addedToast.category === 'admin' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-sky-500/20 text-sky-300 border border-sky-500/30'
+                addedToast.category === 'admin' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-teal-500/20 text-teal-300 border border-teal-500/30'
               }`}>
                 {addedToast.category === 'admin' ? 'ADMIN (Semua Fitur)' : 'PETUGAS (Dasbor, Nominasi, Surat)'}
               </span>
@@ -291,8 +291,8 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
       <div className="w-full max-w-md relative z-10 space-y-5">
         {/* Header App Brand */}
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-amber-500 text-slate-950 font-black shadow-lg shadow-amber-500/30 ring-4 ring-amber-400/30">
-            <Award className="w-9 h-9 text-slate-950" />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-[#00a65a] text-white font-black shadow-lg shadow-emerald-900/30 ring-4 ring-emerald-500/30">
+            <Award className="w-9 h-9 text-white" />
           </div>
 
           <div>
@@ -357,7 +357,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
                     setUsername(e.target.value);
                     setErrorMsg(null);
                   }}
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium"
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
                 />
               </div>
             </div>
@@ -383,7 +383,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
                     setPassword(e.target.value);
                     setErrorMsg(null);
                   }}
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium"
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
                 />
               </div>
             </div>
@@ -391,7 +391,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
             {/* Tombol Submit Login */}
             <button
               type="submit"
-              className="w-full py-3.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-2xl shadow-lg shadow-amber-500/20 transition flex items-center justify-center space-x-2 text-sm cursor-pointer mt-2"
+              className="w-full py-3.5 bg-[#00a65a] hover:bg-[#008d4c] text-white font-black rounded-2xl shadow-lg shadow-emerald-900/30 transition flex items-center justify-center space-x-2 text-sm cursor-pointer mt-2"
             >
               <span>Masuk ke Aplikasi</span>
               <ArrowRight className="w-4 h-4" />
@@ -403,9 +403,9 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
               <button
                 type="button"
                 onClick={() => setIsRegisterModalOpen(true)}
-                className="text-[11px] text-amber-400 hover:text-amber-300 font-extrabold flex items-center space-x-1 transition cursor-pointer"
+                className="text-[11px] text-emerald-400 hover:text-emerald-300 font-extrabold flex items-center space-x-1 transition cursor-pointer"
               >
-                <UserPlus className="w-3.5 h-3.5 text-amber-400" />
+                <UserPlus className="w-3.5 h-3.5 text-emerald-400" />
                 <span>+ Registrasi Akun Baru</span>
               </button>
             </div>
@@ -434,7 +434,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
             </button>
 
             <div className="flex items-center space-x-3 border-b border-slate-800 pb-3">
-              <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0 font-black">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shrink-0 font-black">
                 <UserPlus className="w-5 h-5" />
               </div>
               <div>
@@ -454,7 +454,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
                   placeholder="Contoh: MUHAMMAD FARHAN"
                   value={regData.name}
                   onChange={(e) => setRegData({ ...regData, name: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500 font-semibold"
+                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-semibold"
                 />
               </div>
 
@@ -468,7 +468,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
                   placeholder="Contoh: PETUGAS LAPANGAN / PESERTA ACARA"
                   value={regData.role}
                   onChange={(e) => setRegData({ ...regData, role: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500 font-semibold"
+                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-semibold"
                 />
               </div>
 
@@ -484,7 +484,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
                         defaultPin: e.target.value === 'admin' ? '12345678' : '1234',
                       })
                     }
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-white font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-white font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   >
                     <option value="petugas">PETUGAS (Operasional)</option>
                     <option value="admin">ADMIN (Panitia Inti)</option>
@@ -500,7 +500,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
                     maxLength={16}
                     value={regData.defaultPin}
                     onChange={(e) => setRegData({ ...regData, defaultPin: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-white font-mono focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-white font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
               </div>
@@ -517,7 +517,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
                 <button
                   type="submit"
                   disabled={isSubmittingReg}
-                  className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl shadow-lg shadow-amber-500/20 transition flex items-center space-x-1.5 cursor-pointer"
+                  className="px-5 py-2.5 bg-[#00a65a] hover:bg-[#008d4c] text-white font-black rounded-xl shadow-lg shadow-emerald-900/20 transition flex items-center space-x-1.5 cursor-pointer"
                 >
                   {isSubmittingReg ? (
                     <span>Menyimpan...</span>

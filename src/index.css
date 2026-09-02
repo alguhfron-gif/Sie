@@ -20,19 +20,19 @@
 
 :root {
   --admin-bg: #ecf0f5;
-  --admin-header: #222d32;
-  --admin-sidebar: #222d32;
-  --admin-sidebar-dark: #1a2226;
-  --admin-blue: #3c8dbc;
-  --admin-blue-hover: #367fa9;
+  --admin-header: #16221b;
+  --admin-sidebar: #1e2e25;
+  --admin-sidebar-dark: #16221b;
+  --admin-blue: #005a2b;
+  --admin-blue-hover: #004220;
   --admin-green: #00a65a;
   --admin-green-hover: #008d4c;
-  --admin-yellow: #f39c12;
-  --admin-yellow-hover: #e08e0b;
+  --admin-yellow: #059669;
+  --admin-yellow-hover: #047857;
   --admin-red: #dd4b39;
   --admin-red-hover: #c9302c;
-  --admin-aqua: #00c0ef;
-  --admin-aqua-hover: #00acd6;
+  --admin-aqua: #00a65a;
+  --admin-aqua-hover: #008d4c;
 }
 
 html, body {
@@ -48,7 +48,7 @@ html, body {
 .admin-box {
   background: #ffffff;
   border-radius: 3px;
-  border-top: 3px solid #3c8dbc;
+  border-top: 3px solid #00a65a;
   margin-bottom: 20px;
   width: 100%;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -59,7 +59,7 @@ html, body {
 }
 
 .admin-box-warning {
-  border-top-color: #f39c12;
+  border-top-color: #059669;
 }
 
 .admin-box-danger {

@@ -140,7 +140,7 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
 
           <button
             onClick={handlePrintAndSync}
-            className="flex items-center justify-center space-x-2 bg-[#f39c12] hover:bg-[#e08e0b] text-slate-950 font-black px-4 py-1.5 rounded shadow-2xs transition text-xs cursor-pointer"
+            className="flex items-center justify-center space-x-2 bg-emerald-600 hover:bg-emerald-700 text-white font-black px-4 py-1.5 rounded shadow-2xs transition text-xs cursor-pointer"
           >
             <Printer className="w-4 h-4" />
             <span>Cetak / Export PDF</span>
@@ -153,7 +153,7 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
         sectionId="certificates_config_section"
         title="Konfigurasi Surat & Jenis Penghargaan"
         subtitle="Pilih opsi jenis penghargaan resmi, data penerima, tanggal, serta stempel TTD panitia"
-        icon={<UserCheck className="w-4 h-4 text-amber-600" />}
+        icon={<UserCheck className="w-4 h-4 text-emerald-600" />}
         badge={
           <div className="flex items-center space-x-3 text-xs font-semibold text-slate-600 print:hidden">
             <label className="flex items-center space-x-1 cursor-pointer">
@@ -161,7 +161,7 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
                 type="checkbox"
                 checked={showKopHeader}
                 onChange={(e) => setShowKopHeader(e.target.checked)}
-                className="rounded text-amber-600 focus:ring-amber-500"
+                className="rounded text-emerald-600 focus:ring-emerald-500"
               />
               <span>Kop Surat</span>
             </label>
@@ -170,7 +170,7 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
                 type="checkbox"
                 checked={showWatermark}
                 onChange={(e) => setShowWatermark(e.target.checked)}
-                className="rounded text-amber-600 focus:ring-amber-500"
+                className="rounded text-emerald-600 focus:ring-emerald-500"
               />
               <span>Watermark</span>
             </label>
@@ -179,7 +179,7 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
                 type="checkbox"
                 checked={showStamp}
                 onChange={(e) => setShowStamp(e.target.checked)}
-                className="rounded text-amber-600 focus:ring-amber-500"
+                className="rounded text-emerald-600 focus:ring-emerald-500"
               />
               <span>Stempel TTD</span>
             </label>
@@ -202,7 +202,7 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
                     : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200'
                 }`}
               >
-                {awardTitle === opt && <Check className="w-3.5 h-3.5 text-amber-300" />}
+                {awardTitle === opt && <Check className="w-3.5 h-3.5 text-emerald-200" />}
                 <span>{opt}</span>
               </button>
             ))}
@@ -230,7 +230,7 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
                 onClick={() => handleSelectWinner(nom.id)}
                 className={`text-xs px-2.5 py-1 rounded-lg border font-bold transition cursor-pointer ${
                   selectedNominationId === nom.id
-                    ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-2xs'
+                    ? 'bg-emerald-600 text-white border-emerald-500 shadow-2xs'
                     : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200'
                 }`}
               >
@@ -247,7 +247,7 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
               type="text"
               value={recipientName}
               onChange={(e) => setRecipientName(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-semibold focus:ring-2 focus:ring-amber-500/50 focus:outline-none"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-semibold focus:ring-2 focus:ring-emerald-500/50 focus:outline-none"
             />
           </div>
 
@@ -256,7 +256,7 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
             <select
               value={awardTitle}
               onChange={(e) => setAwardTitle(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-bold focus:ring-2 focus:ring-amber-500/50 focus:outline-none"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-bold focus:ring-2 focus:ring-emerald-500/50 focus:outline-none"
             >
               {AWARD_LETTER_OPTIONS.map((opt) => (
                 <option key={opt} value={opt}>
@@ -271,7 +271,7 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
                 placeholder="Ketik judul penghargaan kustom..."
                 value={customAwardTitle}
                 onChange={(e) => setCustomAwardTitle(e.target.value)}
-                className="w-full mt-1.5 px-3 py-1.5 bg-amber-50 border border-amber-300 rounded-xl text-slate-900 focus:ring-2 focus:ring-amber-500/50 focus:outline-none"
+                className="w-full mt-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-300 rounded-xl text-slate-900 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none"
               />
             )}
           </div>
@@ -282,7 +282,7 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
               type="text"
               value={department}
               onChange={(e) => setDepartment(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-amber-500/50 focus:outline-none"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none"
             />
           </div>
 
@@ -292,7 +292,7 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
               type="text"
               value={eventName}
               onChange={(e) => setEventName(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-amber-500/50 focus:outline-none"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none"
             />
           </div>
 
@@ -302,7 +302,7 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
               type="text"
               value={certNumber}
               onChange={(e) => setCertNumber(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-amber-800 font-mono text-xs focus:ring-2 focus:ring-amber-500/50 focus:outline-none"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-emerald-800 font-mono text-xs focus:ring-2 focus:ring-emerald-500/50 focus:outline-none"
             />
           </div>
 
@@ -312,7 +312,7 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
               type="text"
               value={issueDate}
               onChange={(e) => setIssueDate(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-amber-500/50 focus:outline-none"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none"
             />
           </div>
 
@@ -344,20 +344,20 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
         sectionId="certificates_preview_section"
         title="Pratinjau Lembar Surat Penghargaan / Sertifikat"
         subtitle="Sertifikat dapat diunduh/dicetak langsung dalam format cetak PDF ber-Kop dan Ber-Watermark"
-        icon={<Award className="w-4 h-4 text-amber-600" />}
+        icon={<Award className="w-4 h-4 text-emerald-600" />}
         badge={
-          <span className="text-[10px] font-extrabold bg-amber-100 text-amber-900 border border-amber-200 px-2.5 py-0.5 rounded-full">
+          <span className="text-[10px] font-extrabold bg-emerald-100 text-emerald-900 border border-emerald-200 px-2.5 py-0.5 rounded-full">
             Pratinjau Cetak
           </span>
         }
       >
         <div className="space-y-2">
-          <div className="md:hidden flex items-center justify-between text-[11px] text-amber-800 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-200/80 font-medium">
+          <div className="md:hidden flex items-center justify-between text-[11px] text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200/80 font-medium">
             <span>📱 Pratinjau Surat Penghargaan (Geser kesamping untuk melihat penuh)</span>
           </div>
 
         <div className="overflow-x-auto pb-4 rounded-3xl">
-          <div className="printable-cert min-w-[700px] max-w-4xl mx-auto bg-amber-50/20 p-6 sm:p-10 rounded-3xl border-8 border-amber-500/80 shadow-xl relative text-slate-900 font-serif my-2">
+          <div className="printable-cert min-w-[700px] max-w-4xl mx-auto bg-emerald-50/20 p-6 sm:p-10 rounded-3xl border-8 border-emerald-600/80 shadow-xl relative text-slate-900 font-serif my-2">
             
             {/* BACKGROUND WATERMARK (BEGRON BELAKANG LOGO EMBLEM PPS) */}
             {showWatermark && (
@@ -378,23 +378,23 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
             )}
 
             {/* Decorative Corner Filigree Borders */}
-            <div className="absolute top-3 left-3 w-16 h-16 border-t-4 border-l-4 border-amber-600"></div>
-            <div className="absolute top-3 right-3 w-16 h-16 border-t-4 border-r-4 border-amber-600"></div>
-            <div className="absolute bottom-3 left-3 w-16 h-16 border-b-4 border-l-4 border-amber-600"></div>
-            <div className="absolute bottom-3 right-3 w-16 h-16 border-b-4 border-r-4 border-amber-600"></div>
+            <div className="absolute top-3 left-3 w-16 h-16 border-t-4 border-l-4 border-emerald-700"></div>
+            <div className="absolute top-3 right-3 w-16 h-16 border-t-4 border-r-4 border-emerald-700"></div>
+            <div className="absolute bottom-3 left-3 w-16 h-16 border-b-4 border-l-4 border-emerald-700"></div>
+            <div className="absolute bottom-3 right-3 w-16 h-16 border-b-4 border-r-4 border-emerald-700"></div>
 
             {/* Inner Content Card */}
-            <div className="border-2 border-dashed border-amber-600/40 p-6 sm:p-10 text-center space-y-5 relative z-10 bg-white/95 backdrop-blur-sm rounded-2xl">
+            <div className="border-2 border-dashed border-emerald-600/40 p-6 sm:p-10 text-center space-y-5 relative z-10 bg-white/95 backdrop-blur-sm rounded-2xl">
               
               {/* 1. KOP SURAT / HEADER ATAS DENGAN LOGO RESMI */}
               {showKopHeader && (
-                <div className="border-b-2 border-amber-600/60 pb-4 mb-2">
+                <div className="border-b-2 border-emerald-700/60 pb-4 mb-2">
                   <div className="flex items-center justify-between space-x-4">
                     {/* Logo Emblem Sidogiri */}
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-[#005a2b] to-[#003d1d] p-2 shadow-md shrink-0 flex flex-col items-center justify-center text-center text-white border-2 border-[#f39c12]">
-                      <div className="text-[11px] font-black tracking-widest text-[#f39c12] leading-none">PPS</div>
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-[#005a2b] to-[#003d1d] p-2 shadow-md shrink-0 flex flex-col items-center justify-center text-center text-white border-2 border-emerald-400">
+                      <div className="text-[11px] font-black tracking-widest text-emerald-300 leading-none">PPS</div>
                       <div className="text-xs font-black my-0.5 leading-none">SIDOGIRI</div>
-                      <div className="text-[8px] text-amber-200 leading-none">1745 H</div>
+                      <div className="text-[8px] text-emerald-200 leading-none">1745 H</div>
                     </div>
 
                     {/* Title Header text & Calligraphy */}
@@ -414,8 +414,8 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
                     </div>
 
                     {/* Badge Gold Seal */}
-                    <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-tr from-amber-600 via-amber-400 to-amber-200 rounded-full flex items-center justify-center text-slate-950 font-sans shadow-md border border-amber-300 shrink-0">
-                      <Award className="w-8 h-8 text-amber-950" />
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-tr from-emerald-700 via-emerald-500 to-teal-400 rounded-full flex items-center justify-center text-white font-sans shadow-md border border-emerald-300 shrink-0">
+                      <Award className="w-8 h-8 text-white" />
                     </div>
                   </div>
                 </div>
@@ -423,7 +423,7 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
 
               {/* Title Section */}
               <div>
-                <p className="text-xs font-sans uppercase tracking-[0.3em] font-extrabold text-amber-800">
+                <p className="text-xs font-sans uppercase tracking-[0.3em] font-extrabold text-emerald-800">
                   SIE PENGANUGERAHAN SIDOGIRI
                 </p>
                 <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-wider mt-1 uppercase font-serif">
@@ -435,7 +435,7 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
               {/* Recipient Statement */}
               <div className="space-y-1.5 py-1">
                 <p className="text-xs sm:text-sm font-sans italic text-slate-600">Panitia Sie Penganugerahan memberikan penghargaan resmi kepada:</p>
-                <h3 className="text-2xl sm:text-3xl font-bold text-[#005a2b] border-b-2 border-amber-500/50 inline-block px-8 py-1 font-serif">
+                <h3 className="text-2xl sm:text-3xl font-bold text-[#005a2b] border-b-2 border-emerald-600/50 inline-block px-8 py-1 font-serif">
                   {recipientName}
                 </h3>
                 <p className="text-xs font-sans text-slate-700 font-bold">{department}</p>
@@ -448,7 +448,7 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
                 </p>
                 
                 {/* Highlighted Selected Award Choice */}
-                <div className="bg-gradient-to-r from-amber-50 via-amber-100 to-amber-50 text-emerald-950 font-sans font-black px-6 py-2.5 rounded-2xl border-2 border-amber-400 shadow-xs text-sm sm:text-lg inline-block tracking-wide">
+                <div className="bg-gradient-to-r from-emerald-50 via-emerald-100 to-emerald-50 text-emerald-950 font-sans font-black px-6 py-2.5 rounded-2xl border-2 border-emerald-500 shadow-xs text-sm sm:text-lg inline-block tracking-wide">
                   🎗️ {activeAwardName}
                 </div>
 

@@ -73,7 +73,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     total: expenseByCategoryMap[cat],
   }));
 
-  const COLORS = ['#f39c12', '#3c8dbc', '#00a65a', '#dd4b39', '#00c0ef', '#393536'];
+  const COLORS = ['#00a65a', '#005a2b', '#059669', '#047857', '#10b981', '#34d399'];
 
   return (
     <div className="space-y-4 pb-8">
@@ -85,9 +85,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       />
 
       {/* Action Header Banner */}
-      <div className="admin-box border-t-4 border-t-[#3c8dbc] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="admin-box border-t-4 border-t-[#00a65a] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded bg-[#f39c12] text-slate-950 flex items-center justify-center font-black text-xl shrink-0 shadow">
+          <div className="w-10 h-10 rounded bg-[#00a65a] text-white flex items-center justify-center font-black text-xl shrink-0 shadow">
             🏆
           </div>
           <div>
@@ -160,8 +160,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </button>
           </div>
 
-          {/* Box 3: Tugas Panitia (Yellow/Orange) */}
-          <div className="small-box bg-[#f39c12]">
+          {/* Box 3: Tugas Panitia (Emerald Green) */}
+          <div className="small-box bg-[#005a2b]">
             <div className="inner">
               <h3 className="text-xl font-black">{taskProgress}%</h3>
               <p className="text-xs font-semibold uppercase tracking-wider mt-1">TUGAS OPERASIONAL</p>
@@ -277,12 +277,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         {/* Right Column: Quick Status & Winners */}
         <div className="space-y-4">
           {/* Recent Winners Card */}
-          <div className="admin-box border-t-4 border-t-[#f39c12] p-4 space-y-3">
+          <div className="admin-box border-t-4 border-t-[#00a65a] p-4 space-y-3">
             <div className="admin-box-header px-0 pt-0 border-b border-gray-200">
               <h3 className="font-extrabold text-gray-800 text-sm">Pemenang Ditetapkan</h3>
               <button
                 onClick={() => setActiveTab('nominasi')}
-                className="text-xs font-bold text-[#f39c12] hover:underline cursor-pointer"
+                className="text-xs font-bold text-[#00a65a] hover:underline cursor-pointer"
               >
                 Lihat Semua
               </button>
@@ -300,7 +300,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         <p className="text-[10px] text-gray-500 truncate">{cat?.title || 'Kategori'}</p>
                       </div>
                     </div>
-                    <span className="font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded text-[10px] shrink-0">
+                    <span className="font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded text-[10px] shrink-0">
                       {nom.score} Pts
                     </span>
                   </div>
@@ -316,9 +316,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           {/* Quick Certificate / Document Link Banner */}
-          <div className="bg-amber-50 rounded border border-amber-300 p-3.5 flex items-center justify-between gap-2 shadow-2xs">
+          <div className="bg-emerald-50 rounded border border-emerald-300 p-3.5 flex items-center justify-between gap-2 shadow-2xs">
             <div>
-              <h4 className="font-extrabold text-xs text-amber-950">
+              <h4 className="font-extrabold text-xs text-emerald-950">
                 {isPetugas ? 'Arsip Surat & Ketentuan' : 'Cetak Sertifikat Digital'}
               </h4>
               <p className="text-[10px] text-gray-600">
@@ -327,7 +327,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
             <button
               onClick={() => setActiveTab(isPetugas ? 'surat' : 'sertifikat')}
-              className="px-3 py-1.5 bg-[#f39c12] hover:bg-[#e08e0b] text-slate-950 font-black text-xs rounded shadow shrink-0 cursor-pointer"
+              className="px-3 py-1.5 bg-[#00a65a] hover:bg-[#008d4c] text-white font-black text-xs rounded shadow shrink-0 cursor-pointer"
             >
               {isPetugas ? 'Buka' : 'Cetak'}
             </button>

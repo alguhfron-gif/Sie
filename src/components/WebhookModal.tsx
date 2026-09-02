@@ -82,7 +82,7 @@ export const WebhookModal: React.FC<WebhookModalProps> = ({ isOpen, onClose }) =
         <div className="bg-gradient-to-r from-emerald-600 to-teal-700 p-5 text-white flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/20 shrink-0">
-              <FileSpreadsheet className="w-5 h-5 text-amber-300" />
+              <FileSpreadsheet className="w-5 h-5 text-emerald-200" />
             </div>
             <div>
               <h2 className="text-base font-extrabold text-white">Tempel URL Web App ke Aplikasi</h2>
@@ -100,8 +100,8 @@ export const WebhookModal: React.FC<WebhookModalProps> = ({ isOpen, onClose }) =
         {/* Modal Body */}
         <div className="p-6 space-y-5 text-xs text-slate-700">
           {/* Instruction Banner */}
-          <div className="bg-amber-50 border border-amber-200/90 rounded-2xl p-3.5 flex items-start space-x-3 text-amber-950">
-            <Sparkles className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+          <div className="bg-emerald-50 border border-emerald-200/90 rounded-2xl p-3.5 flex items-start space-x-3 text-emerald-950">
+            <Sparkles className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
             <div className="text-[11px] leading-relaxed">
               <p className="font-extrabold text-slate-900">Petunjuk Menghubungkan Google Sheets:</p>
               <p className="text-slate-700 mt-0.5">
@@ -147,13 +147,13 @@ export const WebhookModal: React.FC<WebhookModalProps> = ({ isOpen, onClose }) =
               className={`p-3.5 rounded-2xl border flex items-start space-x-2.5 text-xs ${
                 testResult.success
                   ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
-                  : 'bg-amber-50 border-amber-300 text-amber-900'
+                  : 'bg-rose-50 border-rose-300 text-rose-900'
               }`}
             >
               {testResult.success ? (
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
               ) : (
-                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
               )}
               <div>
                 <p className="font-extrabold">{testResult.success ? 'Koneksi Berhasil!' : 'Perhatian Webhook'}</p>
@@ -167,7 +167,7 @@ export const WebhookModal: React.FC<WebhookModalProps> = ({ isOpen, onClose }) =
             <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl space-y-3">
               <div className="flex items-center justify-between border-b border-slate-200 pb-2">
                 <h4 className="font-bold text-slate-900 flex items-center space-x-1.5">
-                  <Sparkles className="w-4 h-4 text-amber-500" />
+                  <Sparkles className="w-4 h-4 text-emerald-600" />
                   <span>Panduan Langkah Mudah (3 Menit):</span>
                 </h4>
                 <button

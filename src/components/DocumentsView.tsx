@@ -628,10 +628,10 @@ export const OfficialLetterPaper: React.FC<OfficialLetterPaperProps> = ({
               <div className="flex items-start justify-between">
                 <div className="flex items-center space-x-3">
                   {/* Logo Emblem Icon Sidogiri */}
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-br from-[#005a2b] to-[#003d1d] p-1.5 shadow-sm shrink-0 flex flex-col items-center justify-center text-center text-white border border-[#f39c12]">
-                    <div className="text-[10px] font-black tracking-widest text-[#f39c12] leading-none">PPS</div>
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-br from-[#005a2b] to-[#003d1d] p-1.5 shadow-sm shrink-0 flex flex-col items-center justify-center text-center text-white border border-emerald-400">
+                    <div className="text-[10px] font-black tracking-widest text-emerald-300 leading-none">PPS</div>
                     <div className="text-xs font-black my-0.5 leading-none">SIDOGIRI</div>
-                    <div className="text-[8px] text-amber-200 leading-none">1745 H</div>
+                    <div className="text-[8px] text-emerald-200 leading-none">1745 H</div>
                   </div>
 
                   <div className="min-w-0">
@@ -651,7 +651,7 @@ export const OfficialLetterPaper: React.FC<OfficialLetterPaperProps> = ({
                 </div>
 
                 {/* Hijri Date Display */}
-                <div className="text-right text-xs font-serif font-bold text-slate-800 bg-amber-50/80 px-2.5 py-1 rounded-lg border border-amber-200/80">
+                <div className="text-right text-xs font-serif font-bold text-slate-800 bg-emerald-50/80 px-2.5 py-1 rounded-lg border border-emerald-200/80">
                   {hijriDate}
                 </div>
               </div>
@@ -1123,14 +1123,14 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex items-start space-x-3">
             <div className="p-2.5 bg-emerald-900/80 rounded-xl shrink-0 mt-0.5 border border-emerald-600/40 shadow-xs">
-              <BookOpen className="w-5 h-5 text-amber-300" />
+              <BookOpen className="w-5 h-5 text-emerald-300" />
             </div>
             <div className="space-y-1">
               <div className="flex items-center space-x-2 flex-wrap gap-y-1">
-                <h2 className="text-sm font-black text-amber-300">
+                <h2 className="text-sm font-black text-emerald-200">
                   Panduan & Kriteria Resmi Sie Penganugerahan Sidogiri
                 </h2>
-                <span className="text-[10px] font-black bg-amber-400 text-slate-950 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                <span className="text-[10px] font-black bg-emerald-500 text-white px-2.5 py-0.5 rounded-full uppercase tracking-wider">
                   Khusus Baca (Read-Only)
                 </span>
               </div>
@@ -1143,7 +1143,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
           {onNavigateToNominees && (
             <button
               onClick={onNavigateToNominees}
-              className="px-4 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs rounded-xl shadow-md hover:shadow-lg transition flex items-center justify-center space-x-2 cursor-pointer shrink-0 border border-amber-200"
+              className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl shadow-md hover:shadow-lg transition flex items-center justify-center space-x-2 cursor-pointer shrink-0 border border-emerald-300"
             >
               <UserCheck className="w-4 h-4 text-slate-950" />
               <span>+ Ajukan Candidate di Kolom Nominasi</span>
@@ -1181,7 +1181,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
                   />
                   <button
                     onClick={() => document.getElementById('doc-import-input')?.click()}
-                    className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold px-3 py-1.5 rounded text-xs flex items-center space-x-1.5 shadow transition cursor-pointer"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold px-3 py-1.5 rounded text-xs flex items-center space-x-1.5 shadow transition cursor-pointer"
                     title="Impor Surat dari File Word (.doc/.docx) atau PDF"
                   >
                     <Upload className="w-4 h-4" />
@@ -1195,7 +1195,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
                 className="bg-slate-700 hover:bg-slate-800 text-white font-extrabold px-3 py-1.5 rounded text-xs flex items-center space-x-1.5 shadow transition cursor-pointer"
                 title="Ekspor Semua Dokumen ke Word"
               >
-                <FileDown className="w-4 h-4 text-amber-400" />
+                <FileDown className="w-4 h-4 text-emerald-400" />
                 <span>Ekspor Word (.doc)</span>
               </button>
 
@@ -1225,7 +1225,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
                   />
                   <button
                     onClick={() => document.getElementById('reg-import-input')?.click()}
-                    className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold px-3 py-1.5 rounded text-xs flex items-center space-x-1.5 shadow transition cursor-pointer"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold px-3 py-1.5 rounded text-xs flex items-center space-x-1.5 shadow transition cursor-pointer"
                     title="Impor Ketentuan dari File Word (.doc/.docx) atau PDF"
                   >
                     <Upload className="w-4 h-4" />
@@ -1319,7 +1319,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
                     onClick={() => setCategoryFilter(cat)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer shrink-0 ${
                       categoryFilter === cat
-                        ? 'bg-slate-800 text-amber-400'
+                        ? 'bg-slate-800 text-emerald-400'
                         : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                     }`}
                   >
@@ -1346,7 +1346,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
                           doc.category === 'SK Panitia'
                             ? 'bg-purple-100 text-purple-800 border-purple-200'
                             : doc.category === 'Surat Edaran'
-                            ? 'bg-amber-100 text-amber-800 border-amber-200'
+                            ? 'bg-teal-100 text-teal-800 border-teal-200'
                             : doc.category === 'Surat Undangan'
                             ? 'bg-blue-100 text-blue-800 border-blue-200'
                             : 'bg-emerald-100 text-emerald-800 border-emerald-200'
@@ -1389,10 +1389,10 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
 
                       <button
                         onClick={() => exportOfficialDocToWord(doc, ketuaName, sekretarisName, mengetahuiName)}
-                        className="text-xs font-bold text-amber-800 hover:text-amber-900 flex items-center space-x-1 cursor-pointer bg-amber-50 px-2.5 py-1 rounded border border-amber-200"
+                        className="text-xs font-bold text-emerald-800 hover:text-emerald-900 flex items-center space-x-1 cursor-pointer bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200"
                         title="Unduh Dokumen dalam format Word (.doc)"
                       >
-                        <FileType className="w-3.5 h-3.5 text-amber-600" />
+                        <FileType className="w-3.5 h-3.5 text-emerald-600" />
                         <span>Word (.doc)</span>
                       </button>
                     </div>
@@ -1464,7 +1464,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
                   >
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-200 px-2 py-0.5 rounded">
+                        <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-900 border border-emerald-200 px-2 py-0.5 rounded">
                           {reg.section || 'Ketentuan'}
                         </span>
                         <span className="text-[10px] text-slate-400 font-medium">
@@ -1493,7 +1493,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
                             onClick={onNavigateToNominees}
                             className="w-full py-2 px-3 bg-[#005a2b] hover:bg-[#004220] text-white font-black text-xs rounded-lg shadow-xs flex items-center justify-center space-x-1.5 transition cursor-pointer"
                           >
-                            <UserCheck className="w-4 h-4 text-amber-300" />
+                            <UserCheck className="w-4 h-4 text-emerald-300" />
                             <span>Pahami & Tambah Peserta di Kolom Nominasi ➡️</span>
                           </button>
                         </div>
@@ -1515,10 +1515,10 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
                         <button
                           type="button"
                           onClick={() => exportRegulationsToWord([reg])}
-                          className="text-xs font-bold text-amber-800 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-1 rounded flex items-center space-x-1 cursor-pointer"
+                          className="text-xs font-bold text-emerald-800 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2 py-1 rounded flex items-center space-x-1 cursor-pointer"
                           title="Unduh File Word (.doc)"
                         >
-                          <FileType className="w-3.5 h-3.5 text-amber-600" />
+                          <FileType className="w-3.5 h-3.5 text-emerald-600" />
                           <span>Word</span>
                         </button>
                       </div>
@@ -1573,7 +1573,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
             </button>
 
             <div className="flex items-center space-x-2.5 border-b border-slate-100 pb-3">
-              <Upload className="w-5 h-5 text-amber-500" />
+              <Upload className="w-5 h-5 text-emerald-600" />
               <div>
                 <h2 className="text-sm font-black text-slate-900">
                   Konfirmasi Impor File ({importPreview.type === 'surat' ? 'Surat Resmi' : 'Ketentuan & Kriteria'})
@@ -1691,7 +1691,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
                 <button
                   type="button"
                   onClick={handleConfirmImport}
-                  className="px-4 py-1.5 rounded bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold shadow flex items-center space-x-1"
+                  className="px-4 py-1.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold shadow flex items-center space-x-1"
                 >
                   <Check className="w-4 h-4" />
                   <span>Simpan Hasil Impor ke Database</span>
@@ -1918,7 +1918,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
 
                 <button
                   onClick={() => exportOfficialDocToWord(selectedDocForPreview, ketuaName, sekretarisName, mengetahuiName)}
-                  className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold rounded text-xs flex items-center space-x-1 cursor-pointer shadow"
+                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded text-xs flex items-center space-x-1 cursor-pointer shadow"
                 >
                   <FileType className="w-4 h-4" />
                   <span>Download Word</span>
@@ -1967,11 +1967,11 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
                       selectedDocForPreview.id
                     )
                   }
-                  className="px-3.5 py-1.5 bg-[#f39c12] hover:bg-[#e08e0b] text-slate-950 font-bold rounded text-xs flex items-center space-x-1.5 cursor-pointer shadow-2xs"
+                  className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded text-xs flex items-center space-x-1.5 cursor-pointer shadow-2xs"
                 >
                   {copiedId === selectedDocForPreview.id ? (
                     <>
-                      <Check className="w-4 h-4 text-slate-950" />
+                      <Check className="w-4 h-4 text-white" />
                       <span>Naskah Berhasil Disalin!</span>
                     </>
                   ) : (
@@ -2055,7 +2055,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
 
                 <button
                   onClick={() => exportRegulationsToWord([selectedRegForPreview])}
-                  className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold rounded text-xs flex items-center space-x-1 cursor-pointer shadow"
+                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded text-xs flex items-center space-x-1 cursor-pointer shadow"
                 >
                   <FileType className="w-4 h-4" />
                   <span>Download Word</span>
@@ -2098,11 +2098,11 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
                       selectedRegForPreview.id
                     )
                   }
-                  className="px-3.5 py-1.5 bg-[#f39c12] hover:bg-[#e08e0b] text-slate-950 font-bold rounded text-xs flex items-center space-x-1.5 cursor-pointer shadow-2xs"
+                  className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded text-xs flex items-center space-x-1.5 cursor-pointer shadow-2xs"
                 >
                   {copiedId === selectedRegForPreview.id ? (
                     <>
-                      <Check className="w-4 h-4 text-slate-950" />
+                      <Check className="w-4 h-4 text-white" />
                       <span>Naskah Berhasil Disalin!</span>
                     </>
                   ) : (
@@ -2151,7 +2151,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
                     }}
                     className="px-3.5 py-1.5 bg-[#005a2b] hover:bg-[#004220] text-white font-extrabold rounded text-xs flex items-center space-x-1.5 cursor-pointer shadow"
                   >
-                    <UserCheck className="w-4 h-4 text-amber-300" />
+                    <UserCheck className="w-4 h-4 text-emerald-300" />
                     <span>Pahami & Ajukan Candidate Nominasi ➡️</span>
                   </button>
                 )}

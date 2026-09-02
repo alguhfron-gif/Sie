@@ -330,10 +330,10 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
       />
 
       {/* Top Header Box */}
-      <div className="admin-box border-t-4 border-t-[#3c8dbc] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="admin-box border-t-4 border-t-[#00a65a] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <Trophy className="w-5 h-5 text-[#f39c12]" />
+            <Trophy className="w-5 h-5 text-[#00a65a]" />
             <h1 className="text-base font-extrabold text-gray-800">Daftar Peserta & Nominasi Penganugerahan</h1>
             <span className="flex items-center space-x-1 text-[10px] font-extrabold bg-[#00a65a] text-white px-2 py-0.5 rounded shadow-2xs">
               <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
@@ -364,7 +364,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
           <button
             type="button"
             onClick={handleOpenAdd}
-            className="flex items-center justify-center space-x-1.5 bg-[#3c8dbc] hover:bg-[#367fa9] text-white font-extrabold px-3.5 py-1.5 rounded shadow-2xs transition text-xs cursor-pointer"
+            className="flex items-center justify-center space-x-1.5 bg-[#005a2b] hover:bg-[#004220] text-white font-extrabold px-3.5 py-1.5 rounded shadow-2xs transition text-xs cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Tambah Peserta Baru</span>
@@ -377,9 +377,9 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
         sectionId="nomination_categories_summary"
         title="Ringkasan Kategori & Kuota Anugerah"
         subtitle="Klik kategori untuk memfilter daftar peserta berdasarkan kategori tertentu"
-        icon={<Trophy className="w-4 h-4 text-amber-600" />}
+        icon={<Trophy className="w-4 h-4 text-emerald-600" />}
         badge={
-          <span className="text-[10px] font-extrabold bg-amber-100 text-amber-900 border border-amber-200 px-2 py-0.5 rounded-full">
+          <span className="text-[10px] font-extrabold bg-emerald-100 text-emerald-900 border border-emerald-200 px-2.5 py-0.5 rounded-full">
             {categories.length} Kategori
           </span>
         }
@@ -394,12 +394,12 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                 onClick={() => setSelectedCategory(selectedCategory === cat.id ? 'ALL' : cat.id)}
                 className={`p-4 rounded-2xl border cursor-pointer transition-all ${
                   selectedCategory === cat.id
-                    ? 'border-amber-500 bg-amber-50/80 shadow-sm ring-1 ring-amber-500/30'
+                    ? 'border-emerald-500 bg-emerald-50/80 shadow-sm ring-1 ring-emerald-500/30'
                     : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className={`text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border bg-amber-100 text-amber-800 border-amber-200`}>
+                  <span className={`text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border bg-emerald-100 text-emerald-800 border-emerald-200`}>
                     {cat.title}
                   </span>
                   <span className="text-xs font-semibold text-slate-500">Kuota: {cat.quota}</span>
@@ -407,7 +407,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                 <p className="text-xs text-slate-600 mt-2.5 line-clamp-2 leading-relaxed">{cat.description}</p>
                 <div className="mt-3 flex items-center justify-between text-xs pt-2 border-t border-slate-100">
                   <span className="text-slate-700 font-medium">{count} Peserta Total</span>
-                  <span className="text-amber-700 font-bold">{winners} Pemenang</span>
+                  <span className="text-emerald-700 font-bold">{winners} Pemenang</span>
                 </div>
               </div>
             );
@@ -437,7 +437,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                 placeholder="Cari ID PPS, nama, domisili, kelas, tingkat, alamat, atau unit kerja..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:bg-white text-slate-900 placeholder-slate-400 font-medium"
+                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:bg-white text-slate-900 placeholder-slate-400 font-medium"
               />
             </div>
 
@@ -447,7 +447,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
             <button
               onClick={() => setViewMode('grid')}
               className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl font-bold transition cursor-pointer ${
-                viewMode === 'grid' ? 'bg-amber-500 text-slate-950 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                viewMode === 'grid' ? 'bg-[#00a65a] text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
               }`}
               title="Tampilan Kartu"
             >
@@ -457,7 +457,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
             <button
               onClick={() => setViewMode('table')}
               className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl font-bold transition cursor-pointer ${
-                viewMode === 'table' ? 'bg-amber-500 text-slate-950 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                viewMode === 'table' ? 'bg-[#00a65a] text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
               }`}
               title="Tampilan Tabel Kolom"
             >
@@ -509,7 +509,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                 key={nom.id}
                 className={`bg-white rounded-3xl p-5 border transition-all shadow-sm flex flex-col justify-between ${
                   isWinner
-                    ? 'border-amber-400 ring-1 ring-amber-400/40 bg-gradient-to-br from-amber-50/60 via-white to-amber-50/30'
+                    ? 'border-emerald-400 ring-1 ring-emerald-400/40 bg-gradient-to-br from-emerald-50/60 via-white to-emerald-50/30'
                     : 'border-slate-200 hover:border-slate-300 hover:shadow-md'
                 }`}
               >
@@ -517,7 +517,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border bg-amber-100 text-amber-800 border-amber-200`}>
+                        <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border bg-emerald-100 text-emerald-800 border-emerald-200`}>
                           {category?.title || 'Kategori'}
                         </span>
                         {(nom.idPps || nom.nipNik) && (
@@ -529,11 +529,11 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
 
                       <h3 className="font-extrabold text-slate-900 text-base mt-2 flex items-center space-x-1.5">
                         <span>{nom.candidateName}</span>
-                        {isWinner && <Trophy className="w-4 h-4 text-amber-500 inline shrink-0" />}
+                        {isWinner && <Trophy className="w-4 h-4 text-emerald-600 inline shrink-0" />}
                       </h3>
 
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-600 font-medium mt-1">
-                        {nom.domisili && <span className="text-amber-800 font-semibold">📍 {nom.domisili}</span>}
+                        {nom.domisili && <span className="text-emerald-800 font-semibold">📍 {nom.domisili}</span>}
                         {nom.kelas && <span className="text-slate-700 font-medium">• {nom.kelas}</span>}
                         {nom.tingkat && <span className="text-slate-500">• {nom.tingkat}</span>}
                       </div>
@@ -543,18 +543,18 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                       <span
                         className={`inline-block text-[11px] font-extrabold px-2.5 py-1 rounded-xl border ${
                           nom.status === 'Pemenang'
-                            ? 'bg-amber-500 text-slate-950 border-amber-400 font-black'
+                            ? 'bg-[#00a65a] text-white border-emerald-600 font-black'
                             : nom.status === 'Disetujui'
                             ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
                             : nom.status === 'Penilaian'
-                            ? 'bg-blue-100 text-blue-800 border-blue-200'
+                            ? 'bg-teal-100 text-teal-800 border-teal-200'
                             : 'bg-slate-100 text-slate-600 border-slate-200'
                         }`}
                       >
                         {nom.status}
                       </span>
                       <div className="text-xs text-slate-500 font-semibold mt-1">
-                        Skor: <span className="text-amber-600 font-bold">{nom.score}</span>/100
+                        Skor: <span className="text-emerald-700 font-bold">{nom.score}</span>/100
                       </div>
                     </div>
                   </div>
@@ -591,7 +591,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                     {isAdmin && !isWinner && (
                       <button
                         onClick={() => handleSetWinner(nom)}
-                        className="px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold rounded-xl border border-amber-300 text-[11px] transition cursor-pointer"
+                        className="px-2.5 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-900 font-bold rounded-xl border border-emerald-300 text-[11px] transition cursor-pointer"
                       >
                         🏆 Tetapkan Pemenang
                       </button>
@@ -650,41 +650,41 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                   const isWinner = nom.status === 'Pemenang';
 
                   return (
-                    <tr key={nom.id} className="hover:bg-amber-50/30 transition">
+                    <tr key={nom.id} className="hover:bg-emerald-50/40 transition">
                       <td className="px-4 py-3 font-bold text-slate-400">{idx + 1}</td>
-                      <td className="px-4 py-3 font-mono text-amber-700 font-bold whitespace-nowrap">
+                      <td className="px-4 py-3 font-mono text-emerald-700 font-bold whitespace-nowrap">
                         {nom.idPps || nom.nipNik || '-'}
                       </td>
                       <td className="px-4 py-3">
                         <div className="font-extrabold text-slate-900 text-sm flex items-center space-x-1.5">
                           <span>{nom.candidateName}</span>
-                          {isWinner && <Trophy className="w-3.5 h-3.5 text-amber-500 shrink-0 inline" />}
+                          {isWinner && <Trophy className="w-3.5 h-3.5 text-emerald-600 shrink-0 inline" />}
                         </div>
                         {nom.phone && <div className="text-[10px] text-emerald-700 font-mono mt-0.5">📱 {nom.phone}</div>}
                       </td>
                       <td className="px-4 py-3 text-slate-700 font-medium whitespace-nowrap">{nom.domisili || '-'}</td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <div className="text-slate-900 font-semibold">{nom.kelas || '-'}</div>
-                        {nom.tingkat && <div className="text-[10px] text-amber-700 font-medium">{nom.tingkat}</div>}
+                        {nom.tingkat && <div className="text-[10px] text-emerald-700 font-medium">{nom.tingkat}</div>}
                       </td>
                       <td className="px-4 py-3 text-slate-500 max-w-xs truncate" title={nom.alamat || ''}>
                         {nom.alamat || '-'}
                       </td>
                       <td className="px-4 py-3">
-                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full border bg-amber-100 text-amber-800 border-amber-200 whitespace-nowrap">
+                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full border bg-emerald-100 text-emerald-800 border-emerald-200 whitespace-nowrap">
                           {category?.title || 'Kategori'}
                         </span>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
-                        <div className="font-bold text-amber-700">{nom.score}/100</div>
+                        <div className="font-bold text-emerald-700">{nom.score}/100</div>
                         <span
                           className={`inline-block text-[10px] font-extrabold px-2.5 py-0.5 rounded-lg border mt-0.5 ${
                             nom.status === 'Pemenang'
-                              ? 'bg-amber-500 text-slate-950 border-amber-400 font-black'
+                              ? 'bg-[#00a65a] text-white border-emerald-600 font-black'
                               : nom.status === 'Disetujui'
                               ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
                               : nom.status === 'Penilaian'
-                              ? 'bg-blue-100 text-blue-800 border-blue-200'
+                              ? 'bg-teal-100 text-teal-800 border-teal-200'
                               : 'bg-slate-100 text-slate-600 border-slate-200'
                           }`}
                         >
@@ -696,7 +696,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                           {isAdmin && !isWinner && (
                             <button
                               onClick={() => handleSetWinner(nom)}
-                              className="px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold rounded-lg border border-amber-300 text-[10px] transition cursor-pointer"
+                              className="px-2 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-900 font-bold rounded-lg border border-emerald-300 text-[10px] transition cursor-pointer"
                               title="Tetapkan Pemenang"
                             >
                               🏆 Pemenang
@@ -745,7 +745,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
           <div className="bg-white w-full max-w-xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden text-slate-800 max-h-[90vh] flex flex-col my-auto">
             <div className="bg-slate-50 px-5 py-3.5 border-b border-slate-200 text-slate-900 flex items-center justify-between shrink-0">
               <h3 className="font-extrabold text-sm sm:text-base flex items-center space-x-2">
-                <Award className="w-5 h-5 text-amber-500" />
+                <Award className="w-5 h-5 text-emerald-600" />
                 <span>{editingNomination ? 'Edit Data Peserta & Nominasi' : 'Tambah Peserta / Nominasi Baru'}</span>
               </h3>
               <button onClick={closeModal} className="text-slate-400 hover:text-slate-700 text-lg font-bold p-1 cursor-pointer">
@@ -756,8 +756,8 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
             <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1">
               {/* Seksi 1: Data Utama Peserta (6 Field Wajib & Utama) */}
               <div className="space-y-3 pb-3 border-b border-slate-200">
-                <h4 className="text-xs font-extrabold text-amber-700 uppercase tracking-wider flex items-center space-x-1">
-                  <IdCard className="w-3.5 h-3.5 text-amber-600" />
+                <h4 className="text-xs font-extrabold text-emerald-700 uppercase tracking-wider flex items-center space-x-1">
+                  <IdCard className="w-3.5 h-3.5 text-emerald-600" />
                   <span>Data Utama Peserta</span>
                 </h4>
 
@@ -770,7 +770,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                       placeholder="Contoh: PPS-2026-001"
                       value={idPps}
                       onChange={(e) => setIdPps(e.target.value)}
-                      className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-amber-800 font-mono font-bold focus:ring-2 focus:ring-amber-500/40 focus:bg-white focus:outline-none"
+                      className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-emerald-800 font-mono font-bold focus:ring-2 focus:ring-emerald-500/40 focus:bg-white focus:outline-none"
                     />
                   </div>
 
@@ -783,7 +783,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                       placeholder="Contoh: Ahmad Fauzi, S.T."
                       value={candidateName}
                       onChange={(e) => setCandidateName(e.target.value)}
-                      className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 font-semibold focus:ring-2 focus:ring-amber-500/40 focus:bg-white focus:outline-none"
+                      className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 font-semibold focus:ring-2 focus:ring-emerald-500/40 focus:bg-white focus:outline-none"
                     />
                   </div>
                 </div>
@@ -797,7 +797,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                       placeholder="Contoh: Jakarta Selatan"
                       value={domisili}
                       onChange={(e) => setDomisili(e.target.value)}
-                      className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-amber-500/40 focus:bg-white focus:outline-none"
+                      className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-emerald-500/40 focus:bg-white focus:outline-none"
                     />
                   </div>
 
@@ -809,7 +809,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                       placeholder="Contoh: Kelas 10-A"
                       value={kelas}
                       onChange={(e) => setKelas(e.target.value)}
-                      className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-amber-500/40 focus:bg-white focus:outline-none"
+                      className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-emerald-500/40 focus:bg-white focus:outline-none"
                     />
                   </div>
 
@@ -821,7 +821,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                       placeholder="Contoh: Pemula / Utama"
                       value={tingkat}
                       onChange={(e) => setTingkat(e.target.value)}
-                      className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-amber-500/40 focus:bg-white focus:outline-none"
+                      className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-emerald-500/40 focus:bg-white focus:outline-none"
                     />
                   </div>
                 </div>
@@ -834,7 +834,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                     placeholder="Contoh: Jl. Melati No. 45, RT 02/05, Kebayoran Baru"
                     value={alamat}
                     onChange={(e) => setAlamat(e.target.value)}
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-amber-500/40 focus:bg-white focus:outline-none"
+                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-emerald-500/40 focus:bg-white focus:outline-none"
                   />
                 </div>
               </div>
@@ -854,7 +854,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                       placeholder="Contoh: Divisi Teknologi Informasi"
                       value={department}
                       onChange={(e) => setDepartment(e.target.value)}
-                      className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-amber-500/40 focus:bg-white focus:outline-none"
+                      className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-emerald-500/40 focus:bg-white focus:outline-none"
                     />
                   </div>
 
@@ -865,7 +865,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                       placeholder="Contoh: 081234567890"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-emerald-800 font-mono font-bold focus:ring-2 focus:ring-amber-500/40 focus:bg-white focus:outline-none"
+                      className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-emerald-800 font-mono font-bold focus:ring-2 focus:ring-emerald-500/40 focus:bg-white focus:outline-none"
                     />
                   </div>
                 </div>
@@ -873,8 +873,8 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
 
               {/* Seksi 3: Kategori Penghargaan & Nilai */}
               <div className="space-y-3 pb-3 border-b border-slate-200">
-                <h4 className="text-xs font-extrabold text-amber-700 uppercase tracking-wider flex items-center space-x-1">
-                  <Trophy className="w-3.5 h-3.5 text-amber-600" />
+                <h4 className="text-xs font-extrabold text-emerald-700 uppercase tracking-wider flex items-center space-x-1">
+                  <Trophy className="w-3.5 h-3.5 text-emerald-600" />
                   <span>Kategori Penghargaan & Penilaian</span>
                 </h4>
 
@@ -884,7 +884,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                     <select
                       value={categoryId}
                       onChange={(e) => setCategoryId(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl text-xs focus:ring-2 focus:ring-amber-500/40 focus:bg-white focus:outline-none font-semibold"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500/40 focus:bg-white focus:outline-none font-semibold"
                     >
                       {categories.map((c) => (
                         <option key={c.id} value={c.id}>
@@ -896,7 +896,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
 
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Status Penetapan {!isAdmin && <span className="text-[10px] text-amber-700 font-normal">(Khusus Admin)</span>}
+                      Status Penetapan {!isAdmin && <span className="text-[10px] text-emerald-700 font-normal">(Khusus Admin)</span>}
                     </label>
                     <select
                       value={status}
@@ -905,7 +905,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                       className={`w-full px-3 py-2 border rounded-xl text-xs font-medium ${
                         !isAdmin
                           ? 'bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed'
-                          : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-2 focus:ring-amber-500/40 focus:bg-white focus:outline-none'
+                          : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-2 focus:ring-emerald-500/40 focus:bg-white focus:outline-none'
                       }`}
                     >
                       <option value="Draf">Draf</option>
@@ -918,8 +918,8 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Nilai / Skor Penjuri (0 - 100): <span className="text-amber-700 font-bold">{score}</span>
-                    {!isAdmin && <span className="text-[10px] text-amber-700 font-normal ml-1">(Khusus Admin)</span>}
+                    Nilai / Skor Penjuri (0 - 100): <span className="text-emerald-700 font-bold">{score}</span>
+                    {!isAdmin && <span className="text-[10px] text-emerald-700 font-normal ml-1">(Khusus Admin)</span>}
                   </label>
                   <input
                     type="range"
@@ -928,7 +928,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                     value={score}
                     disabled={!isAdmin}
                     onChange={(e) => setScore(Number(e.target.value))}
-                    className={`w-full accent-amber-500 mt-1 ${!isAdmin ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
+                    className={`w-full accent-emerald-600 mt-1 ${!isAdmin ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
                   />
                 </div>
               </div>
@@ -943,7 +943,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                     placeholder="Tuliskan catatan pertimbangan, rekam jejak, atau alasan mengapa peserta ini direkomendasikan..."
                     value={justification}
                     onChange={(e) => setJustification(e.target.value)}
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-amber-500/40 focus:bg-white focus:outline-none"
+                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-emerald-500/40 focus:bg-white focus:outline-none"
                   />
                 </div>
 
@@ -954,7 +954,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                     placeholder="Contoh: Siti Rahmawati"
                     value={nominatorName}
                     onChange={(e) => setNominatorName(e.target.value)}
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-amber-500/40 focus:bg-white focus:outline-none"
+                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-emerald-500/40 focus:bg-white focus:outline-none"
                   />
                 </div>
               </div>
@@ -984,7 +984,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold rounded-xl shadow-sm transition cursor-pointer"
+                    className="px-5 py-2 bg-[#00a65a] hover:bg-[#008d4c] text-white text-xs font-extrabold rounded-xl shadow-sm transition cursor-pointer"
                   >
                     {editingNomination ? 'Simpan Perubahan' : 'Tambah Peserta'}
                   </button>

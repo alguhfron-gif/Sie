@@ -784,10 +784,10 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans flex flex-col antialiased selection:bg-amber-500 selection:text-white relative overflow-x-hidden">
+    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans flex flex-col antialiased selection:bg-emerald-600 selection:text-white relative overflow-x-hidden">
       {/* Soft Ambient Light Glowing Accents */}
-      <div className="fixed top-0 left-1/4 w-96 h-96 bg-amber-200/30 rounded-full blur-3xl pointer-events-none -z-10"></div>
-      <div className="fixed bottom-1/3 right-10 w-96 h-96 bg-sky-200/30 rounded-full blur-3xl pointer-events-none -z-10"></div>
+      <div className="fixed top-0 left-1/4 w-96 h-96 bg-emerald-200/20 rounded-full blur-3xl pointer-events-none -z-10"></div>
+      <div className="fixed bottom-1/3 right-10 w-96 h-96 bg-teal-200/20 rounded-full blur-3xl pointer-events-none -z-10"></div>
 
       {/* Header Navigation */}
       <Navbar

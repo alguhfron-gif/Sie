@@ -246,7 +246,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
             </h1>
           </div>
           <p className="text-xs text-gray-500 leading-relaxed">
-            Pengaturan hak akses bertingkat untuk <strong className="text-amber-800">ADMIN (Panitia Inti)</strong> dan <strong className="text-[#3c8dbc]">PETUGAS (Operasional & Lapangan)</strong>. Tambah akun baru untuk memperluas akses tim.
+            Pengaturan hak akses bertingkat untuk <strong className="text-emerald-800">ADMIN (Panitia Inti)</strong> dan <strong className="text-[#3c8dbc]">PETUGAS (Operasional & Lapangan)</strong>. Tambah akun baru untuk memperluas akses tim.
           </p>
         </div>
 
@@ -295,7 +295,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
           <div className="bg-slate-950/80 p-3 rounded-2xl border border-slate-800 space-y-2 text-xs">
             <div className="flex items-center justify-between">
               <span className="text-[10px] uppercase font-bold text-slate-400">Nama Akun:</span>
-              <span className="font-black text-amber-400">{addedAccountToast.name}</span>
+              <span className="font-black text-emerald-400">{addedAccountToast.name}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-[10px] uppercase font-bold text-slate-400">Peran / Jabatan:</span>
@@ -304,7 +304,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
             <div className="flex items-center justify-between pt-1 border-t border-slate-800/80">
               <span className="text-[10px] uppercase font-bold text-slate-400">Tingkat Akses:</span>
               <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase ${
-                addedAccountToast.category === 'admin' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' : 'bg-sky-500/20 text-sky-300 border border-sky-500/40'
+                addedAccountToast.category === 'admin' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-sky-500/20 text-sky-300 border border-sky-500/40'
               }`}>
                 {addedAccountToast.category}
               </span>
@@ -336,7 +336,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                   onSwitchUser(targetAcc);
                   setAddedAccountToast(null);
                 }}
-                className="w-full py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs transition cursor-pointer flex items-center justify-center space-x-1.5 shadow-md"
+                className="w-full py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-xl text-xs transition cursor-pointer flex items-center justify-center space-x-1.5 shadow-md"
               >
                 <Sparkles className="w-3.5 h-3.5 text-slate-950" />
                 <span>⚡ Beralih & Masuk Akun Baru Ini</span>
@@ -388,13 +388,13 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
           </div>
         </div>
 
-        <div className="bg-amber-50/80 p-5 rounded-2xl border border-amber-200/80 shadow-sm flex items-center space-x-4">
-          <div className="w-12 h-12 rounded-2xl bg-amber-500 text-slate-950 font-black flex items-center justify-center shrink-0 shadow-sm">
-            <Shield className="w-6 h-6 text-slate-950" />
+        <div className="bg-emerald-50/80 p-5 rounded-2xl border border-emerald-200/80 shadow-sm flex items-center space-x-4">
+          <div className="w-12 h-12 rounded-2xl bg-[#00a65a] text-white font-black flex items-center justify-center shrink-0 shadow-sm">
+            <Shield className="w-6 h-6 text-white" />
           </div>
           <div>
-            <p className="text-xs font-extrabold text-amber-800 uppercase tracking-wider">Tingkat ADMIN</p>
-            <p className="text-2xl font-black text-amber-950 mt-0.5">{adminCount} <span className="text-xs text-amber-800 font-semibold">Pimpinan / Inti</span></p>
+            <p className="text-xs font-extrabold text-emerald-800 uppercase tracking-wider">Tingkat ADMIN</p>
+            <p className="text-2xl font-black text-emerald-950 mt-0.5">{adminCount} <span className="text-xs text-emerald-800 font-semibold">Pimpinan / Inti</span></p>
           </div>
         </div>
 
@@ -427,7 +427,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
             onClick={() => setActiveTab('admin')}
             className={`px-4 py-2 rounded-lg text-xs font-bold transition cursor-pointer flex-1 sm:flex-none flex items-center justify-center space-x-1.5 ${
               activeTab === 'admin'
-                ? 'bg-amber-500 text-slate-950 font-black shadow-sm'
+                ? 'bg-[#00a65a] text-white font-black shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -455,7 +455,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
             placeholder="Cari nama atau jabatan..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
+            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
           />
         </div>
       </div>
@@ -473,7 +473,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
               key={acc.id}
               className={`bg-white rounded-2xl border p-5 shadow-sm transition hover:shadow-md relative flex flex-col justify-between space-y-4 ${
                 isAdmin
-                  ? 'border-amber-200/80 hover:border-amber-400'
+                  ? 'border-emerald-200/80 hover:border-emerald-400'
                   : 'border-sky-200/80 hover:border-sky-400'
               }`}
             >
@@ -483,11 +483,11 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                   <span
                     className={`inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${
                       isAdmin
-                        ? 'bg-amber-100 text-amber-900 border-amber-300'
+                        ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
                         : 'bg-sky-100 text-sky-900 border-sky-300'
                     }`}
                   >
-                    {isAdmin ? <Shield className="w-3 h-3 text-amber-700" /> : <Wrench className="w-3 h-3 text-sky-700" />}
+                    {isAdmin ? <Shield className="w-3 h-3 text-emerald-700" /> : <Wrench className="w-3 h-3 text-sky-700" />}
                     <span>{isAdmin ? 'Tingkat ADMIN' : 'Tingkat PETUGAS'}</span>
                   </span>
 
@@ -504,8 +504,8 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                     )}
 
                     {isCurrentActive && (
-                      <span className="text-[10px] font-extrabold text-amber-800 bg-amber-50 border border-amber-300 px-2.5 py-0.5 rounded-full flex items-center space-x-1">
-                        <UserCheck className="w-3 h-3 text-amber-600" />
+                      <span className="text-[10px] font-extrabold text-emerald-800 bg-emerald-50 border border-emerald-300 px-2.5 py-0.5 rounded-full flex items-center space-x-1">
+                        <UserCheck className="w-3 h-3 text-emerald-600" />
                         <span>Sesi Anda</span>
                       </span>
                     )}
@@ -516,7 +516,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                 <div className="flex items-start space-x-3.5 mt-3.5">
                   <div
                     className={`w-11 h-11 rounded-2xl flex items-center justify-center text-sm shrink-0 shadow-sm border border-slate-200/60 ${
-                      acc.avatarBg || (isAdmin ? 'bg-amber-500 text-slate-950 font-black' : 'bg-sky-500 text-white font-bold')
+                      acc.avatarBg || (isAdmin ? 'bg-[#00a65a] text-white font-bold' : 'bg-sky-500 text-white font-bold')
                     }`}
                   >
                     {acc.name.charAt(0)}
@@ -548,7 +548,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                     onClick={() => onSwitchUser(acc)}
                     className="flex-1 py-1.5 px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-extrabold transition flex items-center justify-center space-x-1 cursor-pointer"
                   >
-                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
                     <span>Switch Login</span>
                   </button>
                 )}
@@ -598,7 +598,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
             <div className="flex items-center space-x-3 pr-8 shrink-0">
               <div
                 className={`w-10 h-10 rounded-2xl flex items-center justify-center font-black shrink-0 ${
-                  formData.category === 'admin' ? 'bg-amber-500 text-slate-950' : 'bg-sky-500 text-white'
+                  formData.category === 'admin' ? 'bg-[#00a65a] text-white' : 'bg-sky-500 text-white'
                 }`}
               >
                 {formData.category === 'admin' ? <Shield className="w-5 h-5" /> : <Wrench className="w-5 h-5" />}
@@ -632,11 +632,11 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                     onClick={() => setFormData({ ...formData, category: 'admin', badge: 'Panitia / Admin', defaultPin: formData.defaultPin === '1234' ? '12345678' : formData.defaultPin })}
                     className={`p-3 rounded-2xl border text-left flex items-center space-x-2.5 transition cursor-pointer ${
                       formData.category === 'admin'
-                        ? 'bg-amber-500/10 border-amber-500 text-amber-950 ring-2 ring-amber-500/20 font-bold'
+                        ? 'bg-emerald-500/10 border-emerald-500 text-emerald-950 ring-2 ring-emerald-500/20 font-bold'
                         : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
                     }`}
                   >
-                    <Shield className="w-5 h-5 text-amber-600 shrink-0" />
+                    <Shield className="w-5 h-5 text-emerald-600 shrink-0" />
                     <div>
                       <p className="font-extrabold text-xs">ADMIN</p>
                       <p className="text-[10px] text-slate-500 font-normal">Panitia Inti (Min. 8 Karakter)</p>
@@ -671,7 +671,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                   placeholder="Contoh: AHMAD SAFII"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   required
                 />
               </div>
@@ -690,7 +690,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                   }
                   value={formData.role}
                   onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   required
                 />
               </div>
@@ -706,7 +706,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                     placeholder="Contoh: Petugas Konsumsi"
                     value={formData.badge}
                     onChange={(e) => setFormData({ ...formData, badge: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
 
@@ -720,7 +720,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                     placeholder={formData.category === 'admin' ? 'Default: 12345678' : 'Default: 1234'}
                     value={formData.defaultPin}
                     onChange={(e) => setFormData({ ...formData, defaultPin: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
               </div>
@@ -730,11 +730,11 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                 <label className="block font-extrabold text-slate-700 mb-1">Warna Identitas Avatar:</label>
                 <div className="flex items-center space-x-2 overflow-x-auto pb-1">
                   {[
-                    { bg: 'bg-amber-500 text-slate-950 font-black', label: 'Emas (Admin)' },
+                    { bg: 'bg-[#00a65a] text-white font-bold', label: 'Hijau (Admin)' },
                     { bg: 'bg-sky-500 text-white font-bold', label: 'Biru (Petugas)' },
-                    { bg: 'bg-emerald-600 text-white font-bold', label: 'Hijau' },
-                    { bg: 'bg-purple-600 text-white font-bold', label: 'Ungu' },
-                    { bg: 'bg-rose-500 text-white font-bold', label: 'Merah' },
+                    { bg: 'bg-teal-600 text-white font-bold', label: 'Teal' },
+                    { bg: 'bg-emerald-700 text-white font-bold', label: 'Hijau Tua' },
+                    { bg: 'bg-slate-700 text-white font-bold', label: 'Slate' },
                   ].map((color, idx) => (
                     <button
                       key={idx}
@@ -765,7 +765,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                   disabled={isSubmitting}
                   className={`px-5 py-2.5 font-black rounded-xl shadow-md transition flex items-center space-x-1.5 cursor-pointer ${
                     formData.category === 'admin'
-                      ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-amber-500/20'
+                      ? 'bg-[#00a65a] hover:bg-[#008d4c] text-white shadow-emerald-900/20'
                       : 'bg-sky-500 hover:bg-sky-400 text-white shadow-sky-500/20'
                   }`}
                 >

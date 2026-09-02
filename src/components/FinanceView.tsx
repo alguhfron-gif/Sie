@@ -236,19 +236,19 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
         <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm text-slate-800 space-y-6 max-w-4xl mx-auto print:bg-white print:text-slate-900 print:shadow-none print:border-none">
           <div className="flex items-center justify-between border-b pb-4 border-slate-200 print:border-slate-300">
             <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-amber-500 rounded-2xl flex items-center justify-center font-bold text-slate-950 text-xl shadow-sm">
+              <div className="w-12 h-12 bg-[#00a65a] rounded-2xl flex items-center justify-center font-bold text-white text-xl shadow-sm">
                 🏆
               </div>
               <div>
                 <h2 className="text-xl font-black tracking-tight text-slate-900">LAPORAN KEUANGAN RESMI</h2>
-                <p className="text-xs font-bold text-amber-800 print:text-slate-600">Panitia Malam Penganugerahan • Sie Penganugerahan</p>
+                <p className="text-xs font-bold text-emerald-800 print:text-slate-600">Panitia Malam Penganugerahan • Sie Penganugerahan</p>
               </div>
             </div>
 
             <div className="flex items-center space-x-2 print:hidden">
               <button
                 onClick={() => window.print()}
-                className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold rounded-2xl text-xs flex items-center space-x-1.5 shadow-sm transition cursor-pointer"
+                className="px-4 py-2 bg-[#00a65a] hover:bg-[#008d4c] text-white font-extrabold rounded-2xl text-xs flex items-center space-x-1.5 shadow-sm transition cursor-pointer"
               >
                 <Printer className="w-4 h-4" />
                 <span>Cetak / PDF</span>
@@ -296,7 +296,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                   <tr key={t.id} className="border-b border-slate-200">
                     <td className="p-2.5 border border-slate-200 text-center">{idx + 1}</td>
                     <td className="p-2.5 border border-slate-200">{t.date}</td>
-                    <td className="p-2.5 border border-slate-200 font-mono text-[11px] text-amber-800 font-bold">{t.receiptNumber || '-'}</td>
+                    <td className="p-2.5 border border-slate-200 font-mono text-[11px] text-emerald-800 font-bold">{t.receiptNumber || '-'}</td>
                     <td className="p-2.5 border border-slate-200 font-medium">{t.title}</td>
                     <td className="p-2.5 border border-slate-200 text-slate-600">{t.category}</td>
                     <td className="p-2.5 border border-slate-200 text-right text-emerald-700 font-semibold">
@@ -355,9 +355,9 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
 
               <button
                 onClick={() => setShowPrintReport(true)}
-                className="flex items-center space-x-1.5 bg-[#f39c12] hover:bg-[#e08e0b] text-slate-950 font-bold px-3.5 py-1.5 rounded text-xs transition shadow-2xs cursor-pointer"
+                className="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3.5 py-1.5 rounded text-xs transition shadow-2xs cursor-pointer"
               >
-                <FileText className="w-4 h-4 text-slate-950" />
+                <FileText className="w-4 h-4 text-white" />
                 <span>Format Laporan Resmi</span>
               </button>
 
@@ -408,14 +408,14 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                   <p className="text-[11px] text-slate-500 mt-1">Trofi, Cetakan, Konsumsi & Perlengkapan</p>
                 </div>
 
-                <div className="bg-amber-50 p-5 rounded-2xl border border-amber-200 shadow-xs text-slate-900">
+                <div className="bg-emerald-50 p-5 rounded-2xl border border-emerald-200 shadow-xs text-slate-900">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-amber-900">Saldo Akhir Tersedia</span>
-                    <div className="w-9 h-9 rounded-2xl bg-amber-200 text-amber-900 border border-amber-300 flex items-center justify-center font-bold">
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-900">Saldo Akhir Tersedia</span>
+                    <div className="w-9 h-9 rounded-2xl bg-emerald-200 text-emerald-900 border border-emerald-300 flex items-center justify-center font-bold">
                       <DollarSign className="w-4 h-4" />
                     </div>
                   </div>
-                  <h2 className="text-2xl font-black text-amber-900 mt-2">{formatIDR(saldoSisa)}</h2>
+                  <h2 className="text-2xl font-black text-emerald-900 mt-2">{formatIDR(saldoSisa)}</h2>
                   <p className="text-[11px] text-slate-600 mt-1">Siap dialokasikan untuk sisa kebutuhan acara</p>
                 </div>
               </div>
@@ -428,8 +428,8 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                     Persentase pengeluaran Sie Penganugerahan berdasarkan kategori kebutuhan logistik & acara.
                   </p>
                   <div className="pt-2 text-xs text-slate-600 space-y-1">
-                    <p>• <strong className="text-amber-800">Trofi & Plakat:</strong> Biaya pengrajin utama</p>
-                    <p>• <strong className="text-amber-800">Cetak Sertifikat:</strong> Kertas Linen Gold Foil</p>
+                    <p>• <strong className="text-emerald-800">Trofi & Plakat:</strong> Biaya pengrajin utama</p>
+                    <p>• <strong className="text-emerald-800">Cetak Sertifikat:</strong> Kertas Linen Gold Foil</p>
                   </div>
                 </div>
 
@@ -528,7 +528,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                       <div className="flex items-center space-x-2 text-[10px] text-slate-500 mt-0.5">
                         <span>{t.date}</span>
                         <span>•</span>
-                        <span className="font-mono text-amber-800 font-bold">{t.receiptNumber || '-'}</span>
+                        <span className="font-mono text-emerald-800 font-bold">{t.receiptNumber || '-'}</span>
                       </div>
                     </div>
                     <span className={`font-black text-xs shrink-0 ${t.type === 'pemasukan' ? 'text-emerald-700' : 'text-rose-700'}`}>
@@ -540,7 +540,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
 
                   <div className="flex items-center justify-between text-[11px] pt-1">
                     <div className="flex items-center space-x-2">
-                      <span className="bg-amber-100 text-amber-900 border border-amber-200 px-2 py-0.5 rounded-lg text-[10px] font-bold">
+                      <span className="bg-emerald-100 text-emerald-900 border border-emerald-200 px-2 py-0.5 rounded-lg text-[10px] font-bold">
                         {t.category}
                       </span>
                       {t.proofUrl && (
@@ -557,10 +557,10 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleOpenEdit(t)}
-                        className="px-2 py-0.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-lg text-[10px] font-bold flex items-center space-x-1 cursor-pointer transition"
+                        className="px-2 py-0.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 rounded-lg text-[10px] font-bold flex items-center space-x-1 cursor-pointer transition"
                         title="Edit Transaksi"
                       >
-                        <Pencil className="w-3 h-3 text-amber-700" />
+                        <Pencil className="w-3 h-3 text-emerald-700" />
                         <span>Edit</span>
                       </button>
                       <button
@@ -600,14 +600,14 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                     <tr key={t.id} className="hover:bg-slate-50 transition">
                       <td className="p-3.5">
                         <div className="font-bold text-slate-900">{t.date}</div>
-                        <div className="text-[10px] text-amber-800 font-mono font-bold">{t.receiptNumber || '-'}</div>
+                        <div className="text-[10px] text-emerald-800 font-mono font-bold">{t.receiptNumber || '-'}</div>
                       </td>
                       <td className="p-3.5">
                         <div className="font-bold text-slate-900">{t.title}</div>
                         {t.notes && <div className="text-[11px] text-slate-500 mt-0.5">{t.notes}</div>}
                       </td>
                       <td className="p-3.5">
-                        <span className="bg-amber-100 text-amber-900 border border-amber-200 px-2.5 py-1 rounded-xl text-[11px] font-bold">
+                        <span className="bg-emerald-100 text-emerald-900 border border-emerald-200 px-2.5 py-1 rounded-xl text-[11px] font-bold">
                           {t.category}
                         </span>
                       </td>
@@ -634,7 +634,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                         <div className="flex items-center justify-center space-x-1">
                           <button
                             onClick={() => handleOpenEdit(t)}
-                            className="p-1.5 text-amber-700 hover:text-amber-800 hover:bg-amber-50 rounded-xl transition cursor-pointer"
+                            className="p-1.5 text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 rounded-xl transition cursor-pointer"
                             title="Edit Transaksi"
                           >
                             <Pencil className="w-4 h-4" />
@@ -673,14 +673,14 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
             {/* Modal Header */}
             <div className="bg-slate-900 text-white p-4 sm:p-5 flex items-center justify-between border-b border-slate-800">
               <div className="flex items-center space-x-2.5 min-w-0">
-                <div className="w-9 h-9 rounded-2xl bg-amber-500 text-slate-950 flex items-center justify-center font-bold shrink-0">
+                <div className="w-9 h-9 rounded-2xl bg-[#00a65a] text-white flex items-center justify-center font-bold shrink-0">
                   <Receipt className="w-5 h-5" />
                 </div>
                 <div className="truncate">
                   <h3 className="font-extrabold text-sm sm:text-base text-white truncate">
                     {selectedProofTrx.title}
                   </h3>
-                  <p className="text-[11px] text-amber-400 font-mono font-bold">
+                  <p className="text-[11px] text-emerald-400 font-mono font-bold">
                     No. Bukti: {selectedProofTrx.receiptNumber || '-'} • {selectedProofTrx.date}
                   </p>
                 </div>
@@ -704,7 +704,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                     {selectedProofTrx.type === 'pemasukan' ? '+' : '-'} {formatIDR(selectedProofTrx.amount)}
                   </span>
                 </div>
-                <span className="bg-amber-100 text-amber-900 border border-amber-200 px-2.5 py-0.5 rounded-lg text-[10px] font-bold">
+                <span className="bg-emerald-100 text-emerald-900 border border-emerald-200 px-2.5 py-0.5 rounded-lg text-[10px] font-bold">
                   {selectedProofTrx.category}
                 </span>
               </div>
@@ -724,7 +724,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
               )}
 
               {selectedProofTrx.notes && (
-                <p className="text-xs text-slate-600 bg-amber-50/50 border border-amber-200 p-3 rounded-xl italic">
+                <p className="text-xs text-slate-600 bg-emerald-50/50 border border-emerald-200 p-3 rounded-xl italic">
                   <strong>Catatan:</strong> {selectedProofTrx.notes}
                 </p>
               )}
@@ -746,7 +746,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setSelectedProofTrx(null)}
-                  className="ml-auto px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold rounded-xl text-xs transition cursor-pointer"
+                  className="ml-auto px-5 py-2 bg-[#00a65a] hover:bg-[#008d4c] text-white font-extrabold rounded-xl text-xs transition cursor-pointer"
                 >
                   Tutup Preview
                 </button>
@@ -875,7 +875,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                       placeholder="Contoh: NOT-2026-005"
                       value={receiptNumber}
                       onChange={(e) => setReceiptNumber(e.target.value)}
-                      className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-amber-800 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none font-mono"
+                      className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-emerald-800 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none font-mono"
                     />
                   </div>
 
@@ -910,8 +910,8 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                         </button>
                       </div>
                     ) : (
-                      <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-300 hover:border-amber-500 bg-slate-50 hover:bg-amber-50/30 rounded-2xl cursor-pointer transition text-center group">
-                        <Upload className="w-5 h-5 text-slate-400 group-hover:text-amber-500 mb-1" />
+                      <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-300 hover:border-emerald-500 bg-slate-50 hover:bg-emerald-50/30 rounded-2xl cursor-pointer transition text-center group">
+                        <Upload className="w-5 h-5 text-slate-400 group-hover:text-emerald-500 mb-1" />
                         <span className="text-xs font-bold text-slate-700">Klik untuk Pilih Foto Kuitansi/Nota</span>
                         <span className="text-[10px] text-slate-400">Format: JPG, PNG, WEBP (Otomatis ke Firebase Storage)</span>
                         <input
