@@ -246,14 +246,14 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
         activeTab="koordinasi"
       />
 
-      {/* Top Header Box */}
-      <div className="admin-box border-t-4 border-t-[#00a65a] p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* Top Header Box in Milad Sidogiri Clean Style */}
+      <div className="bg-white border border-[rgba(36,33,28,0.12)] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center space-x-2">
-            <Users className="w-5 h-5 text-[#00a65a]" />
-            <h1 className="text-base font-extrabold text-gray-800">Koordinasi Panitia & Operasional Acara</h1>
+            <Users className="w-5 h-5 text-[#8a7c4c]" />
+            <h1 className="text-base font-extrabold text-[#24211c]">Koordinasi Panitia & Operasional Acara</h1>
           </div>
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-[#7c7b77] mt-1">
             Struktur dan pembagian tugas panitia, manajemen papan tugas, inventarisasi trofi & perlengkapan, serta rundown acara.
           </p>
         </div>
@@ -262,42 +262,42 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
           <button
             onClick={handleExportCommittee}
             title="Ekspor Data Panitia, Tugas, dan Logistik ke CSV & Google Sheets"
-            className="flex items-center space-x-1.5 bg-[#00a65a] hover:bg-[#008d4c] text-white font-bold px-3.5 py-1.5 rounded text-xs transition shadow-2xs cursor-pointer"
+            className="flex items-center space-x-1.5 bg-white hover:bg-[#f7f6f2] text-[#24211c] border border-[rgba(36,33,28,0.15)] font-bold px-3.5 py-2 rounded-xl text-xs transition shadow-2xs cursor-pointer"
           >
-            <FileSpreadsheet className="w-4 h-4 text-white" />
-            <span>Ekspor ke Sheets / CSV</span>
+            <FileSpreadsheet className="w-4 h-4 text-[#8a7c4c]" />
+            <span>Ekspor Sheets / CSV</span>
           </button>
 
           {/* SubTab Toggle */}
-          <div className="flex items-center bg-slate-100 p-1 rounded-2xl border border-slate-200 text-xs font-semibold gap-1 overflow-x-auto touch-scroll-x no-scrollbar">
+          <div className="flex items-center bg-[#efede7] p-1 rounded-xl border border-[rgba(36,33,28,0.1)] text-xs font-semibold gap-1 overflow-x-auto touch-scroll-x no-scrollbar">
             <button
               onClick={() => setSubTab('structure')}
-              className={`px-3 py-1.5 rounded-xl transition cursor-pointer ${
-                subTab === 'structure' ? 'bg-[#00a65a] text-white shadow-sm font-extrabold' : 'text-slate-600 hover:text-slate-900'
+              className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
+                subTab === 'structure' ? 'bg-[#8a7c4c] text-white shadow-2xs font-bold' : 'text-[#7c7b77] hover:text-[#24211c]'
               }`}
             >
               Struktur Panitia
             </button>
             <button
               onClick={() => setSubTab('tasks')}
-              className={`px-3 py-1.5 rounded-xl transition cursor-pointer ${
-                subTab === 'tasks' ? 'bg-[#00a65a] text-white shadow-sm font-extrabold' : 'text-slate-600 hover:text-slate-900'
+              className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
+                subTab === 'tasks' ? 'bg-[#8a7c4c] text-white shadow-2xs font-bold' : 'text-[#7c7b77] hover:text-[#24211c]'
               }`}
             >
               Tugas Panitia
             </button>
             <button
               onClick={() => setSubTab('inventory')}
-              className={`px-3 py-1.5 rounded-xl transition cursor-pointer ${
-                subTab === 'inventory' ? 'bg-[#00a65a] text-white shadow-sm font-extrabold' : 'text-slate-600 hover:text-slate-900'
+              className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
+                subTab === 'inventory' ? 'bg-[#8a7c4c] text-white shadow-2xs font-bold' : 'text-[#7c7b77] hover:text-[#24211c]'
               }`}
             >
               Perlengkapan
             </button>
             <button
               onClick={() => setSubTab('rundown')}
-              className={`px-3 py-1.5 rounded-xl transition cursor-pointer ${
-                subTab === 'rundown' ? 'bg-[#00a65a] text-white shadow-sm font-extrabold' : 'text-slate-600 hover:text-slate-900'
+              className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
+                subTab === 'rundown' ? 'bg-[#8a7c4c] text-white shadow-2xs font-bold' : 'text-[#7c7b77] hover:text-[#24211c]'
               }`}
             >
               Rundown Acara

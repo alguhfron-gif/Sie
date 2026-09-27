@@ -1,5 +1,26 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Award, DollarSign, Users, FileCheck, LayoutDashboard, Menu, X, LogOut, LogIn, User, FileSpreadsheet, RefreshCw, Cloud, UserPlus, Shield, FileText, Moon, ChevronDown, Clock, Image as ImageIcon } from 'lucide-react';
+import {
+  Award,
+  DollarSign,
+  Users,
+  FileCheck,
+  LayoutDashboard,
+  Menu,
+  X,
+  LogOut,
+  LogIn,
+  User,
+  FileSpreadsheet,
+  RefreshCw,
+  Cloud,
+  UserPlus,
+  Shield,
+  FileText,
+  Moon,
+  ChevronDown,
+  Clock,
+  Image as ImageIcon,
+} from 'lucide-react';
 import { ActiveTab, UserSession } from '../types';
 import { MiladLogo } from './MiladLogo';
 import { LogoManagerModal } from './LogoManagerModal';
@@ -19,7 +40,6 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({
   activeTab,
   setActiveTab,
-  onResetData,
   currentUser,
   onLogout,
   onLogin,
@@ -106,14 +126,14 @@ export const Navbar: React.FC<NavbarProps> = ({
     }
   };
 
-  const formatLoginTime = (dateSource?: string) => {
-    if (!dateSource) return new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-    const d = new Date(dateSource);
-    if (isNaN(d.getTime())) return dateSource;
-    return d.toLocaleString('id-ID', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
+  const formatLoginTime = (timeStr?: string) => {
+    if (!timeStr) return '-';
+    if (timeStr.includes(':') && !timeStr.includes('-') && !timeStr.includes('T')) {
+      return timeStr;
+    }
+    const d = new Date(timeStr);
+    if (isNaN(d.getTime())) return timeStr;
+    return d.toLocaleTimeString('id-ID', {
       hour: '2-digit',
       minute: '2-digit',
     });
@@ -125,11 +145,11 @@ export const Navbar: React.FC<NavbarProps> = ({
   const allNavItems: { id: ActiveTab; label: string; icon: React.ReactNode }[] = [
     { id: 'dashboard', label: 'Dasbor', icon: <LayoutDashboard className="w-4 h-4" /> },
     { id: 'nominasi', label: 'Nominasi', icon: <Award className="w-4 h-4" /> },
+    { id: 'sertifikat', label: 'Sertifikat', icon: <FileCheck className="w-4 h-4" /> },
+    { id: 'surat', label: 'Surat & SK', icon: <FileText className="w-4 h-4" /> },
     { id: 'keuangan', label: 'Keuangan', icon: <DollarSign className="w-4 h-4" /> },
-    { id: 'koordinasi', label: 'Panitia & Tugas', icon: <Users className="w-4 h-4" /> },
-    { id: 'sertifikat', label: 'Cetak Sertifikat', icon: <FileCheck className="w-4 h-4" /> },
-    { id: 'surat', label: 'Surat & Ketentuan', icon: <FileText className="w-4 h-4" /> },
-    { id: 'akun', label: 'Kelola Akun', icon: <UserPlus className="w-4 h-4" /> },
+    { id: 'koordinasi', label: 'Panitia', icon: <Users className="w-4 h-4" /> },
+    { id: 'akun', label: 'Akun', icon: <UserPlus className="w-4 h-4" /> },
   ];
 
   const navItems = isPetugas
@@ -137,34 +157,41 @@ export const Navbar: React.FC<NavbarProps> = ({
     : allNavItems;
 
   return (
-    <header className="sticky top-0 z-40 bg-[#16221b] text-white border-b border-[#23382c] shadow-md">
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[rgba(36,33,28,0.12)] shadow-2xs">
+      {/* Signature Milad Sidogiri Top Decorative Bar */}
+      <div aria-hidden="true" className="grid grid-cols-[26%_1fr_8%] h-1.5 w-full shrink-0">
+        <span className="bg-[#8a7c4c]"></span>
+        <span className="bg-[#e5e2da]"></span>
+        <span className="bg-[#7c7b77]"></span>
+      </div>
+
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-        {/* Row 1: Brand Logo, Tanggal Hijriyah, Sync Cloud & User Profile Dropdown */}
         <div className="flex items-center justify-between h-14 sm:h-16 gap-2 sm:gap-4">
-          {/* Brand Logo & Name with Hamburger Toggle */}
-          <div className="flex items-center space-x-2 shrink-0">
-            {/* Hamburger Menu Icon */}
+          {/* Brand Logo & Name */}
+          <div className="flex items-center space-x-2.5 shrink-0">
+            {/* Sidebar toggle icon for quick expand/collapse */}
             <button
               onClick={() => {
                 if (onToggleSidebar) onToggleSidebar();
                 setMobileMenuOpen(!mobileMenuOpen);
               }}
-              title="Buka/Tutup Navigasi Sidebar"
-              className="p-2 rounded-lg border border-[#23382c] bg-[#1e2e25] hover:bg-[#283f33] text-emerald-400 transition cursor-pointer shrink-0 shadow-2xs active:scale-95"
+              title="Navigasi Menu"
+              className="p-1.5 rounded-lg border border-[rgba(36,33,28,0.15)] bg-[#f7f6f2] hover:bg-[#e5e2da] text-[#24211c] transition cursor-pointer shrink-0 md:hidden active:scale-95"
             >
-              <Menu className="w-5 h-5 text-emerald-400" />
+              <Menu className="w-4 h-4 text-[#24211c]" />
             </button>
 
+            {/* Logo */}
             <div className="flex items-center space-x-2.5">
               {!isPetugas ? (
                 <button
                   type="button"
                   onClick={() => setLogoModalOpen(true)}
-                  title="Klik untuk Mengatur / Mengganti Logo Milad"
+                  title="Klik untuk Mengatur Logo Milad"
                   className="group relative cursor-pointer focus:outline-none"
                 >
                   <MiladLogo size="sm" className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 transition-transform group-hover:scale-105" />
-                  <span className="absolute -bottom-1 -right-1 bg-amber-400 text-slate-950 p-0.5 rounded-full text-[8px] opacity-0 group-hover:opacity-100 transition shadow">
+                  <span className="absolute -bottom-1 -right-1 bg-[#8a7c4c] text-white p-0.5 rounded-full text-[8px] opacity-0 group-hover:opacity-100 transition shadow">
                     <ImageIcon className="w-2.5 h-2.5" />
                   </span>
                 </button>
@@ -174,102 +201,122 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </div>
               )}
               <div className="cursor-pointer" onClick={() => setActiveTab('dashboard')}>
-                <div className="flex items-center space-x-1.5">
-                  <span className="font-extrabold text-xs sm:text-base tracking-tight text-white whitespace-nowrap">
-                    MILAD SIDOGIRI
-                  </span>
-                  <span className="hidden xl:inline-flex items-center space-x-1.5 bg-[#1e2e25] text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded text-[9px] font-black tracking-wide">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#00a65a] animate-pulse shrink-0"></span>
-                    <span>SIE PENGANUGERAHAN</span>
+                <div className="flex flex-col">
+                  <div className="flex items-center space-x-1.5">
+                    <span className="font-extrabold text-xs sm:text-base tracking-tight text-[#24211c] whitespace-nowrap">
+                      SIE PENGANUGERAHAN
+                    </span>
+                    <span className="hidden xl:inline-flex items-center space-x-1 bg-[#f2eee3] text-[#675c37] border border-[#c3b68b]/40 px-2 py-0.5 rounded text-[9px] font-bold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#8a7c4c] animate-pulse shrink-0 mr-1"></span>
+                      MILAD SIDOGIRI
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-[#7c7b77] font-medium hidden sm:block">
+                    Pondok Pesantren Sidogiri • 1158 — 1448 H
                   </span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Header Actions - Desktop Right */}
-          <div className="hidden md:flex items-center space-x-2.5 shrink-0">
-            {/* Tanggal Hijriyah & Masehi */}
-            <div className="flex items-center space-x-1.5 bg-[#1e2e25] text-emerald-300 border border-emerald-500/30 px-3 py-1.5 rounded-lg text-xs font-extrabold shadow-2xs">
-              <Moon className="w-3.5 h-3.5 text-emerald-400 fill-emerald-400/20 shrink-0" />
-              <span className="text-[11px] font-extrabold tracking-tight">
-                {getHijriDate(currentUser?.loginTime)}
-              </span>
+          {/* Desktop Center Navigation Tabs (Direct Quick Access like miladsidogiri.id) */}
+          <nav className="hidden lg:flex items-center space-x-1 bg-[#efede7]/80 p-1 rounded-xl border border-[rgba(36,33,28,0.08)]">
+            {navItems.map((item) => {
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                    isActive
+                      ? 'bg-[#8a7c4c] text-white shadow-2xs font-bold'
+                      : 'text-[#5a5750] hover:text-[#24211c] hover:bg-[#e5e2da]'
+                  }`}
+                >
+                  {item.icon}
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* Header Actions - Right Desktop */}
+          <div className="hidden md:flex items-center space-x-2 shrink-0">
+            {/* Hijri Date Pill */}
+            <div className="flex items-center space-x-1 bg-[#f2eee3] text-[#675c37] border border-[#c3b68b]/40 px-2.5 py-1.5 rounded-lg text-xs font-semibold">
+              <Moon className="w-3.5 h-3.5 text-[#8a7c4c]" />
+              <span className="text-[11px]">{getHijriDate(currentUser?.loginTime)}</span>
             </div>
 
             {/* Sync Cloud */}
             <button
               onClick={handleRefresh}
-              title="Segarkan & Sinkronkan Data Cloud Firestore"
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-emerald-700/60 bg-[#005a2b] hover:bg-[#004220] text-emerald-100 hover:text-white text-xs font-bold transition shadow-2xs cursor-pointer shrink-0"
+              title="Segarkan & Sinkronkan Data"
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-[#efede7] hover:bg-[#e5e2da] text-[#24211c] border border-[rgba(36,33,28,0.12)] text-xs font-semibold transition cursor-pointer shrink-0"
             >
-              <RefreshCw className={`w-3.5 h-3.5 text-emerald-300 ${isRefreshing ? 'animate-spin' : ''}`} />
-              <span>Sync Data</span>
+              <RefreshCw className={`w-3.5 h-3.5 text-[#8a7c4c] ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span>Sync</span>
             </button>
 
-            {/* Tempel Web App URL Button */}
+            {/* Google Sheets Webhook */}
             {onOpenWebhookModal && (
               <button
                 onClick={onOpenWebhookModal}
-                title="Tempel URL Web App Google Sheets untuk Sinkronisasi Otomatis"
-                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-emerald-600 bg-[#00a65a] hover:bg-[#008d4c] text-white text-xs font-bold transition shadow-2xs cursor-pointer shrink-0"
+                title="Integrasi Google Sheets"
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-[#f7f6f2] text-[#24211c] border border-[rgba(36,33,28,0.15)] text-xs font-semibold transition cursor-pointer shrink-0"
               >
-                <FileSpreadsheet className="w-3.5 h-3.5 text-white" />
-                <span className="hidden lg:inline">Tempel Web App URL</span>
-                <span className="lg:hidden">URL Sheets</span>
+                <FileSpreadsheet className="w-3.5 h-3.5 text-[#8a7c4c]" />
+                <span className="hidden xl:inline">Google Sheets</span>
+                <span className="xl:hidden">Sheets</span>
               </button>
             )}
 
-            {/* Nama User & Clickable Dropdown Menu */}
+            {/* User Profile Pill & Dropdown */}
             {currentUser ? (
               <div ref={desktopDropdownRef} className="relative shrink-0">
                 <button
                   onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                  className="flex items-center space-x-2 bg-[#1e2e25] hover:bg-[#283f33] border border-[#23382c] text-white px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer shadow-2xs"
+                  className="flex items-center space-x-2 bg-[#24211c] hover:bg-[#38342c] text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer shadow-2xs"
                 >
-                  <div className="w-6 h-6 rounded-md bg-gradient-to-br from-emerald-500 to-emerald-700 font-black text-[11px] flex items-center justify-center text-white shrink-0 shadow-xs border border-emerald-400/40">
+                  <div className="w-5 h-5 rounded-md bg-[#8a7c4c] text-white font-bold text-[10px] flex items-center justify-center shrink-0">
                     {currentUser.name.charAt(0)}
                   </div>
-                  <div className="text-left leading-tight hidden sm:block">
-                    <p className="font-extrabold text-[11px] text-white truncate max-w-[120px]">{currentUser.name}</p>
-                    <p className="text-[9px] text-emerald-400 font-bold">{currentUser.role.split(' ')[0]}</p>
-                  </div>
-                  <ChevronDown className={`w-3.5 h-3.5 text-emerald-400 transition-transform ${userDropdownOpen ? 'rotate-180' : ''}`} />
+                  <span className="max-w-[110px] truncate text-[11px]">{currentUser.name}</span>
+                  <ChevronDown className={`w-3 h-3 text-[#c3b68b] transition-transform ${userDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
 
-                {/* User Dropdown Menu */}
+                {/* Dropdown */}
                 {userDropdownOpen && (
                   <>
-                    <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-[0.5px]" onClick={() => setUserDropdownOpen(false)} />
-                    <div className="absolute right-0 mt-2 w-72 bg-[#1e2e25] border border-[#23382c] rounded-xl shadow-2xl p-4 z-50 space-y-3 animate-in fade-in slide-in-from-top-2 text-white">
-                      <div className="flex items-center space-x-3 pb-3 border-b border-[#23382c]">
-                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-700 font-black text-white flex items-center justify-center text-sm shadow ring-2 ring-emerald-400 shrink-0 border border-emerald-400/40">
+                    <div className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[0.5px]" onClick={() => setUserDropdownOpen(false)} />
+                    <div className="absolute right-0 mt-2 w-64 bg-white border border-[rgba(36,33,28,0.12)] rounded-xl shadow-xl p-3 z-50 space-y-2.5 animate-in fade-in slide-in-from-top-2 text-[#24211c]">
+                      <div className="flex items-center space-x-2.5 pb-2 border-b border-[rgba(36,33,28,0.08)]">
+                        <div className="w-9 h-9 rounded-lg bg-[#24211c] text-white font-bold flex items-center justify-center text-xs shadow-xs shrink-0">
                           {currentUser.name.charAt(0)}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="font-extrabold text-sm text-white truncate">{currentUser.name}</p>
-                          <span className="inline-block text-[10px] font-bold bg-[#00a65a] text-white px-2 py-0.5 rounded mt-0.5">
+                          <p className="font-bold text-xs text-[#24211c] truncate">{currentUser.name}</p>
+                          <span className="inline-block text-[9px] font-bold bg-[#f2eee3] text-[#675c37] border border-[#c3b68b]/40 px-2 py-0.5 rounded mt-0.5">
                             {currentUser.role}
                           </span>
                         </div>
                       </div>
 
-                      <div className="space-y-2 text-xs bg-[#16221b] p-2.5 rounded-lg border border-[#23382c]">
-                        <div className="flex items-center space-x-2 text-emerald-300 font-extrabold">
-                          <Moon className="w-3.5 h-3.5 text-emerald-400 shrink-0 fill-emerald-400/20" />
-                          <span className="text-[11px]">Hijriyah: {getHijriDate(currentUser.loginTime)}</span>
+                      <div className="space-y-1.5 text-[11px] bg-[#f7f6f2] p-2 rounded-lg border border-[rgba(36,33,28,0.08)]">
+                        <div className="flex items-center space-x-2 text-[#675c37] font-semibold">
+                          <Moon className="w-3.5 h-3.5 text-[#8a7c4c] shrink-0" />
+                          <span>Hijriyah: {getHijriDate(currentUser.loginTime)}</span>
                         </div>
-                        <div className="flex items-center space-x-2 text-emerald-100/70 font-medium">
-                          <Clock className="w-3.5 h-3.5 text-emerald-300/70 shrink-0" />
-                          <span className="text-[11px]">Waktu Login: {formatLoginTime(currentUser.loginTime)}</span>
+                        <div className="flex items-center space-x-2 text-[#7c7b77]">
+                          <Clock className="w-3.5 h-3.5 shrink-0" />
+                          <span>Waktu: {formatLoginTime(currentUser.loginTime)}</span>
                         </div>
-                        <div className="flex items-center space-x-2 text-emerald-300 font-bold">
-                          <Cloud className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                          <span className="text-[11px]">Sync: Cloud Firestore Terhubung</span>
+                        <div className="flex items-center space-x-2 text-[#675c37] font-semibold">
+                          <Cloud className="w-3.5 h-3.5 text-[#8a7c4c] shrink-0" />
+                          <span>Cloud Firestore Aktif</span>
                         </div>
                       </div>
 
-                      {/* Button Atur / Unggah Logo (Khusus Admin) */}
                       {!isPetugas && (
                         <button
                           type="button"
@@ -277,10 +324,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                             setUserDropdownOpen(false);
                             setLogoModalOpen(true);
                           }}
-                          className="w-full flex items-center space-x-2 text-xs font-bold text-amber-200 hover:text-amber-100 bg-amber-950/40 hover:bg-amber-950/70 p-2.5 rounded-lg transition cursor-pointer border border-amber-500/30"
+                          className="w-full flex items-center space-x-2 text-xs font-semibold text-[#24211c] hover:bg-[#efede7] p-2 rounded-lg transition cursor-pointer"
                         >
-                          <ImageIcon className="w-4 h-4 text-amber-400" />
-                          <span>Atur / Unggah Logo Milad</span>
+                          <ImageIcon className="w-4 h-4 text-[#8a7c4c]" />
+                          <span>Atur / Unggah Logo</span>
                         </button>
                       )}
 
@@ -291,10 +338,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                             setUserDropdownOpen(false);
                             onOpenWebhookModal();
                           }}
-                          className="w-full flex items-center space-x-2 text-xs font-bold text-emerald-100 hover:text-white bg-[#16221b] hover:bg-[#283f33] p-2.5 rounded-lg transition cursor-pointer border border-[#23382c]"
+                          className="w-full flex items-center space-x-2 text-xs font-semibold text-[#24211c] hover:bg-[#efede7] p-2 rounded-lg transition cursor-pointer"
                         >
-                          <FileSpreadsheet className="w-4 h-4 text-[#00a65a]" />
-                          <span>Pengaturan Webhook Sheets</span>
+                          <FileSpreadsheet className="w-4 h-4 text-[#8a7c4c]" />
+                          <span>Webhook Google Sheets</span>
                         </button>
                       )}
 
@@ -305,98 +352,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                             setUserDropdownOpen(false);
                             onLogout();
                           }}
-                          className="w-full flex items-center justify-center space-x-2 py-2.5 rounded-lg bg-[#005a2b] hover:bg-[#004220] border border-emerald-600/40 text-white font-extrabold text-xs transition shadow cursor-pointer"
+                          className="w-full flex items-center justify-center space-x-2 py-2 rounded-lg bg-[#24211c] hover:bg-[#38342c] text-white font-bold text-xs transition cursor-pointer"
                         >
-                          <LogOut className="w-4 h-4 text-emerald-300" />
-                          <span>Keluar Akun (Logout)</span>
-                        </button>
-                      )}
-                    </div>
-                  </>
-                )}
-              </div>
-            ) : (
-              <button
-                onClick={onLogin}
-                className="flex items-center space-x-1.5 px-4 py-1.5 rounded-lg bg-[#00a65a] hover:bg-[#008d4c] text-white text-xs font-black shadow transition cursor-pointer border border-emerald-400/40"
-              >
-                <LogIn className="w-4 h-4" />
-                <span>Masuk</span>
-              </button>
-            )}
-          </div>
-
-          {/* Header Actions - Mobile Header */}
-          <div className="md:hidden flex items-center space-x-1.5 shrink-0">
-            {/* Tanggal Hijriyah Mobile Pill */}
-            <div className="flex items-center space-x-1 bg-[#1e2e25] text-emerald-300 border border-emerald-500/30 px-2 py-1 rounded text-[10px] font-extrabold shadow-2xs">
-              <Moon className="w-3 h-3 text-emerald-400 fill-emerald-400/20 shrink-0" />
-              <span className="truncate max-w-[95px]">{getHijriDate(currentUser?.loginTime)}</span>
-            </div>
-
-            {/* Sync Cloud Mobile Button */}
-            <button
-              onClick={handleRefresh}
-              title="Segarkan & Sinkronkan Data Cloud"
-              className="flex items-center space-x-1 px-2 py-1 rounded bg-[#005a2b] text-white font-extrabold text-[10px] shadow-2xs cursor-pointer shrink-0 border border-emerald-600/40"
-            >
-              <RefreshCw className={`w-3 h-3 text-emerald-300 ${isRefreshing ? 'animate-spin' : ''}`} />
-              <span>Sync</span>
-            </button>
-
-            {/* Tempel Web App URL Mobile Button */}
-            {onOpenWebhookModal && (
-              <button
-                onClick={onOpenWebhookModal}
-                title="Tempel URL Web App Google Sheets"
-                className="flex items-center space-x-1 px-2 py-1 rounded bg-[#00a65a] text-white font-extrabold text-[10px] shadow-2xs cursor-pointer shrink-0"
-              >
-                <FileSpreadsheet className="w-3 h-3 text-white" />
-                <span>URL</span>
-              </button>
-            )}
-
-            {currentUser ? (
-              <div ref={mobileDropdownRef} className="relative">
-                <button
-                  onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                  className="flex items-center space-x-1 bg-[#00a65a] text-white px-2 py-1 rounded text-[11px] font-bold cursor-pointer shadow-xs border border-emerald-400/40"
-                >
-                  <User className="w-3.5 h-3.5 text-white" />
-                  <span className="truncate max-w-[65px] font-extrabold">{currentUser.name.split(' ')[0]}</span>
-                  <ChevronDown className="w-3 h-3 text-white" />
-                </button>
-
-                {/* Mobile User Dropdown Menu */}
-                {userDropdownOpen && (
-                  <>
-                    <div className="fixed inset-0 z-40 bg-slate-900/10 backdrop-blur-[0.5px]" onClick={() => setUserDropdownOpen(false)} />
-                    <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl border border-emerald-100 shadow-2xl p-3 z-50 space-y-2.5 animate-in fade-in slide-in-from-top-2">
-                      <div className="flex items-center space-x-2.5 pb-2 border-b border-emerald-100">
-                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 font-bold text-white flex items-center justify-center text-xs shadow">
-                          {currentUser.name.charAt(0)}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-extrabold text-xs text-slate-900 truncate">{currentUser.name}</p>
-                          <p className="text-[10px] text-emerald-700 font-semibold">{currentUser.role}</p>
-                        </div>
-                      </div>
-
-                      <div className="space-y-1.5 text-[11px] bg-emerald-50/60 p-2 rounded-xl border border-emerald-100">
-                        <p className="font-extrabold text-emerald-800">🌙 {getHijriDate(currentUser.loginTime)}</p>
-                        <p className="text-slate-600 font-medium">🕒 Login: {formatLoginTime(currentUser.loginTime)}</p>
-                      </div>
-
-                      {onLogout && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setUserDropdownOpen(false);
-                            onLogout();
-                          }}
-                          className="w-full py-2 bg-emerald-700 hover:bg-emerald-800 border border-emerald-800 text-white font-extrabold text-xs rounded-xl flex items-center justify-center space-x-1.5 cursor-pointer shadow-xs"
-                        >
-                          <LogOut className="w-3.5 h-3.5 text-emerald-200" />
+                          <LogOut className="w-3.5 h-3.5 text-[#c3b68b]" />
                           <span>Keluar (Logout)</span>
                         </button>
                       )}
@@ -407,7 +365,86 @@ export const Navbar: React.FC<NavbarProps> = ({
             ) : (
               <button
                 onClick={onLogin}
-                className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-[#00a65a] text-white font-black text-[11px] shadow-sm cursor-pointer"
+                className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg bg-[#8a7c4c] hover:bg-[#675c37] text-white text-xs font-bold shadow-xs transition cursor-pointer"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Masuk</span>
+              </button>
+            )}
+          </div>
+
+          {/* Mobile Header Actions */}
+          <div className="md:hidden flex items-center space-x-1.5 shrink-0">
+            {/* Sync button */}
+            <button
+              onClick={handleRefresh}
+              title="Segarkan Data"
+              className="p-1.5 rounded-lg bg-[#f7f6f2] hover:bg-[#e5e2da] text-[#24211c] border border-[rgba(36,33,28,0.12)] text-xs cursor-pointer shrink-0"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-[#8a7c4c] ${isRefreshing ? 'animate-spin' : ''}`} />
+            </button>
+
+            {/* Sheets button */}
+            {onOpenWebhookModal && (
+              <button
+                onClick={onOpenWebhookModal}
+                title="Google Sheets"
+                className="p-1.5 rounded-lg bg-white hover:bg-[#f7f6f2] text-[#24211c] border border-[rgba(36,33,28,0.12)] text-xs cursor-pointer shrink-0"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-[#8a7c4c]" />
+              </button>
+            )}
+
+            {/* User Mobile Button */}
+            {currentUser ? (
+              <div ref={mobileDropdownRef} className="relative">
+                <button
+                  onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                  className="flex items-center space-x-1 bg-[#24211c] text-white px-2 py-1 rounded-lg text-xs font-bold cursor-pointer"
+                >
+                  <span className="truncate max-w-[65px] text-[11px]">{currentUser.name.split(' ')[0]}</span>
+                  <ChevronDown className="w-3 h-3 text-[#c3b68b]" />
+                </button>
+
+                {userDropdownOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[0.5px]" onClick={() => setUserDropdownOpen(false)} />
+                    <div className="absolute right-0 mt-2 w-60 bg-white rounded-xl border border-[rgba(36,33,28,0.12)] shadow-xl p-3 z-50 space-y-2 animate-in fade-in slide-in-from-top-2">
+                      <div className="flex items-center space-x-2 pb-2 border-b border-[rgba(36,33,28,0.08)]">
+                        <div className="w-8 h-8 rounded-lg bg-[#24211c] text-white font-bold flex items-center justify-center text-xs shadow-xs">
+                          {currentUser.name.charAt(0)}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-bold text-xs text-[#24211c] truncate">{currentUser.name}</p>
+                          <p className="text-[10px] text-[#7c7b77]">{currentUser.role}</p>
+                        </div>
+                      </div>
+
+                      <div className="text-[10px] text-[#675c37] bg-[#f2eee3] p-1.5 rounded-lg font-medium">
+                        🌙 {getHijriDate(currentUser.loginTime)}
+                      </div>
+
+                      {onLogout && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setUserDropdownOpen(false);
+                            onLogout();
+                          }}
+                          className="w-full py-1.5 bg-[#24211c] hover:bg-[#38342c] text-white font-bold text-xs rounded-lg flex items-center justify-center space-x-1.5 cursor-pointer"
+                        >
+                          <LogOut className="w-3 h-3 text-[#c3b68b]" />
+                          <span>Keluar (Logout)</span>
+                        </button>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <button
+                onClick={onLogin}
+                className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-[#8a7c4c] text-white font-bold text-[11px] shadow-xs cursor-pointer"
               >
                 <LogIn className="w-3.5 h-3.5" />
                 <span>Masuk</span>
@@ -419,40 +456,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Mobile Menu Drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-white/98 border-b border-emerald-100 px-4 pt-3 pb-5 space-y-3 backdrop-blur-xl shadow-xl">
-          {currentUser ? (
-            <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-200/80 flex items-center justify-between text-xs">
-              <div className="flex items-center space-x-2.5">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 font-bold text-white flex items-center justify-center text-xs shadow">
-                  {currentUser.name.charAt(0)}
-                </div>
-                <div>
-                  <p className="font-extrabold text-slate-900 text-xs">{currentUser.name}</p>
-                  <p className="text-[10px] text-emerald-700 font-semibold">{currentUser.role}</p>
-                  <p className="text-[10px] text-emerald-800 font-bold mt-0.5">🌙 {getHijriDate(currentUser.loginTime)}</p>
-                </div>
-              </div>
-              <span className="text-[9px] bg-emerald-100 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full font-bold">
-                Online
-              </span>
-            </div>
-          ) : (
-            <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 text-center">
-              <p className="text-xs text-slate-600 font-medium mb-2">Belum masuk ke akun panitia?</p>
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  if (onLogin) onLogin();
-                }}
-                className="w-full py-2 bg-[#00a65a] hover:bg-[#008d4c] text-white font-extrabold text-xs rounded-xl shadow-sm flex items-center justify-center space-x-1.5 cursor-pointer"
-              >
-                <LogIn className="w-4 h-4" />
-                <span>Masuk Sekarang</span>
-              </button>
-            </div>
-          )}
-
-          {/* Nav Items */}
+        <div className="md:hidden bg-white border-b border-[rgba(36,33,28,0.12)] px-4 pt-3 pb-5 space-y-3 shadow-lg">
           <div className="space-y-1">
             {navItems.map((item) => {
               const isActive = activeTab === item.id;
@@ -463,10 +467,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                     setActiveTab(item.id);
                     setMobileMenuOpen(false);
                   }}
-                  className={`w-full flex items-center space-x-3 px-4 py-2.5 rounded-2xl text-xs font-bold transition ${
+                  className={`w-full flex items-center space-x-3 px-3 py-2 rounded-xl text-xs font-semibold transition cursor-pointer ${
                     isActive
-                      ? 'bg-[#00a65a] text-white font-black shadow-sm'
-                      : 'text-slate-700 hover:text-slate-900 hover:bg-emerald-50'
+                      ? 'bg-[#8a7c4c] text-white font-bold'
+                      : 'text-[#24211c] hover:bg-[#efede7]'
                   }`}
                 >
                   {item.icon}
@@ -476,42 +480,30 @@ export const Navbar: React.FC<NavbarProps> = ({
             })}
           </div>
 
-          {/* Action Buttons in Drawer */}
-          <div className="pt-2 border-t border-emerald-100 space-y-2">
+          <div className="pt-2 border-t border-[rgba(36,33,28,0.08)] space-y-1.5">
             {!isPetugas && (
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
                   setLogoModalOpen(true);
                 }}
-                className="w-full py-2.5 px-3 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-xs flex items-center justify-center space-x-1.5 cursor-pointer shadow-xs"
+                className="w-full py-2 px-3 rounded-lg border border-[rgba(36,33,28,0.15)] bg-[#f7f6f2] text-[#24211c] font-semibold text-xs flex items-center justify-center space-x-1.5 cursor-pointer"
               >
-                <ImageIcon className="w-3.5 h-3.5 text-amber-700" />
+                <ImageIcon className="w-3.5 h-3.5 text-[#8a7c4c]" />
                 <span>Atur / Unggah Logo Milad</span>
               </button>
             )}
 
-            {currentUser && onLogout ? (
+            {currentUser && onLogout && (
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
                   onLogout();
                 }}
-                className="w-full py-2.5 px-3 rounded-xl border border-emerald-700/40 bg-[#005a2b] hover:bg-[#004220] text-white font-extrabold text-xs flex items-center justify-center space-x-1.5 cursor-pointer shadow-xs"
+                className="w-full py-2 px-3 rounded-lg bg-[#24211c] text-white font-semibold text-xs flex items-center justify-center space-x-1.5 cursor-pointer"
               >
-                <LogOut className="w-3.5 h-3.5 text-emerald-300" />
+                <LogOut className="w-3.5 h-3.5 text-[#c3b68b]" />
                 <span>Keluar Akun</span>
-              </button>
-            ) : (
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  if (onLogin) onLogin();
-                }}
-                className="w-full py-2.5 px-3 rounded-xl bg-[#00a65a] hover:bg-[#008d4c] text-white font-black text-xs flex items-center justify-center space-x-1.5 cursor-pointer shadow-sm"
-              >
-                <LogIn className="w-3.5 h-3.5" />
-                <span>Masuk Akun</span>
               </button>
             )}
           </div>

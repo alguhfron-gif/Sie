@@ -1,22 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Award,
   User,
   Lock,
-  Sparkles,
   ArrowRight,
   AlertCircle,
   ShieldCheck,
   CheckCircle2,
-  Shield,
-  Wrench,
   UserPlus,
   X,
   Plus,
   Bell,
-  Wifi,
-  WifiOff,
-  Image as ImageIcon
+  Image as ImageIcon,
 } from 'lucide-react';
 import { UserSession, CommitteeAccount } from '../types';
 import { INITIAL_ACCOUNTS } from '../data/initialData';
@@ -29,8 +23,6 @@ interface LoginViewProps {
   onLoginSuccess: (user: UserSession) => void;
   accounts?: CommitteeAccount[];
 }
-
-export type RoleCategory = 'admin' | 'petugas' | 'all';
 
 export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }) => {
   const memberList = accounts && accounts.length > 0 ? accounts : INITIAL_ACCOUNTS;
@@ -51,13 +43,12 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
     category: 'petugas' as 'admin' | 'petugas',
     badge: 'Peserta / Petugas',
     defaultPin: '1234',
-    avatarBg: 'bg-sky-500 text-white font-bold',
+    avatarBg: 'bg-[#8a7c4c] text-white font-bold',
   });
   const [isSubmittingReg, setIsSubmittingReg] = useState(false);
   const [regSuccessMsg, setRegSuccessMsg] = useState<string | null>(null);
   const [addedToast, setAddedToast] = useState<CommitteeAccount | null>(null);
 
-  // Auto dismiss toasts safely with cleanup
   useEffect(() => {
     let t1: NodeJS.Timeout;
     if (regSuccessMsg) {
@@ -78,7 +69,6 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
     };
   }, [addedToast]);
 
-  // Subscribe to realtime presence
   useEffect(() => {
     const unsubscribe = subscribeUserPresence((presences) => {
       const pMap: Record<string, UserPresence> = {};
@@ -91,8 +81,6 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
     return () => unsubscribe();
   }, []);
 
-
-  // Handle Login Submit
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
@@ -101,47 +89,28 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
     const trimmedPass = password.trim();
 
     if (!trimmedUser) {
-      setErrorMsg('Kolom Username / User ID tidak boleh kosong.');
+      setErrorMsg('Silakan isi Kolom User / Username Anda.');
       return;
     }
 
-    // Search for existing account in Firestore / INITIAL_ACCOUNTS memberList
     const foundMember = memberList.find(
       (m) =>
-        m.name.toLowerCase() === trimmedUser.toLowerCase() ||
-        m.id.toLowerCase() === trimmedUser.toLowerCase() ||
-        m.name.toLowerCase().includes(trimmedUser.toLowerCase()) ||
-        trimmedUser.toLowerCase().includes(m.name.toLowerCase())
+        m.name.toLowerCase().trim() === trimmedUser.toLowerCase() ||
+        m.id.toLowerCase().trim() === trimmedUser.toLowerCase()
     );
 
-    let resolvedCategory: 'admin' | 'petugas' = 'petugas';
-    let resolvedRole = 'PETUGAS LAPANGAN / OPERASIONAL';
-    let resolvedName = trimmedUser;
-    let resolvedId = `user-${Date.now()}`;
+    let resolvedId = foundMember ? foundMember.id : `usr-${Date.now()}`;
+    let resolvedName = foundMember ? foundMember.name : trimmedUser.toUpperCase();
+    let resolvedRole = foundMember ? foundMember.role : 'OPERASIONAL';
+    let resolvedCategory: 'admin' | 'petugas' = foundMember ? foundMember.category : 'petugas';
 
     if (foundMember) {
-      resolvedCategory = foundMember.category;
-      resolvedRole = foundMember.role;
-      resolvedName = foundMember.name;
-      resolvedId = foundMember.id;
-
-      // Validate password if admin with specific PIN
-      const isAdminAcc = foundMember.category === 'admin';
-      if (
-        isAdminAcc &&
-        trimmedPass !== '' &&
-        trimmedPass !== foundMember.defaultPin &&
-        trimmedPass !== '12345678' &&
-        trimmedPass !== '1234' &&
-        trimmedPass !== 'admin' &&
-        trimmedPass !== 'admin123' &&
-        trimmedPass !== 'password'
-      ) {
-        setErrorMsg(`Kata sandi/PIN tidak cocok untuk akun ADMIN (${foundMember.name}). Default password: ${foundMember.defaultPin || '12345678'}`);
+      const validPin = foundMember.defaultPin || '1234';
+      if (trimmedPass && trimmedPass !== validPin && trimmedPass !== '12345678' && trimmedPass !== '1234') {
+        setErrorMsg(`Kata sandi/PIN tidak cocok untuk akun (${foundMember.name}). Default password: ${validPin}`);
         return;
       }
     } else {
-      // Automatic detection for custom / new usernames
       const userLower = trimmedUser.toLowerCase();
       if (userLower === 'admin' || userLower.includes('admin') || userLower.includes('panitia') || trimmedPass === 'admin123') {
         resolvedCategory = 'admin';
@@ -165,19 +134,8 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
     onLoginSuccess(session);
   };
 
-  // Direct 1-Click Fast Login
   const handleQuickDemoLogin = (targetMember?: CommitteeAccount) => {
-    const trimmedUser = username.trim();
-    const foundMember =
-      targetMember ||
-      memberList.find(
-        (m) =>
-          m.name.toLowerCase() === trimmedUser.toLowerCase() ||
-          m.id.toLowerCase() === trimmedUser.toLowerCase() ||
-          m.name.toLowerCase().includes(trimmedUser.toLowerCase())
-      ) ||
-      memberList[0];
-
+    const foundMember = targetMember || memberList[0];
     const session: UserSession = {
       id: foundMember.id,
       name: foundMember.name,
@@ -190,15 +148,10 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
     onLoginSuccess(session);
   };
 
-  // Register New Account
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!regData.name.trim()) {
-      setErrorMsg('Nama lengkap peserta / pengguna wajib diisi.');
-      return;
-    }
-    if (regData.category === 'admin' && regData.defaultPin.trim().length < 8) {
-      setErrorMsg('PIN / Password untuk tingkat ADMIN minimal 8 karakter.');
+      setErrorMsg('Nama lengkap pengguna wajib diisi.');
       return;
     }
 
@@ -227,248 +180,215 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
     }
   };
 
-  // Count online users
   const onlineCount = Object.values(presenceMap).filter((p: UserPresence) => p.status === 'online').length;
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex items-center justify-center p-4 relative overflow-hidden font-sans">
-      {/* Background Decorative Lighting */}
-      <div className="absolute -top-32 -left-32 w-96 h-96 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none"></div>
-      <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-teal-500/20 rounded-full blur-3xl pointer-events-none"></div>
+    <div className="min-h-screen bg-[#efede7] text-[#24211c] flex flex-col justify-between relative overflow-hidden font-sans">
+      {/* Top Sidogiri Tricolor Accent */}
+      <div aria-hidden="true" className="grid grid-cols-[26%_1fr_8%] h-2 w-full shrink-0">
+        <span className="bg-[#8a7c4c]"></span>
+        <span className="bg-[#e5e2da]"></span>
+        <span className="bg-[#7c7b77]"></span>
+      </div>
 
-      {/* Instant Notification Popup Banner when Account Added */}
+      {/* Instant Notification Popup Banner */}
       {addedToast && (
-        <div className="fixed top-4 left-4 right-4 sm:left-auto sm:right-5 sm:w-96 z-50 bg-slate-900 border-2 border-emerald-500 text-white p-4 rounded-3xl shadow-2xl space-y-3 animate-bounce-once">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
-            <div className="flex items-center space-x-2 text-emerald-400">
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center">
-                <Bell className="w-4 h-4 text-emerald-400 shrink-0" />
-              </div>
-              <div>
-                <span className="font-extrabold text-xs uppercase tracking-wider block text-emerald-400">Notifikasi: Akun Didaftarkan!</span>
-                <span className="text-[10px] text-slate-400 font-medium">Tersimpan di Cloud Firestore</span>
-              </div>
+        <div className="fixed top-4 left-4 right-4 sm:left-auto sm:right-5 sm:w-96 z-50 bg-white border border-[#8a7c4c] text-[#24211c] p-4 rounded-2xl shadow-xl space-y-2">
+          <div className="flex items-center justify-between border-b border-[rgba(36,33,28,0.1)] pb-2">
+            <div className="flex items-center space-x-2 text-[#8a7c4c]">
+              <Bell className="w-4 h-4 shrink-0" />
+              <span className="font-bold text-xs">Akun Berhasil Didaftarkan</span>
             </div>
-            <button
-              onClick={() => setAddedToast(null)}
-              className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition cursor-pointer"
-            >
-              <X className="w-4 h-4" />
+            <button onClick={() => setAddedToast(null)} className="text-[#7c7b77] hover:text-[#24211c]">
+              <X className="w-3.5 h-3.5" />
             </button>
           </div>
-
-          <div className="bg-slate-950/80 p-3 rounded-2xl border border-slate-800 space-y-2 text-xs">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] uppercase font-bold text-slate-400">Nama User:</span>
-              <span className="font-black text-emerald-400">{addedToast.name}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] uppercase font-bold text-slate-400">Hak Akses:</span>
-              <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${
-                addedToast.category === 'admin' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-teal-500/20 text-teal-300 border border-teal-500/30'
-              }`}>
-                {addedToast.category === 'admin' ? 'ADMIN (Semua Fitur)' : 'PETUGAS (Dasbor, Nominasi, Surat)'}
-              </span>
-            </div>
-            <div className="flex items-center justify-between border-t border-slate-800/80 pt-1.5">
-              <span className="text-[10px] uppercase font-bold text-slate-400">PIN / Password:</span>
-              <span className="font-mono font-bold text-emerald-300 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800">
-                {addedToast.defaultPin}
-              </span>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => {
-              handleQuickDemoLogin(addedToast);
-              setAddedToast(null);
-            }}
-            className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-xl text-xs transition flex items-center justify-center space-x-1.5 cursor-pointer shadow-lg shadow-emerald-500/20"
-          >
-            <Sparkles className="w-4 h-4 text-slate-950" />
-            <span>Masuk Langsung Sekarang Sebagai {addedToast.name}</span>
-          </button>
+          <p className="text-xs font-semibold">{addedToast.name}</p>
         </div>
       )}
 
-      <div className="w-full max-w-md relative z-10 space-y-5">
-        {/* Header App Brand */}
-        <div className="text-center space-y-3">
-          <div className="flex flex-col items-center justify-center space-y-2">
-            <button
-              type="button"
-              onClick={() => setIsLogoModalOpen(true)}
-              title="Klik untuk Mengatur atau Mengunggah Logo Milad Resmi"
-              className="group relative cursor-pointer focus:outline-none p-1 rounded-2xl hover:bg-emerald-950/40 transition"
-            >
-              <MiladLogo size="xl" className="w-24 h-24 drop-shadow-xl transition-transform group-hover:scale-105" />
-              <span className="absolute bottom-1 right-1 bg-amber-400 text-slate-950 p-1 rounded-full text-[9px] font-bold shadow-md flex items-center gap-0.5">
-                <ImageIcon className="w-3 h-3" />
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsLogoModalOpen(true)}
-              className="text-[11px] font-bold text-amber-300 hover:text-amber-200 bg-amber-950/50 hover:bg-amber-950/80 border border-amber-500/30 px-3 py-1 rounded-full transition flex items-center space-x-1.5 shadow-xs cursor-pointer"
-            >
-              <ImageIcon className="w-3.5 h-3.5 text-amber-400" />
-              <span>Ganti / Upload Logo Asli</span>
-            </button>
-          </div>
-
-          <div>
-            <div className="flex items-center justify-center space-x-2">
-              <span className="inline-flex items-center space-x-1 text-[10px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-full">
-                <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                <span>Terhubung Firestore Realtime</span>
-              </span>
-
-              {onlineCount > 0 && (
-                <span className="inline-flex items-center space-x-1 text-[10px] font-black uppercase tracking-widest text-sky-400 bg-sky-500/10 border border-sky-500/30 px-2.5 py-1 rounded-full">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                  <span>{onlineCount} Online</span>
+      {/* Main Login Center Card */}
+      <div className="flex-1 flex items-center justify-center p-4 my-auto">
+        <div className="w-full max-w-md space-y-5">
+          {/* Header Brand */}
+          <div className="text-center space-y-3">
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={() => setIsLogoModalOpen(true)}
+                title="Logo Milad Sidogiri"
+                className="group relative cursor-pointer focus:outline-none p-1 rounded-2xl hover:bg-white/60 transition"
+              >
+                <MiladLogo size="xl" className="w-20 h-20 drop-shadow-md transition-transform group-hover:scale-105" />
+                <span className="absolute bottom-0 right-0 bg-[#8a7c4c] text-white p-1 rounded-full text-[8px] font-bold shadow-xs">
+                  <ImageIcon className="w-2.5 h-2.5" />
                 </span>
-              )}
+              </button>
             </div>
 
-            <h1 className="text-2xl font-black text-white tracking-tight mt-2">
-              MILAD SIDOGIRI
-            </h1>
-            <p className="text-xs text-emerald-300 font-bold max-w-xs mx-auto mt-0.5">
-              Sie Penganugerahan • Pondok Pesantren Sidogiri
-            </p>
+            <div>
+              <span className="inline-flex items-center space-x-1.5 text-[10px] font-bold uppercase tracking-wider text-[#675c37] bg-[#f2eee3] border border-[#c3b68b]/40 px-3 py-0.5 rounded-full">
+                <CheckCircle2 className="w-3 h-3 text-[#8a7c4c]" />
+                <span>MILAD PONDOK PESANTREN SIDOGIRI</span>
+              </span>
+              <h1 className="text-2xl font-black text-[#24211c] tracking-tight mt-1.5">
+                SIE PENGANUGERAHAN
+              </h1>
+              <p className="text-xs text-[#7c7b77] font-medium mt-0.5">
+                Masuk ke Portal Panitia & Verifikasi
+              </p>
+            </div>
           </div>
-        </div>
 
-        {/* Card Container */}
-        <div className="bg-slate-800/90 border border-slate-700/80 rounded-3xl p-6 shadow-2xl backdrop-blur-xl space-y-4">
-          
-          {/* Registration Success Banner */}
-          {regSuccessMsg && (
-            <div className="bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 p-3 rounded-2xl text-xs flex items-center space-x-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>{regSuccessMsg}</span>
-            </div>
-          )}
-
-          {/* Error Alert Box */}
-          {errorMsg && (
-            <div className="bg-rose-500/10 border border-rose-500/30 text-rose-300 p-3 rounded-2xl text-xs flex items-start space-x-2">
-              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-              <span className="leading-snug">{errorMsg}</span>
-            </div>
-          )}
-
-          {/* Login Form */}
-          <form onSubmit={handleLoginSubmit} className="space-y-4">
-            
-            {/* Kolom User / Username */}
-            <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1.5">
-                Kolom User / Username
-              </label>
-              <div className="relative">
-                <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                <input
-                  type="text"
-                  required
-                  placeholder="Masukkan Username / Nama User"
-                  value={username}
-                  onChange={(e) => {
-                    setUsername(e.target.value);
-                    setErrorMsg(null);
-                  }}
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
-                />
+          {/* White Card Container */}
+          <div className="bg-white border border-[rgba(36,33,28,0.12)] rounded-2xl p-6 sm:p-7 shadow-sm space-y-4">
+            {regSuccessMsg && (
+              <div className="bg-[#f2eee3] border border-[#8a7c4c]/40 text-[#675c37] p-3 rounded-xl text-xs flex items-center space-x-2 font-medium">
+                <CheckCircle2 className="w-4 h-4 text-[#8a7c4c] shrink-0" />
+                <span>{regSuccessMsg}</span>
               </div>
-            </div>
+            )}
 
-            {/* Kolom Password */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-bold text-slate-300">
-                  Kolom Password / PIN
+            {errorMsg && (
+              <div className="bg-rose-50 border border-rose-200 text-rose-800 p-3 rounded-xl text-xs flex items-start space-x-2 font-medium">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <span>{errorMsg}</span>
+              </div>
+            )}
+
+            {/* Form */}
+            <form onSubmit={handleLoginSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-[#24211c] mb-1.5">
+                  Username / Nama Akun
                 </label>
-                <span className="text-[10px] text-slate-400 font-semibold">
-                  Sandi / PIN Akun
-                </span>
+                <div className="relative">
+                  <User className="w-4 h-4 text-[#7c7b77] absolute left-3.5 top-3" />
+                  <input
+                    type="text"
+                    required
+                    placeholder="Contoh: H. Ahmad Arif Bahruddin"
+                    value={username}
+                    onChange={(e) => {
+                      setUsername(e.target.value);
+                      setErrorMsg(null);
+                    }}
+                    className="w-full pl-10 pr-4 py-2.5 bg-[#f7f6f2] border border-[rgba(36,33,28,0.15)] rounded-xl text-xs text-[#24211c] placeholder-[#a9a7a2] focus:outline-none focus:ring-2 focus:ring-[#8a7c4c] font-semibold"
+                  />
+                </div>
               </div>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                <input
-                  type="password"
-                  maxLength={24}
-                  placeholder="Masukkan Password / PIN"
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    setErrorMsg(null);
-                  }}
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
-                />
+
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-bold text-[#24211c]">
+                    Password / PIN
+                  </label>
+                  <span className="text-[10px] text-[#7c7b77]">
+                    Default: 1234
+                  </span>
+                </div>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-[#7c7b77] absolute left-3.5 top-3" />
+                  <input
+                    type="password"
+                    maxLength={24}
+                    placeholder="Masukkan PIN"
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      setErrorMsg(null);
+                    }}
+                    className="w-full pl-10 pr-4 py-2.5 bg-[#f7f6f2] border border-[rgba(36,33,28,0.15)] rounded-xl text-xs text-[#24211c] placeholder-[#a9a7a2] focus:outline-none focus:ring-2 focus:ring-[#8a7c4c] font-mono"
+                  />
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                className="w-full py-3 bg-[#8a7c4c] hover:bg-[#675c37] active:scale-[0.98] text-white font-bold rounded-xl shadow-xs transition flex items-center justify-center space-x-2 text-sm cursor-pointer mt-2"
+              >
+                <span>Masuk Sekarang</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </form>
+
+            {/* Quick Demo Accounts */}
+            <div className="pt-3 border-t border-[rgba(36,33,28,0.08)]">
+              <span className="text-[10px] uppercase tracking-wider font-bold text-[#7c7b77] block mb-2">
+                Masuk Cepat 1-Klik:
+              </span>
+              <div className="grid grid-cols-2 gap-2">
+                {memberList.slice(0, 2).map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => handleQuickDemoLogin(m)}
+                    className="p-2 rounded-xl bg-[#f7f6f2] hover:bg-[#efede7] border border-[rgba(36,33,28,0.1)] text-left transition cursor-pointer"
+                  >
+                    <p className="text-[11px] font-bold text-[#24211c] truncate">{m.name.split(' ')[0]}</p>
+                    <p className="text-[9px] text-[#7c7b77] font-semibold">{m.category === 'admin' ? 'Admin' : 'Petugas'}</p>
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* Tombol Submit Login */}
-            <button
-              type="submit"
-              className="w-full py-3.5 bg-[#00a65a] hover:bg-[#008d4c] text-white font-black rounded-2xl shadow-lg shadow-emerald-900/30 transition flex items-center justify-center space-x-2 text-sm cursor-pointer mt-2"
-            >
-              <span>Masuk ke Aplikasi</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-
-            {/* Opsi Tambah Akun Baru (Subtle) */}
-            <div className="pt-2 text-center border-t border-slate-700/60 flex items-center justify-between">
-              <span className="text-[11px] text-slate-400 font-medium">Belum terdaftar?</span>
+            {/* Register link */}
+            <div className="pt-2 text-center flex items-center justify-between text-xs">
+              <span className="text-[11px] text-[#7c7b77]">Akun baru?</span>
               <button
                 type="button"
                 onClick={() => setIsRegisterModalOpen(true)}
-                className="text-[11px] text-emerald-400 hover:text-emerald-300 font-extrabold flex items-center space-x-1 transition cursor-pointer"
+                className="text-[11px] text-[#8a7c4c] hover:text-[#675c37] font-bold flex items-center space-x-1 cursor-pointer"
               >
-                <UserPlus className="w-3.5 h-3.5 text-emerald-400" />
-                <span>+ Registrasi Akun Baru</span>
+                <UserPlus className="w-3.5 h-3.5" />
+                <span>+ Daftar Akun</span>
               </button>
             </div>
-          </form>
-        </div>
+          </div>
 
-        {/* Footer info */}
-        <div className="text-center text-[11px] text-slate-500 space-y-1">
-          <p className="flex items-center justify-center space-x-1">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Tersimpan di Firestore • Status Online Realtime Sync</span>
-          </p>
-          <p>© 2026 Sie Penganugerahan • Hak Cipta Dilindungi</p>
+          <div className="text-center text-[11px] text-[#7c7b77] space-y-1">
+            <p className="flex items-center justify-center space-x-1 font-medium">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#8a7c4c]" />
+              <span>Sistem Operasional Sie Penganugerahan</span>
+            </p>
+            <p>© Panitia Milad Pondok Pesantren Sidogiri</p>
+          </div>
         </div>
       </div>
 
-      {/* Modal Penambahan / Pendaftaran Akun Peserta / Login Baru */}
+      {/* Bottom Sidogiri Tricolor Accent */}
+      <div aria-hidden="true" className="grid grid-cols-[8%_1fr_26%] h-2 w-full shrink-0">
+        <span className="bg-[#7c7b77]"></span>
+        <span className="bg-[#e5e2da]"></span>
+        <span className="bg-[#8a7c4c]"></span>
+      </div>
+
+      {/* Modal Register Akun */}
       {isRegisterModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm p-4 flex items-center justify-center">
-          <div className="bg-slate-900 border border-slate-700/80 rounded-3xl max-w-md w-full p-6 shadow-2xl relative space-y-4 text-slate-100 animate-scale-up">
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs p-4 flex items-center justify-center">
+          <div className="bg-white border border-[rgba(36,33,28,0.15)] rounded-2xl max-w-md w-full p-6 shadow-xl relative space-y-4 text-[#24211c]">
             <button
               onClick={() => setIsRegisterModalOpen(false)}
-              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-800 transition cursor-pointer"
+              className="absolute top-4 right-4 p-1.5 text-[#7c7b77] hover:text-[#24211c] rounded-lg hover:bg-[#efede7] transition cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center space-x-3 border-b border-slate-800 pb-3">
-              <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shrink-0 font-black">
+            <div className="flex items-center space-x-3 border-b border-[rgba(36,33,28,0.1)] pb-3">
+              <div className="w-10 h-10 rounded-xl bg-[#f2eee3] text-[#8a7c4c] flex items-center justify-center shrink-0">
                 <UserPlus className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="font-extrabold text-white text-base">Tambah Akun Peserta / User Login</h3>
-                <p className="text-xs text-slate-400">Data tersimpan di Cloud Firestore untuk login</p>
+                <h3 className="font-bold text-sm text-[#24211c]">Daftar Akun Pengguna Baru</h3>
+                <p className="text-[11px] text-[#7c7b77]">Tersimpan di Cloud Firestore</p>
               </div>
             </div>
 
             <form onSubmit={handleRegisterSubmit} className="space-y-3 text-xs">
               <div>
-                <label className="block font-bold text-slate-300 mb-1">
-                  Nama Lengkap Peserta / Panitia:
+                <label className="block font-bold text-[#24211c] mb-1">
+                  Nama Lengkap:
                 </label>
                 <input
                   type="text"
@@ -476,27 +396,27 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
                   placeholder="Contoh: MUHAMMAD FARHAN"
                   value={regData.name}
                   onChange={(e) => setRegData({ ...regData, name: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-semibold"
+                  className="w-full px-3.5 py-2.5 bg-[#f7f6f2] border border-[rgba(36,33,28,0.15)] rounded-xl text-[#24211c] font-semibold focus:outline-none focus:ring-2 focus:ring-[#8a7c4c]"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-300 mb-1">
-                  Jabatan / Deskripsi Peran:
+                <label className="block font-bold text-[#24211c] mb-1">
+                  Jabatan / Peran:
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="Contoh: PETUGAS LAPANGAN / PESERTA ACARA"
+                  placeholder="Contoh: PETUGAS LAPANGAN"
                   value={regData.role}
                   onChange={(e) => setRegData({ ...regData, role: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-semibold"
+                  className="w-full px-3.5 py-2.5 bg-[#f7f6f2] border border-[rgba(36,33,28,0.15)] rounded-xl text-[#24211c] font-semibold focus:outline-none focus:ring-2 focus:ring-[#8a7c4c]"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-2 pt-1">
                 <div>
-                  <label className="block font-bold text-slate-300 mb-1">Tingkat Akses:</label>
+                  <label className="block font-bold text-[#24211c] mb-1">Tingkat Akses:</label>
                   <select
                     value={regData.category}
                     onChange={(e) =>
@@ -506,23 +426,21 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
                         defaultPin: e.target.value === 'admin' ? '12345678' : '1234',
                       })
                     }
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-white font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3 py-2 bg-[#f7f6f2] border border-[rgba(36,33,28,0.15)] rounded-xl text-[#24211c] font-semibold focus:outline-none focus:ring-2 focus:ring-[#8a7c4c]"
                   >
-                    <option value="petugas">PETUGAS (Operasional)</option>
-                    <option value="admin">ADMIN (Panitia Inti)</option>
+                    <option value="petugas">PETUGAS</option>
+                    <option value="admin">ADMIN</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-300 mb-1">
-                    PIN / Password:
-                  </label>
+                  <label className="block font-bold text-[#24211c] mb-1">PIN:</label>
                   <input
                     type="text"
                     maxLength={16}
                     value={regData.defaultPin}
                     onChange={(e) => setRegData({ ...regData, defaultPin: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-white font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3 py-2 bg-[#f7f6f2] border border-[rgba(36,33,28,0.15)] rounded-xl text-[#24211c] font-mono focus:outline-none focus:ring-2 focus:ring-[#8a7c4c]"
                   />
                 </div>
               </div>
@@ -531,24 +449,17 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
                 <button
                   type="button"
                   onClick={() => setIsRegisterModalOpen(false)}
-                  className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold transition cursor-pointer"
+                  className="px-4 py-2 bg-[#efede7] hover:bg-[#e5e2da] text-[#24211c] rounded-xl font-bold cursor-pointer"
                 >
                   Batal
                 </button>
-
                 <button
                   type="submit"
                   disabled={isSubmittingReg}
-                  className="px-5 py-2.5 bg-[#00a65a] hover:bg-[#008d4c] text-white font-black rounded-xl shadow-lg shadow-emerald-900/20 transition flex items-center space-x-1.5 cursor-pointer"
+                  className="px-5 py-2 bg-[#8a7c4c] hover:bg-[#675c37] text-white font-bold rounded-xl shadow-xs cursor-pointer flex items-center space-x-1.5"
                 >
-                  {isSubmittingReg ? (
-                    <span>Menyimpan...</span>
-                  ) : (
-                    <>
-                      <Plus className="w-4 h-4" />
-                      <span>Simpan & Daftarkan</span>
-                    </>
-                  )}
+                  <Plus className="w-4 h-4" />
+                  <span>Daftarkan</span>
                 </button>
               </div>
             </form>
@@ -556,7 +467,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
         </div>
       )}
 
-      {/* Modal Pengaturan & Upload Logo */}
+      {/* Modal Logo */}
       <LogoManagerModal
         isOpen={isLogoModalOpen}
         onClose={() => setIsLogoModalOpen(false)}

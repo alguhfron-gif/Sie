@@ -1109,22 +1109,22 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
       </div>
 
       {/* Informational Guidance Banner for Applicants & Instansi */}
-      <div className="bg-gradient-to-r from-[#004220] via-[#005a2b] to-[#007038] text-white p-4 rounded-xl shadow-md border border-emerald-700/50 space-y-3 print:hidden">
+      <div className="bg-[#24211c] text-[#efede7] p-4 sm:p-5 rounded-2xl shadow-xs border border-[rgba(239,237,231,0.12)] space-y-3 print:hidden">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex items-start space-x-3">
-            <div className="p-2.5 bg-emerald-900/80 rounded-xl shrink-0 mt-0.5 border border-emerald-600/40 shadow-xs">
-              <BookOpen className="w-5 h-5 text-emerald-300" />
+            <div className="p-2.5 bg-[#1d1b17] rounded-xl shrink-0 mt-0.5 border border-[rgba(239,237,231,0.1)] shadow-xs">
+              <BookOpen className="w-5 h-5 text-[#8a7c4c]" />
             </div>
             <div className="space-y-1">
               <div className="flex items-center space-x-2 flex-wrap gap-y-1">
-                <h2 className="text-sm font-black text-emerald-200">
+                <h2 className="text-sm font-bold text-white">
                   Panduan & Kriteria Resmi Sie Penganugerahan Sidogiri
                 </h2>
-                <span className="text-[10px] font-black bg-emerald-500 text-white px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                <span className="text-[10px] font-bold bg-[#8a7c4c] text-white px-2.5 py-0.5 rounded-full uppercase tracking-wider">
                   Khusus Baca (Read-Only)
                 </span>
               </div>
-              <p className="text-xs text-emerald-100/90 leading-relaxed max-w-3xl">
+              <p className="text-xs text-[#a9a7a2] leading-relaxed max-w-3xl">
                 Seluruh instansi/pengusul diwajibkan membaca dan memahami naskah kriteria & ketentuan resmi di bawah ini terlebih dahulu agar tidak terjadi kesalahpahaman. Setelah memahami kriteria, Anda dapat langsung mengajukan pendaftaran peserta di kolom nominasi.
               </p>
             </div>
@@ -1133,25 +1133,25 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
           {onNavigateToNominees && (
             <button
               onClick={onNavigateToNominees}
-              className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl shadow-md hover:shadow-lg transition flex items-center justify-center space-x-2 cursor-pointer shrink-0 border border-emerald-300"
+              className="px-4 py-2.5 bg-[#8a7c4c] hover:bg-[#675c37] active:scale-[0.98] text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center justify-center space-x-2 cursor-pointer shrink-0"
             >
-              <UserCheck className="w-4 h-4 text-slate-950" />
-              <span>+ Ajukan Candidate di Kolom Nominasi</span>
+              <UserCheck className="w-4 h-4 text-white" />
+              <span>+ Ajukan Calon di Kolom Nominasi</span>
             </button>
           )}
         </div>
       </div>
 
-      {/* Header Banner Box */}
-      <div className="admin-box border-t-4 border-t-[#3c8dbc] p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
+      {/* Header Banner Box in Milad Sidogiri Clean Style */}
+      <div className="bg-white border border-[rgba(36,33,28,0.12)] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
         <div>
           <div className="flex items-center space-x-2">
-            <ShieldAlert className="w-5 h-5 text-[#3c8dbc]" />
-            <h1 className="text-base font-extrabold text-gray-800">
+            <ShieldAlert className="w-5 h-5 text-[#8a7c4c]" />
+            <h1 className="text-base font-extrabold text-[#24211c]">
               Surat Keputusan & Ketentuan Resmi Ber-Kop Sidogiri
             </h1>
           </div>
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-[#7c7b77] mt-1">
             Pengelolaan Dokumen SK, Surat Edaran, serta Ketentuan & Kriteria Penganugerahan dengan Fitur Impor/Ekspor Word & PDF.
           </p>
         </div>

@@ -318,16 +318,27 @@ export default function App() {
     try {
       const saved = localStorage.getItem('sie_nominations');
       const parsed = saved ? JSON.parse(saved) : INITIAL_NOMINATIONS;
-      return Array.isArray(parsed) ? parsed.map(sanitizeNomination) : INITIAL_NOMINATIONS;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map(sanitizeNomination);
+      }
+      return INITIAL_NOMINATIONS;
     } catch (e) {
       return INITIAL_NOMINATIONS;
     }
   });
 
-  const [categories] = useState<AwardCategory[]>(() => {
+  const [categories, setCategories] = useState<AwardCategory[]>(() => {
     try {
       const saved = localStorage.getItem('sie_categories');
-      return saved ? JSON.parse(saved) : INITIAL_CATEGORIES;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length === 6 && parsed.some((c: AwardCategory) => c.title.includes('Khidmah'))) {
+          return parsed;
+        }
+      }
+      // Migrate to new 6 official Sidogiri award categories
+      localStorage.setItem('sie_categories', JSON.stringify(INITIAL_CATEGORIES));
+      return INITIAL_CATEGORIES;
     } catch (e) {
       return INITIAL_CATEGORIES;
     }
@@ -685,6 +696,17 @@ export default function App() {
     } catch (e) {}
   };
 
+  // Update Category Handler
+  const handleUpdateCategory = (updatedCat: AwardCategory) => {
+    setCategories((prev) => {
+      const updated = prev.map((c) => (c.id === updatedCat.id ? updatedCat : c));
+      try {
+        localStorage.setItem('sie_categories', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+  };
+
   // Nomination Handlers with Firestore Real-time Integration
   const handleAddNomination = async (newNom: Omit<Nomination, 'id' | 'createdAt'>) => {
     try {
@@ -841,11 +863,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans flex flex-col antialiased selection:bg-emerald-600 selection:text-white relative overflow-x-hidden">
-      {/* Soft Ambient Light Glowing Accents */}
-      <div className="fixed top-0 left-1/4 w-96 h-96 bg-emerald-200/20 rounded-full blur-3xl pointer-events-none -z-10"></div>
-      <div className="fixed bottom-1/3 right-10 w-96 h-96 bg-teal-200/20 rounded-full blur-3xl pointer-events-none -z-10"></div>
-
+    <div className="min-h-screen bg-[#efede7] text-[#24211c] font-sans flex flex-col antialiased selection:bg-[#8a7c4c] selection:text-white relative overflow-x-hidden">
       {/* Header Navigation */}
       <Navbar
         activeTab={activeTab}
@@ -920,6 +938,7 @@ export default function App() {
                 <NominationsView
                   nominations={nominations}
                   categories={categories}
+                  onUpdateCategory={handleUpdateCategory}
                   onAddNomination={handleAddNomination}
                   onUpdateNomination={handleUpdateNomination}
                   onDeleteNomination={handleDeleteNomination}
@@ -1010,6 +1029,27 @@ export default function App() {
             )}
           </ErrorBoundary>
         </main>
+      </div>
+
+      {/* Official Milad Sidogiri Footer */}
+      <footer className="mt-auto border-t border-[rgba(36,33,28,0.12)] bg-white/70 py-5 px-4 sm:px-8 text-xs text-[#7c7b77] pb-24 md:pb-6">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2.5">
+          <div className="flex items-center space-x-2 text-center sm:text-left">
+            <span className="font-bold text-[#24211c]">Panitia Milad Pondok Pesantren Sidogiri</span>
+            <span>•</span>
+            <span>Ikhtibar Madrasah Miftahul Ulum</span>
+          </div>
+          <div className="text-[11px] text-[#8a7c4c] font-bold">
+            Sie Penganugerahan | 1158 — 1448 H
+          </div>
+        </div>
+      </footer>
+
+      {/* Signature Milad Sidogiri Bottom Decorative Bar */}
+      <div aria-hidden="true" className="grid grid-cols-[8%_1fr_26%] h-2 w-full shrink-0">
+        <span className="bg-[#7c7b77]"></span>
+        <span className="bg-[#e5e2da]"></span>
+        <span className="bg-[#8a7c4c]"></span>
       </div>
 
       {/* Mobile Bottom Navigation Bar */}

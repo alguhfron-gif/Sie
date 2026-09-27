@@ -239,24 +239,24 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
         activeTab="akun"
       />
 
-      {/* Top Banner Header Box */}
-      <div className="admin-box border-t-4 border-t-[#3c8dbc] p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* Top Banner Header Box in Milad Sidogiri Clean Style */}
+      <div className="bg-white border border-[rgba(36,33,28,0.12)] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center space-x-2">
-            <ShieldCheck className="w-5 h-5 text-[#3c8dbc]" />
-            <h1 className="text-base font-extrabold text-gray-800">
+            <ShieldCheck className="w-5 h-5 text-[#8a7c4c]" />
+            <h1 className="text-base font-extrabold text-[#24211c]">
               Kelola & Penambahan Akun Panitia
             </h1>
           </div>
-          <p className="text-xs text-gray-500 leading-relaxed">
-            Pengaturan hak akses bertingkat untuk <strong className="text-emerald-800">ADMIN (Panitia Inti)</strong> dan <strong className="text-[#3c8dbc]">PETUGAS (Operasional & Lapangan)</strong>. Tambah akun baru untuk memperluas akses tim.
+          <p className="text-xs text-[#7c7b77] leading-relaxed">
+            Pengaturan hak akses bertingkat untuk <strong className="text-[#675c37]">ADMIN (Panitia Inti)</strong> dan <strong className="text-[#8a7c4c]">PETUGAS (Operasional & Lapangan)</strong>. Tambah akun baru untuk memperluas akses tim.
           </p>
         </div>
 
         <div className="flex items-center space-x-2 shrink-0">
           <button
             onClick={handleOpenAddModal}
-            className="px-3.5 py-1.5 bg-[#3c8dbc] hover:bg-[#367fa9] text-white font-black rounded shadow transition flex items-center justify-center space-x-1.5 text-xs cursor-pointer shrink-0"
+            className="px-3.5 py-2 bg-[#8a7c4c] hover:bg-[#675c37] text-white font-bold rounded-xl shadow-xs transition flex items-center justify-center space-x-1.5 text-xs cursor-pointer shrink-0"
           >
             <UserPlus className="w-4 h-4" />
             <span>+ Tambah Akun Baru</span>
@@ -265,9 +265,9 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
           {onLogout && (
             <button
               onClick={onLogout}
-              className="px-3.5 py-1.5 bg-[#dd4b39] hover:bg-[#c9302c] text-white font-black rounded shadow transition flex items-center justify-center space-x-1.5 text-xs cursor-pointer shrink-0"
+              className="px-3.5 py-2 bg-[#24211c] hover:bg-[#38342c] text-white font-bold rounded-xl shadow-xs transition flex items-center justify-center space-x-1.5 text-xs cursor-pointer shrink-0"
             >
-              <LogOut className="w-4 h-4 text-white" />
+              <LogOut className="w-4 h-4 text-[#c3b68b]" />
               <span>Keluar Akun</span>
             </button>
           )}

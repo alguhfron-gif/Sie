@@ -19,115 +19,199 @@
 }
 
 :root {
-  --admin-bg: #ecf0f5;
-  --admin-header: #16221b;
-  --admin-sidebar: #1e2e25;
-  --admin-sidebar-dark: #16221b;
-  --admin-blue: #005a2b;
-  --admin-blue-hover: #004220;
-  --admin-green: #00a65a;
-  --admin-green-hover: #008d4c;
-  --admin-yellow: #059669;
-  --admin-yellow-hover: #047857;
-  --admin-red: #dd4b39;
-  --admin-red-hover: #c9302c;
-  --admin-aqua: #00a65a;
-  --admin-aqua-hover: #008d4c;
+  /* Milad Sidogiri Official Design System Tokens */
+  --ink: #24211c;
+  --paper: #efede7;
+  --paper-soft: #f7f6f2;
+  --paper2: #e5e2da;
+  --olive: #8a7c4c;
+  --olive-d: #675c37;
+  --olive-l: #c3b68b;
+  --olive-p: #f2eee3;
+  --grey: #7c7b77;
+  --grey-l: #a9a7a2;
+  --line: rgba(36, 33, 28, 0.12);
+  --line-strong: rgba(36, 33, 28, 0.22);
+  --disp: 'Sora', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --body: 'Sora', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* Legacy theme aliases mapped to Milad Sidogiri colors */
+  --admin-bg: var(--paper);
+  --admin-header: var(--ink);
+  --admin-sidebar: #1d1b17;
+  --admin-sidebar-dark: var(--ink);
+  --admin-blue: var(--olive);
+  --admin-blue-hover: var(--olive-d);
+  --admin-green: var(--olive);
+  --admin-green-hover: var(--olive-d);
+  --admin-yellow: #a17830;
+  --admin-yellow-hover: #805c20;
+  --admin-red: #b94236;
+  --admin-red-hover: #963126;
+  --admin-aqua: #5d7568;
+  --admin-aqua-hover: #485c52;
 }
 
 html, body {
   max-width: 100vw;
   overflow-x: hidden;
   -webkit-tap-highlight-color: transparent;
-  background-color: #ecf0f5;
-  font-family: 'Source Sans Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  color: #333333;
+  background-color: var(--paper);
+  font-family: var(--body);
+  color: var(--ink);
+  letter-spacing: -0.01em;
 }
 
-/* AdminLTE Box Utilities */
+/* Milad Sidogiri Clean Button Styles */
+.btn-olive {
+  background-color: var(--olive);
+  color: #ffffff;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-olive:hover {
+  background-color: var(--olive-d);
+  box-shadow: 0 4px 12px -2px rgba(103, 92, 55, 0.35);
+}
+.btn-olive:active {
+  transform: scale(0.98);
+}
+
+.btn-ink {
+  background-color: var(--ink);
+  color: #ffffff;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-ink:hover {
+  background-color: #38342c;
+  box-shadow: 0 4px 12px -2px rgba(36, 33, 28, 0.3);
+}
+.btn-ink:active {
+  transform: scale(0.98);
+}
+
+.btn-paper {
+  background-color: var(--paper2);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-paper:hover {
+  background-color: #dcd7ce;
+  border-color: var(--line-strong);
+}
+.btn-paper:active {
+  transform: scale(0.98);
+}
+
+.btn-outline {
+  background-color: transparent;
+  color: var(--ink);
+  border: 1px solid var(--line-strong);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-outline:hover {
+  border-color: var(--olive);
+  color: var(--olive-d);
+  background-color: rgba(138, 124, 76, 0.05);
+}
+
+/* Clean Sidogiri Card Style */
+.sidogiri-card {
+  background-color: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 2px 8px -2px rgba(36, 33, 28, 0.04);
+}
+
+/* Minimalist Admin Box for backwards compatibility */
 .admin-box {
   background: #ffffff;
-  border-radius: 3px;
-  border-top: 3px solid #00a65a;
+  border-radius: 12px;
+  border: 1px solid var(--line);
   margin-bottom: 20px;
   width: 100%;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.admin-box-success {
-  border-top-color: #00a65a;
-}
-
-.admin-box-warning {
-  border-top-color: #059669;
-}
-
-.admin-box-danger {
-  border-top-color: #dd4b39;
-}
-
-.admin-box-info {
-  border-top-color: #00c0ef;
-}
-
-.admin-box-header {
-  color: #444;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 15px;
-  border-bottom: 1px solid #f4f4f4;
-  font-weight: 700;
-}
-
-/* Small Box Info Box Widget */
-.small-box {
-  border-radius: 3px;
-  position: relative;
-  display: block;
-  margin-bottom: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
-  color: #ffffff;
+  box-shadow: 0 1px 4px rgba(36, 33, 28, 0.04);
   overflow: hidden;
 }
 
+.admin-box-success {
+  border-top: 3px solid var(--olive);
+}
+
+.admin-box-warning {
+  border-top: 3px solid #b8860b;
+}
+
+.admin-box-danger {
+  border-top: 3px solid var(--admin-red);
+}
+
+.admin-box-info {
+  border-top: 3px solid var(--olive-d);
+}
+
+.admin-box-header {
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--line);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+/* Stat Box Widget in Milad Sidogiri Minimal Style */
+.small-box {
+  border-radius: 12px;
+  position: relative;
+  display: block;
+  margin-bottom: 20px;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  background: #ffffff;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(36, 33, 28, 0.04);
+}
+
 .small-box .inner {
-  padding: 15px;
+  padding: 16px;
 }
 
 .small-box .icon-bg {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: 12px;
+  right: 14px;
   z-index: 0;
-  font-size: 70px;
-  color: rgba(0, 0, 0, 0.15);
-  transition: all 0.3s linear;
+  font-size: 56px;
+  color: rgba(138, 124, 76, 0.12);
+  transition: all 0.3s ease;
 }
 
 .small-box:hover .icon-bg {
-  transform: scale(1.1);
+  transform: scale(1.08);
 }
 
 .small-box-footer {
   position: relative;
   text-align: center;
-  padding: 4px 0;
-  color: rgba(255, 255, 255, 0.8);
+  padding: 8px 0;
+  color: var(--grey);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  background: rgba(0, 0, 0, 0.15);
+  gap: 6px;
+  background: var(--paper-soft);
+  border-top: 1px solid var(--line);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   text-decoration: none;
-  transition: background 0.2s;
+  transition: all 0.2s;
 }
 
 .small-box-footer:hover {
-  color: #ffffff;
-  background: rgba(0, 0, 0, 0.25);
+  color: var(--olive);
+  background: var(--paper2);
 }
 
 /* Official Print Paper Styles */
@@ -141,7 +225,7 @@ html, body {
     print-color-adjust: exact !important;
   }
   
-  /* Hide all non-printable UI elements during print */
+  /* Hide non-printable UI elements during print */
   nav, aside, header, footer, button, .print\:hidden {
     display: none !important;
   }
@@ -174,10 +258,8 @@ html, body {
     break-before: page !important;
   }
 
-  /* Force background colors, stamps, and watermarks in print */
   .printable-letter *, .printable-cert * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 }
-

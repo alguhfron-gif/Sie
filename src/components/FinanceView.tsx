@@ -318,12 +318,12 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
 
           <div className="pt-8 grid grid-cols-2 text-center text-xs text-slate-700">
             <div>
-              <p className="font-semibold mb-12">Mengetahui,<br />Ketua Sie Penganugerahan</p>
-              <p className="font-bold text-slate-900 underline">Ahmad Fauzi, S.T.</p>
+              <p className="font-semibold mb-12">Mengetahui,<br />Ketua Panitia Sie Penganugerahan</p>
+              <p className="font-bold text-slate-900 underline">H. Ahmad Arif Bahruddin</p>
             </div>
             <div>
-              <p className="font-semibold mb-12">Disusun Oleh,<br />Bendahara Sie Penganugerahan</p>
-              <p className="font-bold text-slate-900 underline">Siti Rahmawati</p>
+              <p className="font-semibold mb-12">Disusun Oleh,<br />Sekretaris Sie Penganugerahan</p>
+              <p className="font-bold text-slate-900 underline">Muhammad Sofyan Sauri</p>
             </div>
           </div>
         </div>
@@ -336,14 +336,14 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
             activeTab="keuangan"
           />
 
-          {/* Top Action Box */}
-          <div className="admin-box border-t-4 border-t-[#00a65a] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          {/* Top Action Box in Milad Sidogiri Clean Style */}
+          <div className="bg-white border border-[rgba(36,33,28,0.12)] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <div className="flex items-center space-x-2">
-                <DollarSign className="w-5 h-5 text-[#00a65a]" />
-                <h1 className="text-base font-extrabold text-gray-800">Laporan Kas & Anggaran Sie Penganugerahan</h1>
+                <DollarSign className="w-5 h-5 text-[#8a7c4c]" />
+                <h1 className="text-base font-extrabold text-[#24211c]">Laporan Kas & Anggaran Sie Penganugerahan</h1>
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-[#7c7b77] mt-1">
                 Catat arus kas masuk/keluar, pertanggungjawaban trofi & sertifikat, serta buat laporan resmi.
               </p>
             </div>
@@ -352,26 +352,26 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
               <button
                 onClick={handleExportFinance}
                 title="Ekspor Seluruh Data Keuangan ke CSV & Google Sheets"
-                className="flex items-center space-x-1.5 bg-[#00a65a] hover:bg-[#008d4c] text-white font-bold px-3.5 py-1.5 rounded text-xs transition shadow-2xs cursor-pointer"
+                className="flex items-center space-x-1.5 bg-white hover:bg-[#f7f6f2] text-[#24211c] border border-[rgba(36,33,28,0.15)] font-bold px-3.5 py-2 rounded-xl text-xs transition shadow-2xs cursor-pointer"
               >
-                <FileSpreadsheet className="w-4 h-4 text-white" />
-                <span>Ekspor ke Sheets / CSV</span>
+                <FileSpreadsheet className="w-4 h-4 text-[#8a7c4c]" />
+                <span>Ekspor Sheets / CSV</span>
               </button>
 
               <button
                 onClick={() => setShowPrintReport(true)}
-                className="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3.5 py-1.5 rounded text-xs transition shadow-2xs cursor-pointer"
+                className="flex items-center space-x-1.5 bg-[#24211c] hover:bg-[#38342c] text-white font-bold px-3.5 py-2 rounded-xl text-xs transition shadow-2xs cursor-pointer"
               >
-                <FileText className="w-4 h-4 text-white" />
+                <FileText className="w-4 h-4 text-[#c3b68b]" />
                 <span>Format Laporan Resmi</span>
               </button>
 
               <button
                 onClick={handleOpenAdd}
-                className="flex items-center space-x-1.5 bg-[#3c8dbc] hover:bg-[#367fa9] text-white font-extrabold px-3.5 py-1.5 rounded shadow-2xs transition text-xs cursor-pointer"
+                className="flex items-center space-x-1.5 bg-[#8a7c4c] hover:bg-[#675c37] text-white font-bold px-3.5 py-2 rounded-xl shadow-xs transition text-xs cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
-                <span>+ Tambah Transaksi</span>
+                <span>+ Catat Kas Baru</span>
               </button>
             </div>
           </div>

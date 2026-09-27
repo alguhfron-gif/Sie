@@ -12,7 +12,7 @@ export const AWARD_LETTER_OPTIONS = [
   'Penghargaan Khidmah (Ranting)',
   'Penghargaan Khidmah (Guru)',
   'Penghargaan Khidmah (Alumni)',
-  'Penghargaan Pengurus Terbaik',
+  'Penghargaan Khidmah (Pengurus)',
   'Penghargaan Santri Terbaik',
   'Penghargaan Murid Terbaik',
 ];
@@ -38,10 +38,10 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
   const [eventName, setEventName] = useState<string>('Malam Penganugerahan Insan Berprestasi 2026');
   const [issueDate, setIssueDate] = useState<string>('22 Juli 2026');
   const [certNumber, setCertNumber] = useState<string>('084/SIE-ANUGERAH/2026');
-  const [signatory1, setSignatory1] = useState<string>('Ahmad Fauzi, S.T.');
-  const [signatory1Role, setSignatory1Role] = useState<string>('Ketua Sie Penganugerahan');
-  const [signatory2, setSignatory2] = useState<string>('Dr. Hendra Gunawan');
-  const [signatory2Role, setSignatory2Role] = useState<string>('Ketua Umum Panitia');
+  const [signatory1, setSignatory1] = useState<string>('H. Ahmad Arif Bahruddin');
+  const [signatory1Role, setSignatory1Role] = useState<string>('Ketua');
+  const [signatory2, setSignatory2] = useState<string>('Muhammad Sofyan Sauri');
+  const [signatory2Role, setSignatory2Role] = useState<string>('Sekretaris');
 
   // Display toggles
   const [showKopHeader, setShowKopHeader] = useState<boolean>(true);
@@ -124,13 +124,13 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
       </div>
 
       {/* Header & Controls - Hidden on Print */}
-      <div className="admin-box border-t-4 border-t-[#dd4b39] p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
+      <div className="bg-white border border-[rgba(36,33,28,0.12)] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
         <div>
           <div className="flex items-center space-x-2">
-            <FileCheck className="w-5 h-5 text-[#dd4b39]" />
-            <h1 className="text-base font-extrabold text-gray-800">Generator & Cetak Surat Penghargaan / Sertifikat</h1>
+            <FileCheck className="w-5 h-5 text-[#8a7c4c]" />
+            <h1 className="text-base font-extrabold text-[#24211c]">Generator & Cetak Piagam / Sertifikat Penghargaan</h1>
           </div>
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-[#7c7b77] mt-1">
             Pilih opsi jenis penghargaan resmi, sesuaikan data penerima, dan unduh/cetak PDF dengan Kop, Watermark, serta TTD Panitia lengkap.
           </p>
         </div>
@@ -139,15 +139,15 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
           <button
             onClick={handleExportCertificates}
             title="Ekspor Data Sertifikat & Pemenang ke CSV & Google Sheets"
-            className="flex items-center space-x-1.5 bg-[#00a65a] hover:bg-[#008d4c] text-white font-bold px-3.5 py-1.5 rounded text-xs transition shadow-2xs cursor-pointer"
+            className="flex items-center space-x-1.5 bg-white hover:bg-[#f7f6f2] text-[#24211c] border border-[rgba(36,33,28,0.15)] font-bold px-3.5 py-2 rounded-xl text-xs transition shadow-2xs cursor-pointer"
           >
-            <FileSpreadsheet className="w-4 h-4 text-white" />
+            <FileSpreadsheet className="w-4 h-4 text-[#8a7c4c]" />
             <span>Ekspor ke Sheets / CSV</span>
           </button>
 
           <button
             onClick={handlePrintAndSync}
-            className="flex items-center justify-center space-x-2 bg-emerald-600 hover:bg-emerald-700 text-white font-black px-4 py-1.5 rounded shadow-2xs transition text-xs cursor-pointer"
+            className="flex items-center justify-center space-x-2 bg-[#8a7c4c] hover:bg-[#675c37] text-white font-bold px-4 py-2 rounded-xl shadow-xs transition text-xs cursor-pointer"
           >
             <Printer className="w-4 h-4" />
             <span>Cetak / Export PDF</span>
@@ -334,7 +334,7 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
           </div>
 
           <div>
-            <label className="block font-bold text-slate-700 mb-1">Penandatangan 1 (Ketua Sie)</label>
+            <label className="block font-bold text-slate-700 mb-1">Penandatangan 1 (Ketua)</label>
             <input
               type="text"
               value={signatory1}
@@ -344,7 +344,7 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
           </div>
 
           <div>
-            <label className="block font-bold text-slate-700 mb-1">Penandatangan 2 (Ketua Umum/Pengurus)</label>
+            <label className="block font-bold text-slate-700 mb-1">Penandatangan 2 (Sekretaris)</label>
             <input
               type="text"
               value={signatory2}

@@ -24,12 +24,19 @@ export interface Transaction {
 
 export type NominationStatus = 'Draf' | 'Penilaian' | 'Disetujui' | 'Pemenang';
 
+export interface AwardCategoryCriterion {
+  name: string;
+  weight: number;
+}
+
 export interface AwardCategory {
   id: string;
   title: string;
   description: string;
   badgeColor: string;
   quota: number;
+  requirements?: string[];
+  criteria?: AwardCategoryCriterion[];
 }
 
 export interface Nomination {

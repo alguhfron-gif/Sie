@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Award, Plus, Search, Filter, CheckCircle2, Edit2, Trash2, Trophy, Star, UserCheck, ShieldCheck, LayoutGrid, List, Phone, Briefcase, IdCard, Sparkles, FileSpreadsheet, Download, Loader2 } from 'lucide-react';
+import { Award, Plus, Search, Filter, CheckCircle2, Edit2, Trash2, Trophy, Star, UserCheck, ShieldCheck, LayoutGrid, List, Phone, Briefcase, IdCard, Sparkles, FileSpreadsheet, Download, Loader2, Scale, FileText, Building2, GraduationCap, HeartHandshake, BookOpen, Info, Check, ChevronDown, ChevronUp, Lock, X } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import ExcelJS from 'exceljs';
 import { AwardCategory, Nomination, NominationStatus, UserSession } from '../types';
@@ -7,9 +7,231 @@ import { sendWebhookPayload, exportToCSV } from '../services/webhookService';
 import { ContentHeader } from './ContentHeader';
 import { CollapsibleSection } from './CollapsibleSection';
 
+export interface AssessmentRubric {
+  number: number;
+  id: string;
+  title: string;
+  badgeLabel: string;
+  quota: number;
+  description: string;
+  syarat: string[];
+  kriteria: { name: string; weight: number }[];
+  fokusTema?: string[];
+  mekanisme?: string[];
+  hadiah?: { rank: string; detail: string }[];
+}
+
+export const OFFICIAL_AWARD_RUBRICS: AssessmentRubric[] = [
+  {
+    number: 1,
+    id: 'cat-1',
+    title: 'Penghargaan Khidmah (Ranting)',
+    badgeLabel: 'MMU / IASS Ranting',
+    quota: 3,
+    description: 'Penganugerahan dedikasi pengurus ranting MMU/IASS dalam memajukan dakwah, pembinaan thalabah, dan keorganisasian almamater di daerah.',
+    syarat: [
+      'Pengurus aktif Ranting MMU / IASS Cabang & Ranting minimal 2 tahun masa khidmah.',
+      'Tertib administrasi, laporan berkala tepat waktu, dan keaktifan kegiatan dakwah ranting.',
+      'Kontribusi nyata dalam pembinaan thalabah daerah dan penguatan jaringan almamater.',
+    ],
+    kriteria: [
+      { name: 'Keaktifan Program Ranting', weight: 35 },
+      { name: 'Tertib Administrasi & Laporan', weight: 30 },
+      { name: 'Loyalitas & Khidmah Dakwah', weight: 35 },
+    ],
+    fokusTema: [
+      'Konsolidasi dakwah Ahlussunnah wal Jamaah di wilayah ranting daerah.',
+      'Kemandirian finansial dan ketertiban pelaporan administrasi ranting berkala.',
+      'Penguatan ikatan thalabah daerah dan loyalitas khidmah kepada Masyayikh Sidogiri.',
+    ],
+    mekanisme: [
+      'Pengusulan melalui angket resmi Pengurus Wilayah/Cabang IASS atau formulir ranting.',
+      'Batas pengusulan: Sabtu, 29 Jumadats Tsaniyah 1447 H | 20 Desember 2025 M.',
+      'Verifikasi data keaktifan dan rekam jejak kepengurusan oleh Sie Penganugerahan.',
+      'Penetapan pemenang sah melalui sidang pleno panitia dan SK Pengasuh PPS.',
+    ],
+    hadiah: [
+      { rank: 'JUARA I', detail: 'Trofi Kehormatan + Piagam Pengasuh PPS + Tali Asih Khidmah' },
+      { rank: 'JUARA II', detail: 'Trofi Kehormatan + Piagam Pengasuh PPS + Tali Asih Khidmah' },
+      { rank: 'JUARA III', detail: 'Trofi Kehormatan + Piagam Pengasuh PPS + Tali Asih Khidmah' },
+    ],
+  },
+  {
+    number: 2,
+    id: 'cat-2',
+    title: 'Penghargaan Khidmah (Guru)',
+    badgeLabel: 'Asatidz / Guru MMU',
+    quota: 3,
+    description: 'Apresiasi pengabdian asatidz/guru madrasah dengan masa khidmah, keteladanan akhlak, kedisiplinan mengajar, dan integritas tinggi.',
+    syarat: [
+      'Guru/Asatidz aktif MMU / Madrasah Sidogiri minimal 3 tahun berturut-turut.',
+      'Memiliki keteladanan akhlak mulia dan kedisiplinan presensi mengajar 100%.',
+      'Dedikasi tinggi dalam membina dan mentransfer ilmu kepada thalabah.',
+    ],
+    kriteria: [
+      { name: 'Presensi & Keistiqamahan Mengajar', weight: 40 },
+      { name: 'Keteladanan Akhlak & Adab', weight: 30 },
+      { name: 'Dedikasi & Kualitas Pengajaran', weight: 30 },
+    ],
+    fokusTema: [
+      'Keistiqamahan mentransfer ilmu dan menjaga mata rantai sanad keilmuan pesantren.',
+      'Keteladanan akhlak mulia, kewibawaan pendidik, dan kasih sayang kepada murid.',
+      'Disiplin presensi mengajar 100% dan loyalitas penuh terhadap manhaj MMU Sidogiri.',
+    ],
+    mekanisme: [
+      'Rekomendasi tertulis dari Kepala Madrasah MMU / Koordinator Daerah MMU.',
+      'Pemeriksaan buku rekap presensi mengajar dan catatan ketertiban madrasah.',
+      'Penilaian sidang juri berdasarkan bobot presensi (40%), adab (30%), dan dedikasi (30%).',
+      'Penganugerahan trofi dan piagam di panggung utama Malam Puncak Milad.',
+    ],
+    hadiah: [
+      { rank: 'JUARA I', detail: 'Trofi Kehormatan + Piagam Pengasuh PPS + Tali Asih Khidmah' },
+      { rank: 'JUARA II', detail: 'Trofi Kehormatan + Piagam Pengasuh PPS + Tali Asih Khidmah' },
+      { rank: 'JUARA III', detail: 'Trofi Kehormatan + Piagam Pengasuh PPS + Tali Asih Khidmah' },
+    ],
+  },
+  {
+    number: 3,
+    id: 'cat-3',
+    title: 'Penghargaan Khidmah (Alumni)',
+    badgeLabel: 'Alumni IASS',
+    quota: 3,
+    description: 'Penghargaan bagi alumni IASS yang istiqamah berkhidmah kepada almamater, umat, dan pesantren di berbagai pelosok nusantara.',
+    syarat: [
+      'Terdaftar sah sebagai anggota Ikatan Alumni Santri Sidogiri (IASS).',
+      'Berperan aktif dalam program dakwah, sosial, dan memuliakan almamater.',
+      'Memiliki integritas pribadi terpuji dan tidak mencemarkan nama baik pesantren.',
+    ],
+    kriteria: [
+      { name: 'Kontribusi Sosial & Dakwah', weight: 40 },
+      { name: 'Loyalitas kepada Masyayikh & Pondok', weight: 30 },
+      { name: 'Integritas & Rekam Jejak Almamater', weight: 30 },
+    ],
+    fokusTema: [
+      'Menjaga nama baik dan marwah Pondok Pesantren Sidogiri di tengah masyarakat.',
+      'Kontribusi dakwah sosial, pemberdayaan ekonomi keumatan, dan kepedulian almamater.',
+      'Ketaatan dan loyalitas tanpa batas terhadap arahan dan dawuh Masyayikh.',
+    ],
+    mekanisme: [
+      'Pengusulan melalui rekomendasi Pengurus Wilayah/Cabang IASS setempat.',
+      'Validasi data keanggotaan sah Ikatan Alumni Santri Sidogiri (IASS).',
+      'Verifikasi lapangan rekam jejak kiprah dakwah dan integritas pribadi.',
+      'Sidang pleno penetapan penganugerahan bersama Pengurus Harian PPS.',
+    ],
+    hadiah: [
+      { rank: 'JUARA I', detail: 'Trofi Kehormatan + Piagam Pengasuh PPS + Tali Asih Khidmah' },
+      { rank: 'JUARA II', detail: 'Trofi Kehormatan + Piagam Pengasuh PPS + Tali Asih Khidmah' },
+      { rank: 'JUARA III', detail: 'Trofi Kehormatan + Piagam Pengasuh PPS + Tali Asih Khidmah' },
+    ],
+  },
+  {
+    number: 4,
+    id: 'cat-4',
+    title: 'Penghargaan Khidmah (Pengurus)',
+    badgeLabel: 'Pengurus PPS & Panitia',
+    quota: 3,
+    description: 'Apresiasi etos kerja kepengurusan pesantren dan kepanitiaan dengan loyalitas, kedisiplinan harian, dan amanah tertinggi.',
+    syarat: [
+      'Pengurus aktif struktur kepengurusan PPS atau Panitia Milad Sidogiri.',
+      'Menunjukkan etos kerja tinggi, disiplin dalam bertugas harian, dan amanah.',
+      'Kepatuhan dan sinergi penuh terhadap arahan pimpinan / Pengurus Harian.',
+    ],
+    kriteria: [
+      { name: 'Realisasi Program & Tanggung Jawab', weight: 40 },
+      { name: 'Kedisiplinan & Presensi Tugas', weight: 30 },
+      { name: 'Keteladanan & Loyalitas Khidmah', weight: 30 },
+    ],
+    fokusTema: [
+      'Realisasi target program kerja bagian dengan hasil optimal dan tepat waktu.',
+      'Kedisiplinan tugas harian, presensi piket, dan amanah memegang inventaris.',
+      'Keteladanan sikap, kepatuhan struktural, dan sinergi bersama Pengurus Harian.',
+    ],
+    mekanisme: [
+      'Penilaian komprehensif berdasarkan rapor kinerja bulanan kepengurusan PPS.',
+      'Rekomendasi dari Ketua Bagian / Instansi terkait dan presensi harian.',
+      'Skor kelulusan penjurian minimal 85 poin dari total pembobotan.',
+      'Penetapan melalui Surat Keputusan (SK) resmi Pengasuh PPS.',
+    ],
+    hadiah: [
+      { rank: 'JUARA I', detail: 'Trofi Kehormatan + Piagam Pengasuh PPS + Tali Asih Khidmah' },
+      { rank: 'JUARA II', detail: 'Trofi Kehormatan + Piagam Pengasuh PPS + Tali Asih Khidmah' },
+      { rank: 'JUARA III', detail: 'Trofi Kehormatan + Piagam Pengasuh PPS + Tali Asih Khidmah' },
+    ],
+  },
+  {
+    number: 5,
+    id: 'cat-5',
+    title: 'Penghargaan Santri Terbaik',
+    badgeLabel: 'Santri Mukim',
+    quota: 3,
+    description: 'Penganugerahan bagi santri mukim berakhlakul karimah, istiqamah shalat jamaah di saf awal, wiridan bersama, dan berdisiplin tinggi.',
+    syarat: [
+      'Santri aktif mukim Pondok Pesantren Sidogiri.',
+      'Bebas dari catatan pelanggaran tata tertib pesantren (bebas ta\'zir).',
+      'Istiqamah shalat berjamaah 5 waktu saf awal, wiridan, dan taklim asrama.',
+    ],
+    kriteria: [
+      { name: 'Akhlakul Karimah & Keteladanan', weight: 40 },
+      { name: 'Kedisiplinan Shalat Jamaah & Wirid', weight: 35 },
+      { name: 'Ketertiban Asrama & Kegiatan Pondok', weight: 25 },
+    ],
+    fokusTema: [
+      'Keistiqamahan shalat berjamaah 5 waktu di saf awal masjid dan wirid bersama.',
+      'Kebersihan catatan ketertiban asrama, bebas dari ta\'zir atau pelanggaran.',
+      'Keluhuran adab sopan santun terhadap Masyayikh, asatidz, dan sesama thalabah.',
+    ],
+    mekanisme: [
+      'Penyaringan data ketertiban santri melalui Buku Pelanggaran & Ta\'zir.',
+      'Validasi keistiqamahan jamaah melalui kartu kontrol presensi shalat 5 waktu.',
+      'Penilaian adab dan keterlibatan taklim asrama oleh Pembina Asrama.',
+      'Penganugerahan langsung oleh Pengasuh pada Malam Puncak Milad.',
+    ],
+    hadiah: [
+      { rank: 'JUARA I', detail: 'Trofi Kehormatan + Piagam Santri Teladan + Paket Kitab Kuning' },
+      { rank: 'JUARA II', detail: 'Trofi Kehormatan + Piagam Santri Teladan + Paket Kitab Kuning' },
+      { rank: 'JUARA III', detail: 'Trofi Kehormatan + Piagam Santri Teladan + Paket Kitab Kuning' },
+    ],
+  },
+  {
+    number: 6,
+    id: 'cat-6',
+    title: 'Penghargaan Murid terbaik',
+    badgeLabel: 'Murid Madrasah MMU',
+    quota: 3,
+    description: 'Penghargaan prestasi akademik madrasah MMU dengan perolehan nilai ikhtibar tertinggi, catatan maknani terlengkap, dan ketekunan belajar.',
+    syarat: [
+      'Murid aktif Madrasah Miftahul Ulum (MMU) Sidogiri.',
+      'Peringkat kelas unggul dan perolehan nilai ujian (ikhtibar) terbaik.',
+      'Kehadiran kelas lengkap, rajin mencatat, dan aktif dalam musyawarah/fathul qorib.',
+    ],
+    kriteria: [
+      { name: 'Prestasi Akademik & Nilai Ujian', weight: 45 },
+      { name: 'Presensi & Kelengkapan Catatan Kitab', weight: 30 },
+      { name: 'Keaktifan Musyawarah & Adab Belajar', weight: 25 },
+    ],
+    fokusTema: [
+      'Perolehan nilai ujian (ikhtibar) caturwulan dan semester tertinggi di MMU.',
+      'Kelengkapan, kerapian catatan kitab kuning (makna gandul), dan presensi mutlak.',
+      'Keaktifan dalam musyawarah ilmiyah fathul qorib dan kedisiplinan belajar.',
+    ],
+    mekanisme: [
+      'Rekapitulasi resmi nilai ujian madrasah oleh Bagian Pengajaran MMU.',
+      'Pemeriksaan kelengkapan catatan kitab oleh dewan asatidz musyawarah.',
+      'Pembobotan nilai: Ujian (45%), Presensi/Kitab (30%), Musyawarah (25%).',
+      'Penganugerahan piagam murid teladan di panggung Malam Puncak Milad.',
+    ],
+    hadiah: [
+      { rank: 'JUARA I', detail: 'Trofi Kehormatan + Piagam Murid Teladan MMU + Beasiswa Pendidikan' },
+      { rank: 'JUARA II', detail: 'Trofi Kehormatan + Piagam Murid Teladan MMU + Beasiswa Pendidikan' },
+      { rank: 'JUARA III', detail: 'Trofi Kehormatan + Piagam Murid Teladan MMU + Beasiswa Pendidikan' },
+    ],
+  },
+];
+
 interface NominationsViewProps {
   nominations: Nomination[];
   categories: AwardCategory[];
+  onUpdateCategory?: (category: AwardCategory) => void;
   onAddNomination: (nom: Omit<Nomination, 'id' | 'createdAt'>) => void;
   onUpdateNomination: (nom: Nomination) => void;
   onDeleteNomination: (id: string) => void;
@@ -21,6 +243,7 @@ interface NominationsViewProps {
 export const NominationsView: React.FC<NominationsViewProps> = ({
   nominations,
   categories,
+  onUpdateCategory,
   onAddNomination,
   onUpdateNomination,
   onDeleteNomination,
@@ -34,8 +257,85 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
-  const [isModalOpen, setIsModalOpen] = useState(isAddModalOpenOpenDirectly);
+  const [isModalOpen, setIsModalOpen] = useState(isAdmin ? isAddModalOpenOpenDirectly : false);
   const [editingNomination, setEditingNomination] = useState<Nomination | null>(null);
+
+  // Active rubric tab ID for full view (defaults to 1st category: Penghargaan Khidmah Ranting)
+  const [activeRubricId, setActiveRubricId] = useState<string>('cat-1');
+
+  // Accordion state for 6 award category columns (expand on click to reveal syarat & ketentuan)
+  const [expandedRubricIds, setExpandedRubricIds] = useState<Record<string, boolean>>({});
+
+  const toggleRubricExpand = (id: string) => {
+    setExpandedRubricIds((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
+
+  // State for Editing Category Syarat & Ketentuan (Admin only)
+  const [editingRubric, setEditingRubric] = useState<AssessmentRubric | null>(null);
+  const [editRubricTitle, setEditRubricTitle] = useState('');
+  const [editRubricBadge, setEditRubricBadge] = useState('');
+  const [editRubricQuota, setEditRubricQuota] = useState(3);
+  const [editRubricDesc, setEditRubricDesc] = useState('');
+  const [editRubricSyarat, setEditRubricSyarat] = useState<string[]>([]);
+  const [editRubricKriteria, setEditRubricKriteria] = useState<{ name: string; weight: number }[]>([]);
+
+  // Open modal to edit rubric (Admin only)
+  const handleOpenEditRubric = (rubric: AssessmentRubric, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isAdmin) return;
+    setEditingRubric(rubric);
+    setEditRubricTitle(rubric.title);
+    setEditRubricBadge(rubric.badgeLabel);
+    setEditRubricQuota(rubric.quota);
+    setEditRubricDesc(rubric.description);
+    setEditRubricSyarat([...rubric.syarat]);
+    setEditRubricKriteria(rubric.kriteria.map((k) => ({ ...k })));
+  };
+
+  // Save edited rubric
+  const handleSaveRubric = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingRubric) return;
+
+    // Update in local OFFICIAL_AWARD_RUBRICS in-memory
+    const idx = OFFICIAL_AWARD_RUBRICS.findIndex((r) => r.id === editingRubric.id);
+    if (idx !== -1) {
+      OFFICIAL_AWARD_RUBRICS[idx] = {
+        ...OFFICIAL_AWARD_RUBRICS[idx],
+        title: editRubricTitle,
+        badgeLabel: editRubricBadge,
+        quota: editRubricQuota,
+        description: editRubricDesc,
+        syarat: editRubricSyarat.filter((s) => s.trim().length > 0),
+        kriteria: editRubricKriteria.filter((k) => k.name.trim().length > 0),
+      };
+    }
+
+    // Also sync to AwardCategory in parent state if onUpdateCategory exists
+    const matchedCat = categories.find(
+      (c) =>
+        c.id === editingRubric.id ||
+        c.title.toLowerCase().replace(/\s+/g, '') === editingRubric.title.toLowerCase().replace(/\s+/g, '')
+    );
+    if (matchedCat && onUpdateCategory) {
+      onUpdateCategory({
+        ...matchedCat,
+        title: editRubricTitle,
+        description: editRubricDesc,
+        quota: editRubricQuota,
+        requirements: editRubricSyarat.filter((s) => s.trim().length > 0),
+        criteria: editRubricKriteria.filter((k) => k.name.trim().length > 0),
+      });
+    }
+
+    // Keep active rubric tab on the saved rubric so changes are immediately visible
+    setActiveRubricId(editingRubric.id);
+    setExpandedRubricIds((prev) => ({ ...prev, [editingRubric.id]: true }));
+    setEditingRubric(null);
+  };
 
   // Form states (Termasuk 6 Kolom Utama Peserta: ID PPS, Nama, Domisili, Kelas, Tingkat, Alamat)
   const [idPps, setIdPps] = useState('');
@@ -179,7 +479,15 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
       (nom.achievement && nom.achievement.toLowerCase().includes(term)) ||
       nom.nominatorName.toLowerCase().includes(term);
 
-    const matchesCategory = selectedCategory === 'ALL' || nom.categoryId === selectedCategory;
+    const matchesCategory =
+      selectedCategory === 'ALL' ||
+      nom.categoryId === selectedCategory ||
+      (selectedCategory === 'cat-1' && (nom.categoryId === 'cat-1' || categories.find((c) => c.id === nom.categoryId)?.title.toLowerCase().includes('ranting'))) ||
+      (selectedCategory === 'cat-2' && (nom.categoryId === 'cat-2' || categories.find((c) => c.id === nom.categoryId)?.title.toLowerCase().includes('guru'))) ||
+      (selectedCategory === 'cat-3' && (nom.categoryId === 'cat-3' || categories.find((c) => c.id === nom.categoryId)?.title.toLowerCase().includes('alumni'))) ||
+      (selectedCategory === 'cat-4' && (nom.categoryId === 'cat-4' || categories.find((c) => c.id === nom.categoryId)?.title.toLowerCase().includes('pengurus'))) ||
+      (selectedCategory === 'cat-5' && (nom.categoryId === 'cat-5' || categories.find((c) => c.id === nom.categoryId)?.title.toLowerCase().includes('santri'))) ||
+      (selectedCategory === 'cat-6' && (nom.categoryId === 'cat-6' || categories.find((c) => c.id === nom.categoryId)?.title.toLowerCase().includes('murid')));
     const matchesStatus = selectedStatus === 'ALL' || nom.status === selectedStatus;
 
     return matchesSearch && matchesCategory && matchesStatus;
@@ -324,109 +632,370 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
     <div className="space-y-4 pb-12">
       {/* Breadcrumb & Title */}
       <ContentHeader
-        title="Nominasi & Peserta Penganugerahan"
-        subtitle="Sistem Pendaftaran, Penilaian, dan Penetapan Pemenang"
+        title={isAdmin ? "Nominasi & Peserta Penganugerahan" : "Ketentuan & Syarat Penilaian Nominasi"}
+        subtitle={isAdmin ? "Sistem Pendaftaran, Penilaian, dan Penetapan Pemenang" : "Standar Kualifikasi dan Syarat Resmi 6 Kategori Penghargaan"}
         activeTab="nominasi"
       />
 
-      {/* Top Header Box */}
-      <div className="admin-box border-t-4 border-t-[#00a65a] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Trophy className="w-5 h-5 text-[#00a65a]" />
-            <h1 className="text-base font-extrabold text-gray-800">Daftar Peserta & Nominasi Penganugerahan</h1>
-            <span className="flex items-center space-x-1 text-[10px] font-extrabold bg-[#00a65a] text-white px-2 py-0.5 rounded shadow-2xs">
-              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
-              <span>Firestore Sync Active</span>
-            </span>
+      {/* Top Header Box in Milad Sidogiri Clean Style (Khusus Admin) */}
+      {isAdmin && (
+        <div className="bg-white border border-[rgba(36,33,28,0.12)] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Trophy className="w-5 h-5 text-[#8a7c4c]" />
+              <h1 className="text-base font-extrabold text-[#24211c]">
+                Daftar Peserta & Nominasi Penganugerahan
+              </h1>
+              <span className="flex items-center space-x-1 text-[10px] font-bold bg-[#f2eee3] text-[#675c37] border border-[#c3b68b]/40 px-2.5 py-0.5 rounded-full">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#8a7c4c] animate-pulse"></span>
+                <span>Firestore Realtime</span>
+              </span>
+            </div>
+            <p className="text-xs text-[#7c7b77] mt-1">
+              Manajemen data lengkap peserta, penambahan atribut identitas (NIP/NIK, Jabatan, Kontak, Karya), penilaian, hingga penetapan pemenang.
+            </p>
           </div>
-          <p className="text-xs text-gray-500 mt-1">
-            Manajemen data lengkap peserta, penambahan atribut identitas (NIP/NIK, Jabatan, Kontak, Karya), penilaian, hingga penetapan pemenang.
-          </p>
+
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={handleExportExcel}
+              disabled={isExporting}
+              className="flex items-center justify-center space-x-1.5 bg-white hover:bg-[#f7f6f2] text-[#24211c] border border-[rgba(36,33,28,0.15)] font-bold px-3.5 py-2 rounded-xl shadow-2xs transition text-xs cursor-pointer disabled:opacity-50"
+              title="Ekspor seluruh data peserta ke file Excel (.xlsx)"
+            >
+              {isExporting ? (
+                <Loader2 className="w-4 h-4 animate-spin text-[#8a7c4c]" />
+              ) : (
+                <FileSpreadsheet className="w-4 h-4 text-[#8a7c4c]" />
+              )}
+              <span>{isExporting ? 'Mengekspor...' : 'Ekspor Excel'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleOpenAdd}
+              className="flex items-center justify-center space-x-1.5 bg-[#8a7c4c] hover:bg-[#675c37] text-white font-bold px-3.5 py-2 rounded-xl shadow-xs transition text-xs cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Tambah Peserta Baru</span>
+            </button>
+          </div>
         </div>
+      )}
 
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={handleExportExcel}
-            disabled={isExporting}
-            className="flex items-center justify-center space-x-1.5 bg-[#00a65a] hover:bg-[#008d4c] text-white font-extrabold px-3.5 py-1.5 rounded shadow-2xs transition text-xs cursor-pointer disabled:opacity-50"
-            title="Ekspor seluruh data peserta ke file Excel (.xlsx)"
-          >
-            {isExporting ? (
-              <Loader2 className="w-4 h-4 animate-spin text-white" />
-            ) : (
-              <FileSpreadsheet className="w-4 h-4 text-white" />
-            )}
-            <span>{isExporting ? 'Mengekspor...' : 'Ekspor Excel'}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleOpenAdd}
-            className="flex items-center justify-center space-x-1.5 bg-[#005a2b] hover:bg-[#004220] text-white font-extrabold px-3.5 py-1.5 rounded shadow-2xs transition text-xs cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Tambah Peserta Baru</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Kategori Overview Badges (Bento Tiles) */}
+      {/* Ketentuan dan Syarat Penilaian Nominasi (6 Kategori Resmi Penganugerahan) */}
       <CollapsibleSection
-        sectionId="nomination_categories_summary"
-        title="Ringkasan Kategori & Kuota Anugerah"
-        subtitle="Klik kategori untuk memfilter daftar peserta berdasarkan kategori tertentu"
-        icon={<Trophy className="w-4 h-4 text-emerald-600" />}
+        sectionId="nomination_assessment_guidelines"
+        title="Ketentuan dan Syarat Penilaian Nominasi"
+        subtitle="Standar kualifikasi, syarat kelayakan, serta kriteria dan bobot penilaian resmi untuk 6 kategori penganugerahan"
+        icon={<Scale className="w-4 h-4 text-[#8a7c4c]" />}
         badge={
-          <span className="text-[10px] font-extrabold bg-emerald-100 text-emerald-900 border border-emerald-200 px-2.5 py-0.5 rounded-full">
-            {categories.length} Kategori
+          <span className="text-[10px] font-extrabold bg-[#f2eee3] text-[#675c37] border border-[#c3b68b]/40 px-2.5 py-0.5 rounded-full">
+            6 Kategori Penghargaan
           </span>
         }
       >
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {categories.map((cat) => {
-            const count = nominations.filter((n) => n.categoryId === cat.id).length;
-            const winners = nominations.filter((n) => n.categoryId === cat.id && n.status === 'Pemenang').length;
-            return (
-              <div
-                key={cat.id}
-                onClick={() => setSelectedCategory(selectedCategory === cat.id ? 'ALL' : cat.id)}
-                className={`p-4 rounded-2xl border cursor-pointer transition-all ${
-                  selectedCategory === cat.id
-                    ? 'border-emerald-500 bg-emerald-50/80 shadow-sm ring-1 ring-emerald-500/30'
-                    : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className={`text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border bg-emerald-100 text-emerald-800 border-emerald-200`}>
-                    {cat.title}
-                  </span>
-                  <span className="text-xs font-semibold text-slate-500">Kuota: {cat.quota}</span>
+        {/* Active Rubric Resolution & Full-Screen Category Display ala Screenshot */}
+        {(() => {
+          const activeRubric = OFFICIAL_AWARD_RUBRICS.find((r) => r.id === activeRubricId) || OFFICIAL_AWARD_RUBRICS[0];
+          const matchedCat = categories.find(
+            (c) =>
+              c.id === activeRubric.id ||
+              c.title.toLowerCase().replace(/\s+/g, '') === activeRubric.title.toLowerCase().replace(/\s+/g, '') ||
+              (activeRubric.id === 'cat-1' && c.title.toLowerCase().includes('ranting')) ||
+              (activeRubric.id === 'cat-2' && c.title.toLowerCase().includes('guru')) ||
+              (activeRubric.id === 'cat-3' && c.title.toLowerCase().includes('alumni')) ||
+              (activeRubric.id === 'cat-4' && c.title.toLowerCase().includes('pengurus')) ||
+              (activeRubric.id === 'cat-5' && c.title.toLowerCase().includes('santri')) ||
+              (activeRubric.id === 'cat-6' && c.title.toLowerCase().includes('murid'))
+          );
+
+          const activeCatId = matchedCat ? matchedCat.id : activeRubric.id;
+          const matchingNoms = nominations.filter(
+            (n) =>
+              n.categoryId === activeRubric.id ||
+              (matchedCat && n.categoryId === matchedCat.id) ||
+              (activeRubric.id === 'cat-1' && n.categoryId.toLowerCase().includes('ranting')) ||
+              (activeRubric.id === 'cat-2' && n.categoryId.toLowerCase().includes('guru')) ||
+              (activeRubric.id === 'cat-3' && n.categoryId.toLowerCase().includes('alumni')) ||
+              (activeRubric.id === 'cat-4' && n.categoryId.toLowerCase().includes('pengurus')) ||
+              (activeRubric.id === 'cat-5' && n.categoryId.toLowerCase().includes('santri')) ||
+              (activeRubric.id === 'cat-6' && n.categoryId.toLowerCase().includes('murid'))
+          );
+          const count = matchingNoms.length;
+
+          const displayTitle = matchedCat?.title || activeRubric.title;
+          const displayDesc = matchedCat?.description || activeRubric.description;
+          const displayQuota = matchedCat?.quota || activeRubric.quota;
+          const displayBadge = activeRubric.badgeLabel;
+          const displaySyarat = (matchedCat?.requirements && matchedCat.requirements.length > 0)
+            ? matchedCat.requirements
+            : activeRubric.syarat;
+          const displayKriteria = (matchedCat?.criteria && matchedCat.criteria.length > 0)
+            ? matchedCat.criteria
+            : activeRubric.kriteria;
+          const displayIndikator = activeRubric.fokusTema || [
+            'Rekam jejak akhlak terpuji dan kepatuhan pada tata tertib Sidogiri.',
+            'Kontribusi nyata dan loyalitas tanpa pamrih dalam khidmah dakwah.',
+            'Integritas pribadi dan konsistensi dalam mengemban amanah.',
+          ];
+          const displayMekanisme = activeRubric.mekanisme || [
+            'Pengisian dan penyerahan angket usulan resmi kepada Sie Penganugerahan.',
+            'Batas akhir penyetoran berkas: Sabtu, 29 Jumadats Tsaniyah 1447 H | 20 Desember 2025 M.',
+            'Verifikasi berkas, validasi rekam jejak, dan sidang pleno penjurian.',
+            'Penetapan resmi melalui Surat Keputusan (SK) Pengasuh Pondok Pesantren Sidogiri.',
+          ];
+          const displayHadiah = activeRubric.hadiah || [
+            { rank: 'JUARA I', detail: 'Trofi Kehormatan + Piagam Pengasuh PPS + Tali Asih Khidmah' },
+            { rank: 'JUARA II', detail: 'Trofi Kehormatan + Piagam Pengasuh PPS + Tali Asih Khidmah' },
+            { rank: 'JUARA III', detail: 'Trofi Kehormatan + Piagam Pengasuh PPS + Tali Asih Khidmah' },
+          ];
+
+          return (
+            <div className="space-y-4">
+              {/* Header Sesuai Tangkapan Layar: Judul Besar Kiri & Deskripsi Pengantar Kanan */}
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pt-1">
+                <div>
+                  <h2 className="text-2xl sm:text-3xl font-black text-[#8a7c4c] tracking-tight uppercase">
+                    CABANG PENGANUGERAHAN
+                  </h2>
                 </div>
-                <p className="text-xs text-slate-600 mt-2.5 line-clamp-2 leading-relaxed">{cat.description}</p>
-                <div className="mt-3 flex items-center justify-between text-xs pt-2 border-t border-slate-100">
-                  <span className="text-slate-700 font-medium">{count} Peserta Total</span>
-                  <span className="text-emerald-700 font-bold">{winners} Pemenang</span>
+                <p className="text-xs text-[#7c7b77] sm:text-right max-w-md leading-relaxed">
+                  Pilih cabang untuk membaca persyaratan, teknis pelaksanaan, kriteria penilaian, dan ketentuannya.
+                </p>
+              </div>
+
+              {/* Baris Tombol Tab Kategori Horizontal (01, 02, 03, ...) Sesuai Tangkapan Layar */}
+              <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+                {OFFICIAL_AWARD_RUBRICS.map((rubric) => {
+                  const isActive = rubric.id === activeRubricId;
+                  const matched = categories.find(
+                    (c) =>
+                      c.id === rubric.id ||
+                      c.title.toLowerCase().replace(/\s+/g, '') === rubric.title.toLowerCase().replace(/\s+/g, '')
+                  );
+                  const title = matched?.title || rubric.title;
+
+                  return (
+                    <button
+                      key={rubric.id}
+                      type="button"
+                      onClick={() => setActiveRubricId(rubric.id)}
+                      className={`flex items-center space-x-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm transition-all duration-150 cursor-pointer select-none font-bold ${
+                        isActive
+                          ? 'bg-[#8a7c4c] text-white shadow-xs ring-1 ring-[#675c37]'
+                          : 'bg-[#efede7] hover:bg-[#e4e0d4] text-[#24211c] border border-[rgba(36,33,28,0.12)]'
+                      }`}
+                    >
+                      <span className={`font-mono text-xs font-black ${isActive ? 'text-[#f2eee3]' : 'text-[#7c7b77]'}`}>
+                        {String(rubric.number).padStart(2, '0')}
+                      </span>
+                      <span>{title}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Layar Penuh Menampilkan Isi Syarat & Ketentuan Sesuai Desain Tangkapan Layar */}
+              <div className="bg-[#f5f2eb] border border-[#dcd7cb] rounded-3xl p-5 sm:p-7 shadow-xs relative overflow-hidden">
+                {/* Aksen kisi-kisi latar halus ala tangkapan layar di pojok kanan atas */}
+                <div
+                  aria-hidden="true"
+                  className="absolute right-0 top-0 w-64 h-64 opacity-25 pointer-events-none [background:radial-gradient(#8a7c4c_1px,transparent_1px)] [background-size:16px_16px]"
+                />
+
+                <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+                  {/* Kolom Kiri (Judul, Sasaran, Deskripsi, Batas Waktu/Kuota, Juara I/II/III, Aksi Admin) */}
+                  <div className="lg:col-span-5 flex flex-col justify-between space-y-5">
+                    <div>
+                      <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#8a7c4c] block mb-1">
+                        SASARAN: {displayBadge}
+                      </span>
+                      <h3 className="text-2xl sm:text-3xl font-extrabold text-[#24211c] leading-tight tracking-tight">
+                        {displayTitle}
+                      </h3>
+                      <p className="text-xs sm:text-sm text-[#5c5b57] leading-relaxed mt-2.5">
+                        {displayDesc}
+                      </p>
+
+                      {/* Kotak Batas Waktu / Kuota ala Tangkapan Layar */}
+                      <div className="mt-3.5 inline-block border border-[#c3b68b] bg-[#ede9df] px-3.5 py-1.5 rounded-lg text-xs font-bold text-[#675c37]">
+                        Batas Pengusulan: 29 Jumadats Tsaniyah 1447 H • Kuota: {displayQuota} Orang
+                      </div>
+                    </div>
+
+                    {/* Garis Pembatas */}
+                    <div className="pt-2 border-t border-[rgba(36,33,28,0.15)]">
+                      {/* Breakdown Penganugerahan / Juara I, II, III */}
+                      <div className="space-y-2.5 text-xs">
+                        {displayHadiah.map((h, i) => (
+                          <div key={i} className="flex items-baseline justify-between gap-3 pb-2 border-b border-[rgba(36,33,28,0.08)] last:border-0 last:pb-0">
+                            <span className="font-extrabold text-[#24211c] uppercase tracking-wide shrink-0">
+                              {h.rank}
+                            </span>
+                            <span className="text-[#5c5b57] text-right font-medium">
+                              {h.detail}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Tombol Aksi Admin vs Petugas */}
+                      <div className="pt-4 flex flex-wrap items-center gap-2">
+                        {isAdmin ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={(e) =>
+                                handleOpenEditRubric(
+                                  {
+                                    ...activeRubric,
+                                    title: displayTitle,
+                                    description: displayDesc,
+                                    quota: displayQuota,
+                                    syarat: displaySyarat,
+                                    kriteria: displayKriteria,
+                                  },
+                                  e
+                                )
+                              }
+                              className="flex items-center space-x-1.5 bg-[#8a7c4c] hover:bg-[#675c37] text-white px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer shadow-2xs"
+                              title="Edit Ketentuan & Bobot Penilaian"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                              <span>Edit Ketentuan & Bobot</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setSelectedCategory(selectedCategory === activeCatId ? 'ALL' : activeCatId)}
+                              className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer shadow-2xs border ${
+                                selectedCategory === activeCatId
+                                  ? 'bg-[#24211c] text-white border-[#24211c]'
+                                  : 'bg-white hover:bg-[#f7f6f2] text-[#24211c] border-[rgba(36,33,28,0.15)]'
+                              }`}
+                              title="Filter daftar peserta di tabel bawah"
+                            >
+                              {selectedCategory === activeCatId ? (
+                                <>
+                                  <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                  <span>Filter Aktif ({count})</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Filter className="w-3.5 h-3.5 text-[#8a7c4c]" />
+                                  <span>Filter Peserta ({count})</span>
+                                </>
+                              )}
+                            </button>
+                          </>
+                        ) : (
+                          <div className="flex items-center space-x-2 text-xs text-[#7c7b77] bg-white/80 border border-[rgba(36,33,28,0.1)] px-3 py-1.5 rounded-xl font-medium">
+                            <Lock className="w-3.5 h-3.5 text-[#8a7c4c]" />
+                            <span>Pedoman Resmi Milad Sidogiri (Petugas Mode Baca)</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bagian Kanan (Grid 4 Blok: Peserta, Sudut Pandang Tema, Format/Kriteria, Mekanisme) */}
+                  <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-6">
+                    {/* Blok 1: PESERTA & KELAYAKAN (Sesuai kolom "PESERTA" di tangkapan layar) */}
+                    <div className="space-y-2.5">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-[#24211c] pb-2 border-b border-[rgba(36,33,28,0.2)]">
+                        PESERTA & KELAYAKAN
+                      </h4>
+                      <ul className="space-y-2 text-xs text-[#5c5b57] leading-relaxed">
+                        {displaySyarat.map((s, i) => (
+                          <li key={i} className="flex items-start space-x-2">
+                            <span className="text-[#8a7c4c] font-black text-sm leading-none mt-0.5">•</span>
+                            <span>{s}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Blok 2: SUDUT PANDANG TEMA / INDIKATOR (Sesuai kolom "SUDUT PANDANG TEMA" di tangkapan layar) */}
+                    <div className="space-y-2.5">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-[#24211c] pb-2 border-b border-[rgba(36,33,28,0.2)]">
+                        SUDUT PANDANG TEMA
+                      </h4>
+                      <ul className="space-y-2 text-xs text-[#5c5b57] leading-relaxed">
+                        {displayIndikator.map((ind, i) => (
+                          <li key={i} className="flex items-start space-x-2">
+                            <span className="text-[#8a7c4c] font-black text-sm leading-none mt-0.5">•</span>
+                            <span>{ind}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Blok 3: FORMAT & KETENTUAN PENILAIAN (Sesuai kolom "FORMAT & KETENTUAN" di tangkapan layar) */}
+                    <div className="space-y-2.5">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-[#24211c] pb-2 border-b border-[rgba(36,33,28,0.2)]">
+                        FORMAT & KETENTUAN
+                      </h4>
+                      <div className="space-y-2.5 pt-1 text-xs">
+                        {displayKriteria.map((k, i) => (
+                          <div key={i} className="space-y-1">
+                            <div className="flex items-center justify-between text-[#24211c] font-medium text-xs">
+                              <span>{k.name}</span>
+                              <span className="font-extrabold text-[#8a7c4c] bg-[#ede9df] px-1.5 py-0.5 rounded text-[11px] border border-[#c3b68b]/30">
+                                {k.weight}%
+                              </span>
+                            </div>
+                            <div className="w-full bg-[#ded9cb] h-1.5 rounded-full overflow-hidden">
+                              <div
+                                className="bg-[#8a7c4c] h-1.5 rounded-full transition-all duration-300"
+                                style={{ width: `${k.weight}%` }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                        <p className="text-[11px] text-[#7c7b77] italic pt-1">
+                          * Standar skor kelulusan minimal penganugerahan: 85/100.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Blok 4: MEKANISME & PENILAIAN (Sesuai kolom "MEKANISME & PENILAIAN" di tangkapan layar) */}
+                    <div className="space-y-2.5">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-[#24211c] pb-2 border-b border-[rgba(36,33,28,0.2)]">
+                        MEKANISME & PENILAIAN
+                      </h4>
+                      <ul className="space-y-2 text-xs text-[#5c5b57] leading-relaxed">
+                        {displayMekanisme.map((m, i) => (
+                          <li key={i} className="flex items-start space-x-2">
+                            <span className="text-[#8a7c4c] font-black text-sm leading-none mt-0.5">•</span>
+                            <span>{m}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
                 </div>
               </div>
-            );
-          })}
-        </div>
+            </div>
+          );
+        })()}
       </CollapsibleSection>
 
-      {/* Main Participants List Section */}
-      <CollapsibleSection
-        sectionId="nomination_list_section"
-        title="Daftar Peserta Nominasi & Penganugerahan"
-        subtitle="Kelola data pendaftaran, pencarian, filter, serta penetapan skor dan pemenang"
-        icon={<UserCheck className="w-4 h-4 text-emerald-600" />}
-        badge={
-          <span className="text-[10px] font-extrabold bg-emerald-100 text-emerald-900 border border-emerald-200 px-2.5 py-0.5 rounded-full">
-            {filteredNominations.length} Peserta
-          </span>
-        }
-      >
+      {/* Main Participants List & Awarding Section (Khusus Admin Saja - Petugas Tidak Ditampilkan) */}
+      {isAdmin && (
+        <CollapsibleSection
+          sectionId="nomination_list_section"
+          title="Daftar Peserta Nominasi & Penganugerahan"
+          subtitle="Kelola data pendaftaran, pencarian, filter, serta penetapan skor dan pemenang"
+          icon={<UserCheck className="w-4 h-4 text-emerald-600" />}
+          defaultOpen={false}
+          badge={
+            <span className="text-[10px] font-extrabold bg-emerald-100 text-emerald-900 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+              {filteredNominations.length} Peserta
+            </span>
+          }
+        >
         <div className="space-y-4">
           {/* Search & Filter Bar + View Toggle */}
           <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
@@ -443,11 +1012,11 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
 
         <div className="flex flex-wrap items-center gap-2">
           {/* View Mode Toggle Buttons */}
-          <div className="flex items-center bg-slate-100 p-1 rounded-2xl border border-slate-200 text-xs">
+          <div className="flex items-center bg-[#efede7] p-1 rounded-xl border border-[rgba(36,33,28,0.1)] text-xs">
             <button
               onClick={() => setViewMode('grid')}
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl font-bold transition cursor-pointer ${
-                viewMode === 'grid' ? 'bg-[#00a65a] text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg font-bold transition cursor-pointer ${
+                viewMode === 'grid' ? 'bg-[#8a7c4c] text-white shadow-2xs' : 'text-[#7c7b77] hover:text-[#24211c]'
               }`}
               title="Tampilan Kartu"
             >
@@ -456,8 +1025,8 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
             </button>
             <button
               onClick={() => setViewMode('table')}
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl font-bold transition cursor-pointer ${
-                viewMode === 'table' ? 'bg-[#00a65a] text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg font-bold transition cursor-pointer ${
+                viewMode === 'table' ? 'bg-[#8a7c4c] text-white shadow-2xs' : 'text-[#7c7b77] hover:text-[#24211c]'
               }`}
               title="Tampilan Tabel Kolom"
             >
@@ -501,7 +1070,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
       {viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredNominations.map((nom) => {
-            const category = categories.find((c) => c.id === nom.categoryId);
+            const category = categories.find((c) => c.id === nom.categoryId) || OFFICIAL_AWARD_RUBRICS.find((r) => r.id === nom.categoryId);
             const isWinner = nom.status === 'Pemenang';
 
             return (
@@ -646,7 +1215,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
                 {filteredNominations.map((nom, idx) => {
-                  const category = categories.find((c) => c.id === nom.categoryId);
+                  const category = categories.find((c) => c.id === nom.categoryId) || OFFICIAL_AWARD_RUBRICS.find((r) => r.id === nom.categoryId);
                   const isWinner = nom.status === 'Pemenang';
 
                   return (
@@ -738,9 +1307,10 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
       )}
       </div>
     </CollapsibleSection>
+  )}
 
-      {/* Modal Add / Edit Nomination (Form LENGKAP Data Peserta) */}
-      {isModalOpen && (
+      {/* Modal Add / Edit Nomination (Form LENGKAP Data Peserta - Khusus Admin) */}
+      {isModalOpen && isAdmin && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
           <div className="bg-white w-full max-w-xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden text-slate-800 max-h-[90vh] flex flex-col my-auto">
             <div className="bg-slate-50 px-5 py-3.5 border-b border-slate-200 text-slate-900 flex items-center justify-between shrink-0">
@@ -886,7 +1456,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                       onChange={(e) => setCategoryId(e.target.value)}
                       className="w-full px-3 py-2 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500/40 focus:bg-white focus:outline-none font-semibold"
                     >
-                      {categories.map((c) => (
+                      {(categories.length === 6 ? categories : OFFICIAL_AWARD_RUBRICS).map((c) => (
                         <option key={c.id} value={c.id}>
                           {c.title}
                         </option>
@@ -989,6 +1559,219 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                     {editingNomination ? 'Simpan Perubahan' : 'Tambah Peserta'}
                   </button>
                 </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Edit Syarat & Ketentuan Kategori (Khusus Admin) */}
+      {isAdmin && editingRubric && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 my-8">
+            <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-8 h-8 rounded-xl bg-[#f2eee3] text-[#8a7c4c] flex items-center justify-center font-bold">
+                  <Edit2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-900">
+                    Edit Ketentuan & Syarat Penilaian
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Kategori: <span className="font-bold text-[#8a7c4c]">{editingRubric.title}</span>
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingRubric(null)}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveRubric} className="mt-4 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Nama Kategori Penghargaan
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editRubricTitle}
+                  onChange={(e) => setEditRubricTitle(e.target.value)}
+                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-[#8a7c4c]/40 focus:bg-white focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Label Sasaran / Badge
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editRubricBadge}
+                    onChange={(e) => setEditRubricBadge(e.target.value)}
+                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-[#8a7c4c]/40 focus:bg-white focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Kuota Pemenang
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="50"
+                    required
+                    value={editRubricQuota}
+                    onChange={(e) => setEditRubricQuota(Number(e.target.value))}
+                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-[#8a7c4c]/40 focus:bg-white focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Deskripsi Singkat Kategori
+                </label>
+                <textarea
+                  rows={2}
+                  value={editRubricDesc}
+                  onChange={(e) => setEditRubricDesc(e.target.value)}
+                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-[#8a7c4c]/40 focus:bg-white focus:outline-none"
+                />
+              </div>
+
+              {/* Edit Syarat & Ketentuan (Poin-Poin) */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold text-slate-700">
+                    Ketentuan & Syarat Kelayakan ({editRubricSyarat.length} Poin)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setEditRubricSyarat([...editRubricSyarat, ''])}
+                    className="text-[11px] font-bold text-[#8a7c4c] hover:underline flex items-center space-x-1"
+                  >
+                    <Plus className="w-3 h-3" />
+                    <span>Tambah Syarat</span>
+                  </button>
+                </div>
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  {editRubricSyarat.map((item, idx) => (
+                    <div key={idx} className="flex items-center space-x-2">
+                      <span className="w-5 h-5 rounded-full bg-[#f2eee3] text-[#8a7c4c] flex items-center justify-center text-[10px] font-bold shrink-0">
+                        {idx + 1}
+                      </span>
+                      <input
+                        type="text"
+                        value={item}
+                        placeholder={`Poin syarat ${idx + 1}`}
+                        onChange={(e) => {
+                          const updated = [...editRubricSyarat];
+                          updated[idx] = e.target.value;
+                          setEditRubricSyarat(updated);
+                        }}
+                        className="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:ring-2 focus:ring-[#8a7c4c]/40 focus:bg-white focus:outline-none"
+                      />
+                      {editRubricSyarat.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditRubricSyarat(editRubricSyarat.filter((_, i) => i !== idx));
+                          }}
+                          className="p-1 text-slate-400 hover:text-rose-600 transition"
+                          title="Hapus poin syarat"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Edit Kriteria & Bobot Penilaian */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold text-slate-700">
+                    Kriteria & Bobot Penilaian
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setEditRubricKriteria([...editRubricKriteria, { name: '', weight: 10 }])}
+                    className="text-[11px] font-bold text-[#8a7c4c] hover:underline flex items-center space-x-1"
+                  >
+                    <Plus className="w-3 h-3" />
+                    <span>Tambah Kriteria</span>
+                  </button>
+                </div>
+                <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                  {editRubricKriteria.map((krit, idx) => (
+                    <div key={idx} className="flex items-center space-x-2">
+                      <input
+                        type="text"
+                        value={krit.name}
+                        placeholder="Nama kriteria..."
+                        onChange={(e) => {
+                          const updated = [...editRubricKriteria];
+                          updated[idx].name = e.target.value;
+                          setEditRubricKriteria(updated);
+                        }}
+                        className="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:ring-2 focus:ring-[#8a7c4c]/40 focus:bg-white focus:outline-none"
+                      />
+                      <div className="flex items-center space-x-1 shrink-0">
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={krit.weight}
+                          onChange={(e) => {
+                            const updated = [...editRubricKriteria];
+                            updated[idx].weight = Number(e.target.value);
+                            setEditRubricKriteria(updated);
+                          }}
+                          className="w-16 px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-center font-bold text-[#8a7c4c] focus:outline-none"
+                        />
+                        <span className="text-xs font-bold text-slate-500">%</span>
+                      </div>
+                      {editRubricKriteria.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditRubricKriteria(editRubricKriteria.filter((_, i) => i !== idx));
+                          }}
+                          className="p-1 text-slate-400 hover:text-rose-600 transition"
+                          title="Hapus kriteria"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-slate-200 flex items-center justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingRubric(null)}
+                  className="px-4 py-2 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl hover:bg-slate-100 transition cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-[#8a7c4c] hover:bg-[#675c37] text-white text-xs font-extrabold rounded-xl shadow-sm transition cursor-pointer flex items-center space-x-1.5"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>Simpan Perubahan</span>
+                </button>
               </div>
             </form>
           </div>
