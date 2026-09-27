@@ -59,6 +59,22 @@ export interface Nomination {
   photoUrl?: string;
   nominatorName: string;
   createdAt: string;
+
+  // 1. Identitas Pengusul
+  pengusulNama?: string;
+  pengusulJabatan?: string;
+  pengusulDomisili?: 'PPS' | 'LPPS' | string;
+  pengusulAlamat?: string;
+
+  // 2. Identitas Peserta / Ranting yang Diusulkan
+  candidateDomisiliType?: 'PPS' | 'LPPS' | string;
+
+  // 3. Rubrik Penilaian Dinamis (Checklist Centang & Isian Bebas)
+  evaluationChecklist?: Record<string, boolean>;
+  alasanLain?: string;
+  integritasNote?: string;
+  transparansiLaporanNote?: string;
+  lainLainNote?: string;
 }
 
 export type TaskStatus = 'Terencana' | 'Berjalan' | 'Selesai';

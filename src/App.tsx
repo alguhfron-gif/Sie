@@ -114,49 +114,30 @@ export default function App() {
     }
   }, [activeTab]);
 
-  // User Authentication Session State - Opens directly without loading screens or barriers
+  // User Authentication Session State - Hanya me-restore sesi jika pengguna telah login sebelumnya
   const [currentUser, setCurrentUser] = useState<UserSession | null>(() => {
-    // 1. Try localStorage
+    // 1. Coba restore dari localStorage
     const savedLocal = localStorage.getItem('sie_user_session');
     if (savedLocal) {
       try {
         const parsed = JSON.parse(savedLocal);
-        if (parsed && parsed.name) return parsed;
+        if (parsed && parsed.name && parsed.id) return parsed;
       } catch (e) {
         console.error('Failed to parse saved user session from localStorage', e);
       }
     }
-    // 2. Fallback to sessionStorage
+    // 2. Coba restore dari sessionStorage
     const savedSession = sessionStorage.getItem('sie_user_session');
     if (savedSession) {
       try {
         const parsed = JSON.parse(savedSession);
-        if (parsed && parsed.name) return parsed;
+        if (parsed && parsed.name && parsed.id) return parsed;
       } catch (e) {
         console.error('Failed to parse saved user session from sessionStorage', e);
       }
     }
-    // 3. Instant auto-open default session: Panitia Inti (Admin)
-    const defaultAcc = INITIAL_ACCOUNTS[0] || {
-      id: '1',
-      name: 'BIRRIL WALID',
-      role: 'KETUA SIE PENGANUGERAHAN',
-      category: 'admin',
-    };
-    const initialSession: UserSession = {
-      id: defaultAcc.id,
-      name: defaultAcc.name,
-      role: `${defaultAcc.role} (ADMIN)`,
-      category: defaultAcc.category,
-      authType: 'committee',
-      email: 'birril.walid@penganugerahan.id',
-      loginTime: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
-    };
-    try {
-      localStorage.setItem('sie_user_session', JSON.stringify(initialSession));
-      sessionStorage.setItem('sie_user_session', JSON.stringify(initialSession));
-    } catch (e) {}
-    return initialSession;
+    // Tanpa sesi tersimpan: tampilkan halaman Login resmi
+    return null;
   });
 
   // Global App Lifecycle & Background Visibility Handler

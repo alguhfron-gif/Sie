@@ -105,6 +105,20 @@ export function sanitizeNomination(raw: any, index: number = 0): Nomination {
     phone: raw.phone ? String(raw.phone) : undefined,
     achievement: raw.achievement ? String(raw.achievement) : undefined,
     photoUrl: raw.photoUrl ? String(raw.photoUrl) : undefined,
+
+    // Identitas Pengusul & Ranting yang Diusulkan
+    pengusulNama: raw.pengusulNama ? String(raw.pengusulNama) : undefined,
+    pengusulJabatan: raw.pengusulJabatan ? String(raw.pengusulJabatan) : undefined,
+    pengusulDomisili: raw.pengusulDomisili ? String(raw.pengusulDomisili) : undefined,
+    pengusulAlamat: raw.pengusulAlamat ? String(raw.pengusulAlamat) : undefined,
+    candidateDomisiliType: raw.candidateDomisiliType ? String(raw.candidateDomisiliType) : undefined,
+
+    // Rubrik Penilaian Dinamis (Checklist & Isian Mandiri)
+    evaluationChecklist: raw.evaluationChecklist && typeof raw.evaluationChecklist === 'object' ? raw.evaluationChecklist : undefined,
+    alasanLain: raw.alasanLain ? String(raw.alasanLain) : undefined,
+    integritasNote: raw.integritasNote ? String(raw.integritasNote) : undefined,
+    transparansiLaporanNote: raw.transparansiLaporanNote ? String(raw.transparansiLaporanNote) : undefined,
+    lainLainNote: raw.lainLainNote ? String(raw.lainLainNote) : undefined,
   };
 }
 
