@@ -39,6 +39,27 @@ export interface AwardCategory {
   criteria?: AwardCategoryCriterion[];
 }
 
+export interface GuruIdentityItem {
+  idPersonalia: string;
+  nama: string;
+  domisiliAlamat: string;
+  jabatan: string;
+  checklist?: Record<string, boolean>;
+  lainLainNote?: string;
+}
+
+export interface SantriMuridIdentityItem {
+  idPersonalia: string;
+  nama: string;
+  domisiliAlamat: string;
+  nilaiImda1: string;
+  nilaiImda2: string;
+  nilaiSemester1Aly: string;
+  presensiKehadiran: string;
+  checklist?: Record<string, boolean>;
+  lainLainNote?: string;
+}
+
 export interface Nomination {
   id: string;
   idPps?: string;
@@ -69,8 +90,15 @@ export interface Nomination {
   // 2. Identitas Peserta / Ranting yang Diusulkan
   candidateDomisiliType?: 'PPS' | 'LPPS' | string;
 
+  // Identitas Khusus Penghargaan Khidmah (Guru): 5 Identitas Terstruktur
+  guruIdentitas?: GuruIdentityItem[];
+
+  // Identitas Khusus Penghargaan Santri Terbaik & Murid Terbaik: 2 Identitas Terstruktur
+  santriMuridIdentitas?: SantriMuridIdentityItem[];
+
   // 3. Rubrik Penilaian Dinamis (Checklist Centang & Isian Bebas)
   evaluationChecklist?: Record<string, boolean>;
+  alumniCriteriaReasons?: Record<string, string>;
   alasanLain?: string;
   integritasNote?: string;
   transparansiLaporanNote?: string;

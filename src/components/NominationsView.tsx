@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Award, Plus, Search, Filter, CheckCircle2, Edit2, Trash2, Trophy, Star, UserCheck, ShieldCheck, LayoutGrid, List, Phone, Briefcase, IdCard, Sparkles, FileSpreadsheet, Download, Loader2, Scale, FileText, Building2, GraduationCap, HeartHandshake, BookOpen, Info, Check, ChevronDown, ChevronUp, Lock, X, CheckSquare } from 'lucide-react';
+import { Award, Plus, Search, Filter, CheckCircle2, Edit2, Trash2, Trophy, Star, UserCheck, ShieldCheck, LayoutGrid, List, Phone, Briefcase, IdCard, Sparkles, FileSpreadsheet, Download, Loader2, Scale, FileText, FileCheck, Building2, GraduationCap, HeartHandshake, BookOpen, Info, Check, ChevronDown, ChevronUp, Lock, X, CheckSquare, Users, ClipboardCheck } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import ExcelJS from 'exceljs';
-import { AwardCategory, Nomination, NominationStatus, UserSession } from '../types';
+import { AwardCategory, Nomination, NominationStatus, UserSession, GuruIdentityItem, SantriMuridIdentityItem } from '../types';
 import { sendWebhookPayload, exportToCSV } from '../services/webhookService';
 import { ContentHeader } from './ContentHeader';
 import { CollapsibleSection } from './CollapsibleSection';
@@ -228,6 +228,46 @@ export const OFFICIAL_AWARD_RUBRICS: AssessmentRubric[] = [
   },
 ];
 
+export const GURU_CRITERIA_LIST = [
+  { id: 'guru_dedikasi', label: 'a. Memiliki dedikasi yang tinggi pada Agama, Dakwah, Pondok Pesantren Sidogiri dan/atau Madrasah Miftahul Ulum' },
+  { id: 'guru_disiplin_tatatertib', label: 'b. Selalu disiplin dan taat pada tata tertib Madrasah dan Pondok Pesantren Sidogiri' },
+  { id: 'guru_teladan_akhlak', label: 'c. Menjadi teladan bagi murid dalam bertutur kata, bersikap, berperilaku, beribadah serta penerapan Akhlaq al Karimah' },
+  { id: 'guru_materi_aswaja', label: 'd. Menguasai materi pembelajaran dari berbagai sumber yang sesuai dengan ajaran Ahlussunnah wal jamaah dengan sangat baik' },
+  { id: 'guru_penjelasan_lugas', label: 'e. Mampu memberikan penjelasan dengan baik, jelas, lugas, dan tepat setiap kali murid bertanya, serta selalu berusaha keras agar semua murid tuntas dalam belajar' },
+  { id: 'guru_hadir_kbm', label: 'f. Selalu hadir/keluar tepat waktu pada proses KBM di kelas, serta tidak pernah meninggalkan kelas selama proses KBM tanpa alasan yang penting' },
+  { id: 'guru_bimbing_disiplin', label: 'g. Selalu gigih mengingatkan dan membimbing murid untuk selalu berperilaku baik dan disiplin' },
+  { id: 'guru_tegur_sanksi', label: 'h. Selalu menegur atau memberikan sanksi kepada murid yang dianggap melanggar peraturan Madrasah seperti tidak memakai lencana, terlambat masuk kelas dll' },
+  { id: 'guru_tamrin_masal', label: 'i. Selalu melaksanakan tamrin masal dengan tertib dan tepat waktu' },
+  { id: 'guru_kegiatan_madrasah', label: 'j. Selalu hadir pada kegiatan-kegiatan Madrasah lainnya, seperti kegiatan gerak batin yang diadakan oleh Ketua I setiap malam Jumat pon' },
+  { id: 'guru_ramah_senyum', label: 'k. Ramah dan enak diajak bicara serta murah senyum' },
+  { id: 'guru_bersahabat_muruah', label: 'l. Dekat dan bersahabat dengan murid dengan tetap menjaga wibawa dan muru’ah seorang guru' },
+  { id: 'guru_bersih_rapi', label: 'm. Selalu berpenampilan bersih, rapi, wangi, serasi, dan enak dipandang sesuai dengan ajaran Islam' },
+];
+
+export const ALUMNI_CRITERIA_LIST = [
+  { id: 'alumni_dedikasi', title: 'a. Dedikasi', desc: 'Memiliki dedikasi yang tinggi pada Agama, Dakwah, Pondok Pesantren Sidogiri dan/atau Madrasah Miftahul Ulum' },
+  { id: 'alumni_ketaatan', title: 'b. Ketaatan', desc: 'Ketaatan ditunjukkan dengan ketundukan serta kepatuhan secara penuh pada titah Masyayikh dan Pengurus atasan, serta aturan yang telah ditetapkan, meskipun tidak searah dengan pandangan pribadinya. Termasuk juga keaktifan mengikuti kegiatan IASS' },
+  { id: 'alumni_kapabilitas', title: 'c. Kapabilitas', desc: 'Yaitu kemampuan dan keahlian yang dibutuhkan untuk melakukan pekerjaannya, seperti mengajar, berniaga, bertani, dls. Biasanya hal ini berkaitan dengan kemampuan di bidangnya, nalar, kecerdasan, serta cara berpikir sistematis' },
+  { id: 'alumni_kapasitas', title: 'd. Kapasitas', desc: 'Yaitu kapasitas maksimum atau potensi kemampuan seseorang yang ditunjukkan dengan keahlian memecahkan masalah (problem solving skill) di tengah-tengah masyarakatnya' },
+  { id: 'alumni_kreativitas', title: 'e. Kreativitas', desc: 'Kreativitas ditunjukan dengan karya atau pekerjaaan yang tidak biasa dilakukan oleh orang banyak, yang manfaatnya dapat dirasakan oleh agama, masyarakat dan atau Ikatan Alumni Santri Sidogiri' },
+  { id: 'alumni_karakter', title: 'f. Karakter', desc: 'Karakter yang baik yaitu watak dasar manusia yang ditunjukkan dalam perilaku sehari-hari, seperti sikap tawadhu’, kemampuan mengendalikan emosi, dan bagaimana merespon sebuah kejadian' },
+  { id: 'alumni_kredibilitas', title: 'g. Kredibilitas', desc: 'Ditunjukkan dengan kejujuran dan integritas yang tinggi, sehingga dapat dipercaya dan diandalkan untuk memikul amanah dan tanggung jawab dengan benar' },
+  { id: 'alumni_komitmen', title: 'h. Komitmen', desc: 'Ditunjukkan dengan kesungguhan menyelesaikan tugas dan kewajiban, walaupun dalam kondisi yang sulit dan tidak menguntungkan' },
+];
+
+export const SANTRI_CRITERIA_LIST = [
+  { id: 'santri_jamaah', label: 'a. Istiqamah shalat berjamaah 5 waktu di saf awal masjid dan wirid bersama' },
+  { id: 'santri_akhlak', label: 'b. Keluhuran akhlak, adab sopan santun terhadap Masyayikh, asatidz, dan sesama thalabah' },
+  { id: 'santri_tatatertib', label: 'c. Kebersihan catatan ketertiban asrama, bebas dari ta\'zir atau pelanggaran' },
+  { id: 'santri_taklim', label: 'd. Keaktifan dalam pengajian kitab (taklim asrama) dan kegiatan pondok' },
+];
+
+export const MURID_CRITERIA_LIST = [
+  { id: 'murid_ujian', label: 'a. Perolehan nilai ujian (ikhtibar) caturwulan dan semester tertinggi di MMU' },
+  { id: 'murid_maknani', label: 'b. Kelengkapan, kerapian catatan kitab kuning (makna gandul), dan presensi mutlak' },
+  { id: 'murid_musyawarah', label: 'c. Keaktifan dalam musyawarah ilmiyah fathul qorib dan kedisiplinan belajar' },
+];
+
 interface NominationsViewProps {
   nominations: Nomination[];
   categories: AwardCategory[];
@@ -239,6 +279,55 @@ interface NominationsViewProps {
   onCloseAddModalDirectly?: () => void;
   currentUser?: UserSession | null;
 }
+
+// Konversi aman nilai apapun ke lowercase string agar tidak pernah throw "toLowerCase is not a function"
+const toSafeLower = (val: unknown): string => {
+  if (typeof val === 'string') return val.toLowerCase().trim();
+  if (typeof val === 'number') return String(val).toLowerCase().trim();
+  return '';
+};
+
+// Helper ketat untuk memastikan HANYA Penghargaan Khidmah (Guru) yang memuat 5 identitas
+// Kata "pengurus" mengandung substring "guru" (penGURUs), sehingga wajib diproteksi agar Pengurus TETAP 1 identitas
+export const isGuruCategoryItem = (id?: unknown, title?: unknown): boolean => {
+  const safeId = toSafeLower(id);
+  const safeTitle = toSafeLower(title);
+
+  // Pengurus (cat-4) dan kategori lain BUKAN Guru, wajib cuma 1 identitas!
+  if (safeId === 'cat-4' || safeId === '4' || safeId.includes('pengurus') || safeTitle.includes('pengurus')) {
+    return false;
+  }
+
+  // Khusus Penghargaan Khidmah (Guru)
+  return (
+    safeId === 'cat-2' ||
+    safeId === '2' ||
+    safeId === 'guru' ||
+    /\bguru\b/i.test(safeTitle) ||
+    /\basatidz\b/i.test(safeTitle)
+  );
+};
+
+export const isPengurusCategoryItem = (id?: unknown, title?: unknown): boolean => {
+  const safeId = toSafeLower(id);
+  const safeTitle = toSafeLower(title);
+  return safeId === 'cat-4' || safeId === '4' || safeId.includes('pengurus') || safeTitle.includes('pengurus');
+};
+
+export const isSantriMuridCategoryItem = (id?: unknown, title?: unknown): boolean => {
+  const safeId = toSafeLower(id);
+  const safeTitle = toSafeLower(title);
+  return (
+    safeId === 'cat-5' ||
+    safeId === '5' ||
+    safeId === 'cat-6' ||
+    safeId === '6' ||
+    safeId.includes('santri') ||
+    safeTitle.includes('santri') ||
+    safeId.includes('murid') ||
+    safeTitle.includes('murid')
+  );
+};
 
 export const NominationsView: React.FC<NominationsViewProps> = ({
   nominations,
@@ -365,6 +454,121 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
   const [alamat, setAlamat] = useState('');
   const [nipNik, setNipNik] = useState('');
 
+  // Identitas Khusus Penghargaan Khidmah (Guru): 5 Identitas Terstruktur (id personalia, nama, dom/alamat, jabatan, checklist, lainLainNote)
+  const defaultGuruIdentitas: GuruIdentityItem[] = [
+    { idPersonalia: '', nama: '', domisiliAlamat: '', jabatan: '', checklist: {}, lainLainNote: '' },
+    { idPersonalia: '', nama: '', domisiliAlamat: '', jabatan: '', checklist: {}, lainLainNote: '' },
+    { idPersonalia: '', nama: '', domisiliAlamat: '', jabatan: '', checklist: {}, lainLainNote: '' },
+    { idPersonalia: '', nama: '', domisiliAlamat: '', jabatan: '', checklist: {}, lainLainNote: '' },
+    { idPersonalia: '', nama: '', domisiliAlamat: '', jabatan: '', checklist: {}, lainLainNote: '' },
+  ];
+  const [guruIdentitas, setGuruIdentitas] = useState<GuruIdentityItem[]>(defaultGuruIdentitas);
+
+  const updateGuruIdentitas = (index: number, field: keyof GuruIdentityItem, value: any) => {
+    setGuruIdentitas((prev) => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], [field]: value };
+      return copy;
+    });
+  };
+
+  const toggleGuruChecklist = (guruIndex: number, criterionId: string) => {
+    setGuruIdentitas((prev) => {
+      const copy = [...prev];
+      const curChecklist = copy[guruIndex]?.checklist || {};
+      copy[guruIndex] = {
+        ...copy[guruIndex],
+        checklist: {
+          ...curChecklist,
+          [criterionId]: !curChecklist[criterionId],
+        },
+      };
+      return copy;
+    });
+  };
+
+  const checkAllGuru = (guruIndex: number) => {
+    setGuruIdentitas((prev) => {
+      const copy = [...prev];
+      const allChecked: Record<string, boolean> = {};
+      GURU_CRITERIA_LIST.forEach((c) => {
+        allChecked[c.id] = true;
+      });
+      copy[guruIndex] = {
+        ...copy[guruIndex],
+        checklist: allChecked,
+      };
+      return copy;
+    });
+  };
+
+  const uncheckAllGuru = (guruIndex: number) => {
+    setGuruIdentitas((prev) => {
+      const copy = [...prev];
+      copy[guruIndex] = {
+        ...copy[guruIndex],
+        checklist: {},
+      };
+      return copy;
+    });
+  };
+
+  // Identitas Khusus Penghargaan Santri Terbaik & Murid Terbaik: 2 Identitas Terstruktur
+  const defaultSantriMuridIdentitas: SantriMuridIdentityItem[] = [
+    { idPersonalia: '', nama: '', domisiliAlamat: '', nilaiImda1: '', nilaiImda2: '', nilaiSemester1Aly: '', presensiKehadiran: '', checklist: {}, lainLainNote: '' },
+    { idPersonalia: '', nama: '', domisiliAlamat: '', nilaiImda1: '', nilaiImda2: '', nilaiSemester1Aly: '', presensiKehadiran: '', checklist: {}, lainLainNote: '' },
+  ];
+  const [santriMuridIdentitas, setSantriMuridIdentitas] = useState<SantriMuridIdentityItem[]>(defaultSantriMuridIdentitas);
+
+  const updateSantriMuridIdentitas = (index: number, field: keyof SantriMuridIdentityItem, value: any) => {
+    setSantriMuridIdentitas((prev) => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], [field]: value };
+      return copy;
+    });
+  };
+
+  const toggleSantriMuridChecklist = (index: number, criterionId: string) => {
+    setSantriMuridIdentitas((prev) => {
+      const copy = [...prev];
+      const curChecklist = copy[index]?.checklist || {};
+      copy[index] = {
+        ...copy[index],
+        checklist: {
+          ...curChecklist,
+          [criterionId]: !curChecklist[criterionId],
+        },
+      };
+      return copy;
+    });
+  };
+
+  const checkAllSantriMurid = (index: number, criteriaList: { id: string }[]) => {
+    setSantriMuridIdentitas((prev) => {
+      const copy = [...prev];
+      const allChecked: Record<string, boolean> = {};
+      criteriaList.forEach((c) => {
+        allChecked[c.id] = true;
+      });
+      copy[index] = {
+        ...copy[index],
+        checklist: allChecked,
+      };
+      return copy;
+    });
+  };
+
+  const uncheckAllSantriMurid = (index: number) => {
+    setSantriMuridIdentitas((prev) => {
+      const copy = [...prev];
+      copy[index] = {
+        ...copy[index],
+        checklist: {},
+      };
+      return copy;
+    });
+  };
+
   // 3. Kategori Penganugerahan & Kontak
   const [department, setDepartment] = useState(''); // Jabatan Peserta pada 2 Tahun Terakhir
   const [position, setPosition] = useState('');
@@ -383,6 +587,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
   const [integritasNote, setIntegritasNote] = useState('');
   const [transparansiLaporanNote, setTransparansiLaporanNote] = useState('');
   const [lainLainNote, setLainLainNote] = useState('');
+  const [alumniCriteriaReasons, setAlumniCriteriaReasons] = useState<Record<string, string>>({});
 
   const toggleChecklist = (key: string) => {
     setChecklist((prev) => ({
@@ -392,7 +597,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
   };
 
   // Handle Modal Open (Otomatis mengisi identitas pengusul dari akun login)
-  const handleOpenAdd = () => {
+  const handleOpenAdd = (preferredCatId?: string) => {
     setEditingNomination(null);
     const resolvedName = currentUser?.name || currentUser?.email || 'Panitia Sie Penganugerahan';
     const resolvedRole = currentUser?.role || (isAdmin ? 'Panitia Inti Penganugerahan' : 'Petugas Lapangan');
@@ -415,7 +620,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
     setPosition('');
     setPhone('');
     setAchievement('');
-    setCategoryId(activeRubricId || categories[0]?.id || 'cat-1');
+    setCategoryId(preferredCatId || activeRubricId || categories[0]?.id || 'cat-1');
     setJustification('');
     setStatus('Penilaian');
     setScore(85);
@@ -426,6 +631,18 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
     setIntegritasNote('');
     setTransparansiLaporanNote('');
     setLainLainNote('');
+    setAlumniCriteriaReasons({});
+    setGuruIdentitas([
+      { idPersonalia: '', nama: '', domisiliAlamat: '', jabatan: '', checklist: {}, lainLainNote: '' },
+      { idPersonalia: '', nama: '', domisiliAlamat: '', jabatan: '', checklist: {}, lainLainNote: '' },
+      { idPersonalia: '', nama: '', domisiliAlamat: '', jabatan: '', checklist: {}, lainLainNote: '' },
+      { idPersonalia: '', nama: '', domisiliAlamat: '', jabatan: '', checklist: {}, lainLainNote: '' },
+      { idPersonalia: '', nama: '', domisiliAlamat: '', jabatan: '', checklist: {}, lainLainNote: '' },
+    ]);
+    setSantriMuridIdentitas([
+      { idPersonalia: '', nama: '', domisiliAlamat: '', nilaiImda1: '', nilaiImda2: '', nilaiSemester1Aly: '', presensiKehadiran: '', checklist: {}, lainLainNote: '' },
+      { idPersonalia: '', nama: '', domisiliAlamat: '', nilaiImda1: '', nilaiImda2: '', nilaiSemester1Aly: '', presensiKehadiran: '', checklist: {}, lainLainNote: '' },
+    ]);
 
     setIsModalOpen(true);
   };
@@ -468,6 +685,49 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
     setIntegritasNote(nom.integritasNote || '');
     setTransparansiLaporanNote(nom.transparansiLaporanNote || '');
     setLainLainNote(nom.lainLainNote || '');
+    setAlumniCriteriaReasons(nom.alumniCriteriaReasons || {});
+
+    // Restore 5 Guru identities if available, otherwise blank 5 items
+    if (nom.guruIdentitas && nom.guruIdentitas.length > 0) {
+      const merged: GuruIdentityItem[] = [0, 1, 2, 3, 4].map((i) => ({
+        idPersonalia: nom.guruIdentitas?.[i]?.idPersonalia || '',
+        nama: nom.guruIdentitas?.[i]?.nama || '',
+        domisiliAlamat: nom.guruIdentitas?.[i]?.domisiliAlamat || '',
+        jabatan: nom.guruIdentitas?.[i]?.jabatan || '',
+        checklist: nom.guruIdentitas?.[i]?.checklist || (i === 0 ? nom.evaluationChecklist || {} : {}),
+        lainLainNote: nom.guruIdentitas?.[i]?.lainLainNote || (i === 0 ? nom.lainLainNote || '' : ''),
+      }));
+      setGuruIdentitas(merged);
+    } else {
+      setGuruIdentitas([
+        { idPersonalia: '', nama: '', domisiliAlamat: '', jabatan: '', checklist: {}, lainLainNote: '' },
+        { idPersonalia: '', nama: '', domisiliAlamat: '', jabatan: '', checklist: {}, lainLainNote: '' },
+        { idPersonalia: '', nama: '', domisiliAlamat: '', jabatan: '', checklist: {}, lainLainNote: '' },
+        { idPersonalia: '', nama: '', domisiliAlamat: '', jabatan: '', checklist: {}, lainLainNote: '' },
+        { idPersonalia: '', nama: '', domisiliAlamat: '', jabatan: '', checklist: {}, lainLainNote: '' },
+      ]);
+    }
+
+    // Restore 2 Santri/Murid identities if available, otherwise blank 2 items
+    if (nom.santriMuridIdentitas && nom.santriMuridIdentitas.length > 0) {
+      const mergedSM: SantriMuridIdentityItem[] = [0, 1].map((i) => ({
+        idPersonalia: nom.santriMuridIdentitas?.[i]?.idPersonalia || '',
+        nama: nom.santriMuridIdentitas?.[i]?.nama || '',
+        domisiliAlamat: nom.santriMuridIdentitas?.[i]?.domisiliAlamat || '',
+        nilaiImda1: nom.santriMuridIdentitas?.[i]?.nilaiImda1 || '',
+        nilaiImda2: nom.santriMuridIdentitas?.[i]?.nilaiImda2 || '',
+        nilaiSemester1Aly: nom.santriMuridIdentitas?.[i]?.nilaiSemester1Aly || '',
+        presensiKehadiran: nom.santriMuridIdentitas?.[i]?.presensiKehadiran || '',
+        checklist: nom.santriMuridIdentitas?.[i]?.checklist || (i === 0 ? nom.evaluationChecklist || {} : {}),
+        lainLainNote: nom.santriMuridIdentitas?.[i]?.lainLainNote || (i === 0 ? nom.lainLainNote || '' : ''),
+      }));
+      setSantriMuridIdentitas(mergedSM);
+    } else {
+      setSantriMuridIdentitas([
+        { idPersonalia: '', nama: '', domisiliAlamat: '', nilaiImda1: '', nilaiImda2: '', nilaiSemester1Aly: '', presensiKehadiran: '', checklist: {}, lainLainNote: '' },
+        { idPersonalia: '', nama: '', domisiliAlamat: '', nilaiImda1: '', nilaiImda2: '', nilaiSemester1Aly: '', presensiKehadiran: '', checklist: {}, lainLainNote: '' },
+      ]);
+    }
 
     setIsModalOpen(true);
   };
@@ -488,21 +748,54 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!candidateName.trim()) return;
+
+    // Check if Guru category (HANYA Penghargaan Khidmah (Guru), Pengurus tetap cuma 1 identitas)
+    const isGuruCategory = isGuruCategoryItem(
+      categoryId,
+      categories.find((c) => c.id === categoryId)?.title
+    );
+
+    // Check if Santri/Murid category (HANYA Penghargaan Santri Terbaik & Murid Terbaik)
+    const isSantriMuridCategory = isSantriMuridCategoryItem(
+      categoryId,
+      categories.find((c) => c.id === categoryId)?.title
+    );
+
+    const effectiveCandidateName = isGuruCategory
+      ? candidateName.trim() ||
+        guruIdentitas.find((g) => g.nama.trim().length > 0)?.nama.trim() ||
+        'Nominasi 5 Guru Teladan MMU'
+      : isSantriMuridCategory
+      ? candidateName.trim() ||
+        santriMuridIdentitas.find((s) => s.nama.trim().length > 0)?.nama.trim() ||
+        'Nominasi 2 Santri / Murid Terbaik'
+      : candidateName.trim();
+
+    if (!effectiveCandidateName) return;
+
+    const isAlumniCategory = categoryId === 'cat-3' || toSafeLower(categoryId).includes('alumni');
+    if (isAlumniCategory) {
+      for (const item of ALUMNI_CRITERIA_LIST) {
+        if (checklist[item.id] && !alumniCriteriaReasons[item.id]?.trim()) {
+          alert(`Mohon lengkapi kolom alasan sebagai pembuktian untuk kriteria "${item.title}". Kolom ini wajib diisi.`);
+          return;
+        }
+      }
+    }
 
     const nomPayload = {
-      idPps: idPps || `PPS-2026-00${nominations.length + 1}`,
-      candidateName,
+      idPps: idPps || (isGuruCategory && guruIdentitas[0]?.idPersonalia ? guruIdentitas[0].idPersonalia : isSantriMuridCategory && santriMuridIdentitas[0]?.idPersonalia ? santriMuridIdentitas[0].idPersonalia : `PPS-2026-00${nominations.length + 1}`),
+      candidateName: effectiveCandidateName,
       candidateDomisiliType,
-      domisili,
+      domisili: domisili || (isGuruCategory ? guruIdentitas[0]?.domisiliAlamat : isSantriMuridCategory ? santriMuridIdentitas[0]?.domisiliAlamat : ''),
       kelas,
       tingkat,
-      alamat,
-      nipNik: nipNik || idPps,
-      department,
+      alamat: alamat || (isGuruCategory ? guruIdentitas[0]?.domisiliAlamat : isSantriMuridCategory ? santriMuridIdentitas[0]?.domisiliAlamat : ''),
+      nipNik: nipNik || idPps || (isGuruCategory ? guruIdentitas[0]?.idPersonalia : isSantriMuridCategory ? santriMuridIdentitas[0]?.idPersonalia : ''),
+      department: department || (isGuruCategory ? guruIdentitas[0]?.jabatan : ''),
       position,
       phone,
-      achievement,
+      achievement: achievement || (isSantriMuridCategory && santriMuridIdentitas[0]?.nilaiImda1 ? `Imda I: ${santriMuridIdentitas[0].nilaiImda1}, Imda II: ${santriMuridIdentitas[0].nilaiImda2}, Sem 1 'Aly: ${santriMuridIdentitas[0].nilaiSemester1Aly}, Presensi: ${santriMuridIdentitas[0].presensiKehadiran}` : ''),
       categoryId,
       justification: justification.trim() || alasanLain.trim() || lainLainNote.trim() || 'Diusulkan secara resmi untuk Penganugerahan Milad Sidogiri.',
       status,
@@ -514,11 +807,18 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
       pengusulDomisili,
       pengusulAlamat,
 
-      evaluationChecklist: checklist,
+      // Simpan 5 Identitas Guru
+      guruIdentitas: isGuruCategory ? guruIdentitas : undefined,
+
+      // Simpan 2 Identitas Santri / Murid
+      santriMuridIdentitas: isSantriMuridCategory ? santriMuridIdentitas : undefined,
+
+      evaluationChecklist: isGuruCategory ? (guruIdentitas[0]?.checklist || checklist) : isSantriMuridCategory ? (santriMuridIdentitas[0]?.checklist || checklist) : checklist,
+      alumniCriteriaReasons: isAlumniCategory ? alumniCriteriaReasons : undefined,
       alasanLain,
       integritasNote,
       transparansiLaporanNote,
-      lainLainNote,
+      lainLainNote: isGuruCategory ? (guruIdentitas[0]?.lainLainNote || lainLainNote) : isSantriMuridCategory ? (santriMuridIdentitas[0]?.lainLainNote || lainLainNote) : lainLainNote,
     };
 
     if (editingNomination) {
@@ -567,12 +867,12 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
     const matchesCategory =
       selectedCategory === 'ALL' ||
       nom.categoryId === selectedCategory ||
-      (selectedCategory === 'cat-1' && (nom.categoryId === 'cat-1' || categories.find((c) => c.id === nom.categoryId)?.title.toLowerCase().includes('ranting'))) ||
-      (selectedCategory === 'cat-2' && (nom.categoryId === 'cat-2' || categories.find((c) => c.id === nom.categoryId)?.title.toLowerCase().includes('guru'))) ||
-      (selectedCategory === 'cat-3' && (nom.categoryId === 'cat-3' || categories.find((c) => c.id === nom.categoryId)?.title.toLowerCase().includes('alumni'))) ||
-      (selectedCategory === 'cat-4' && (nom.categoryId === 'cat-4' || categories.find((c) => c.id === nom.categoryId)?.title.toLowerCase().includes('pengurus'))) ||
-      (selectedCategory === 'cat-5' && (nom.categoryId === 'cat-5' || categories.find((c) => c.id === nom.categoryId)?.title.toLowerCase().includes('santri'))) ||
-      (selectedCategory === 'cat-6' && (nom.categoryId === 'cat-6' || categories.find((c) => c.id === nom.categoryId)?.title.toLowerCase().includes('murid')));
+      (selectedCategory === 'cat-1' && (nom.categoryId === 'cat-1' || toSafeLower(categories.find((c) => c.id === nom.categoryId)?.title).includes('ranting'))) ||
+      (selectedCategory === 'cat-2' && (nom.categoryId === 'cat-2' || isGuruCategoryItem(nom.categoryId, categories.find((c) => c.id === nom.categoryId)?.title))) ||
+      (selectedCategory === 'cat-3' && (nom.categoryId === 'cat-3' || toSafeLower(categories.find((c) => c.id === nom.categoryId)?.title).includes('alumni'))) ||
+      (selectedCategory === 'cat-4' && (nom.categoryId === 'cat-4' || isPengurusCategoryItem(nom.categoryId, categories.find((c) => c.id === nom.categoryId)?.title))) ||
+      (selectedCategory === 'cat-5' && (nom.categoryId === 'cat-5' || toSafeLower(categories.find((c) => c.id === nom.categoryId)?.title).includes('santri'))) ||
+      (selectedCategory === 'cat-6' && (nom.categoryId === 'cat-6' || toSafeLower(categories.find((c) => c.id === nom.categoryId)?.title).includes('murid')));
     const matchesStatus = selectedStatus === 'ALL' || nom.status === selectedStatus;
 
     return matchesSearch && matchesCategory && matchesStatus;
@@ -628,6 +928,29 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
         const categoryObj = categories.find((c) => c.id === nom.categoryId);
         const catTitle = categoryObj ? categoryObj.title : nom.categoryId;
 
+        let extraDetails = nom.achievement || '';
+        if (nom.santriMuridIdentitas && nom.santriMuridIdentitas.some((s) => s.nama || s.idPersonalia)) {
+          const smDetails = nom.santriMuridIdentitas
+            .filter((s) => s.nama || s.idPersonalia)
+            .map((s, i) => `Figur 0${i + 1}: ${s.nama} (${s.idPersonalia || '-'}) [Dom/Alamat: ${s.domisiliAlamat || '-'}, Imda I: ${s.nilaiImda1 || '-'}, Imda II: ${s.nilaiImda2 || '-'}, Sem 1 'Aly: ${s.nilaiSemester1Aly || '-'}, Presensi: ${s.presensiKehadiran || '-'}]`)
+            .join(' | ');
+          extraDetails = extraDetails ? `${extraDetails} | ${smDetails}` : smDetails;
+        } else if (nom.guruIdentitas && nom.guruIdentitas.some((g) => g.nama || g.idPersonalia)) {
+          const gDetails = nom.guruIdentitas
+            .filter((g) => g.nama || g.idPersonalia)
+            .map((g, i) => `Guru 0${i + 1}: ${g.nama} (${g.idPersonalia || '-'}) [${g.jabatan || '-'}]`)
+            .join(' | ');
+          extraDetails = extraDetails ? `${extraDetails} | ${gDetails}` : gDetails;
+        }
+
+        let extraJustification = nom.justification || '';
+        if (nom.alumniCriteriaReasons && Object.keys(nom.alumniCriteriaReasons).length > 0) {
+          const alumniText = Object.entries(nom.alumniCriteriaReasons)
+            .map(([critId, reason]) => `${critId}: ${reason}`)
+            .join('; ');
+          extraJustification = extraJustification ? `${extraJustification} | Pembuktian: ${alumniText}` : `Pembuktian Alumni: ${alumniText}`;
+        }
+
         const row = worksheet.addRow({
           no: index + 1,
           idPps: nom.idPps || '-',
@@ -643,8 +966,8 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
           tingkat: nom.tingkat || '-',
           phone: nom.phone || '-',
           alamat: nom.alamat || '-',
-          achievement: nom.achievement || '-',
-          justification: nom.justification || '-',
+          achievement: extraDetails || '-',
+          justification: extraJustification || '-',
           nominatorName: nom.nominatorName || '-',
           createdAt: nom.createdAt || '-',
         });
@@ -789,25 +1112,27 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
               c.id === activeRubric.id ||
               c.title.toLowerCase().replace(/\s+/g, '') === activeRubric.title.toLowerCase().replace(/\s+/g, '') ||
               (activeRubric.id === 'cat-1' && c.title.toLowerCase().includes('ranting')) ||
-              (activeRubric.id === 'cat-2' && c.title.toLowerCase().includes('guru')) ||
+              (activeRubric.id === 'cat-2' && isGuruCategoryItem(c.id, c.title)) ||
               (activeRubric.id === 'cat-3' && c.title.toLowerCase().includes('alumni')) ||
-              (activeRubric.id === 'cat-4' && c.title.toLowerCase().includes('pengurus')) ||
+              (activeRubric.id === 'cat-4' && isPengurusCategoryItem(c.id, c.title)) ||
               (activeRubric.id === 'cat-5' && c.title.toLowerCase().includes('santri')) ||
               (activeRubric.id === 'cat-6' && c.title.toLowerCase().includes('murid'))
           );
 
           const activeCatId = matchedCat ? matchedCat.id : activeRubric.id;
-          const matchingNoms = nominations.filter(
-            (n) =>
+          const matchingNoms = nominations.filter((n) => {
+            const nomCatId = typeof n.categoryId === 'string' ? n.categoryId.toLowerCase() : '';
+            return (
               n.categoryId === activeRubric.id ||
               (matchedCat && n.categoryId === matchedCat.id) ||
-              (activeRubric.id === 'cat-1' && n.categoryId.toLowerCase().includes('ranting')) ||
-              (activeRubric.id === 'cat-2' && n.categoryId.toLowerCase().includes('guru')) ||
-              (activeRubric.id === 'cat-3' && n.categoryId.toLowerCase().includes('alumni')) ||
-              (activeRubric.id === 'cat-4' && n.categoryId.toLowerCase().includes('pengurus')) ||
-              (activeRubric.id === 'cat-5' && n.categoryId.toLowerCase().includes('santri')) ||
-              (activeRubric.id === 'cat-6' && n.categoryId.toLowerCase().includes('murid'))
-          );
+              (activeRubric.id === 'cat-1' && nomCatId.includes('ranting')) ||
+              (activeRubric.id === 'cat-2' && isGuruCategoryItem(n.categoryId, '')) ||
+              (activeRubric.id === 'cat-3' && nomCatId.includes('alumni')) ||
+              (activeRubric.id === 'cat-4' && isPengurusCategoryItem(n.categoryId, '')) ||
+              (activeRubric.id === 'cat-5' && nomCatId.includes('santri')) ||
+              (activeRubric.id === 'cat-6' && nomCatId.includes('murid'))
+            );
+          });
           const count = matchingNoms.length;
 
           const displayTitle = matchedCat?.title || activeRubric.title;
@@ -866,7 +1191,10 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                     <button
                       key={rubric.id}
                       type="button"
-                      onClick={() => setActiveRubricId(rubric.id)}
+                      onClick={() => {
+                        setActiveRubricId(rubric.id);
+                        setCategoryId(rubric.id);
+                      }}
                       className={`flex items-center space-x-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm transition-all duration-150 cursor-pointer select-none font-bold ${
                         isActive
                           ? 'bg-[#8a7c4c] text-white shadow-xs ring-1 ring-[#675c37]'
@@ -974,17 +1302,27 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                                 </>
                               )}
                             </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleOpenAdd(activeCatId)}
+                              className="flex items-center space-x-1.5 bg-[#8a7c4c] hover:bg-[#675c37] text-white px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer shadow-2xs"
+                              title="Tambah peserta baru untuk kategori ini"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                              <span>+ Tambah Peserta Kategori Ini</span>
+                            </button>
                           </>
                         ) : (
                           <div className="flex flex-wrap items-center gap-2">
                             <button
                               type="button"
-                              onClick={handleOpenAdd}
+                              onClick={() => handleOpenAdd(activeCatId)}
                               className="flex items-center space-x-1.5 bg-[#8a7c4c] hover:bg-[#675c37] text-white px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer shadow-2xs"
                               title="Isi Formulir Usulan Calon Penerima Anugerah"
                             >
                               <Plus className="w-3.5 h-3.5" />
-                              <span>+ Isi Formulir Usulan Peserta</span>
+                              <span>+ Isi Usulan ({displayTitle})</span>
                             </button>
                             <div className="flex items-center space-x-2 text-xs text-[#7c7b77] bg-white/80 border border-[rgba(36,33,28,0.1)] px-3 py-1.5 rounded-xl font-medium">
                               <Lock className="w-3.5 h-3.5 text-[#8a7c4c]" />
@@ -1160,16 +1498,19 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                 Semua Cabang ({nominations.length})
               </button>
               {(categories.length === 6 ? categories : OFFICIAL_AWARD_RUBRICS).map((cat) => {
-                const count = nominations.filter(
-                  (n) =>
+                const count = nominations.filter((n) => {
+                  const nomCatId = toSafeLower(n.categoryId);
+                  const catTitleLower = toSafeLower(cat.title);
+                  return (
                     n.categoryId === cat.id ||
-                    (cat.id === 'cat-1' && (n.categoryId.toLowerCase().includes('ranting') || cat.title.toLowerCase().includes('ranting'))) ||
-                    (cat.id === 'cat-2' && (n.categoryId.toLowerCase().includes('guru') || cat.title.toLowerCase().includes('guru'))) ||
-                    (cat.id === 'cat-3' && (n.categoryId.toLowerCase().includes('alumni') || cat.title.toLowerCase().includes('alumni'))) ||
-                    (cat.id === 'cat-4' && (n.categoryId.toLowerCase().includes('pengurus') || cat.title.toLowerCase().includes('pengurus'))) ||
-                    (cat.id === 'cat-5' && (n.categoryId.toLowerCase().includes('santri') || cat.title.toLowerCase().includes('santri'))) ||
-                    (cat.id === 'cat-6' && (n.categoryId.toLowerCase().includes('murid') || cat.title.toLowerCase().includes('murid')))
-                ).length;
+                    (cat.id === 'cat-1' && (nomCatId.includes('ranting') || catTitleLower.includes('ranting'))) ||
+                    (cat.id === 'cat-2' && (isGuruCategoryItem(n.categoryId, '') || isGuruCategoryItem(cat.id, cat.title))) ||
+                    (cat.id === 'cat-3' && (nomCatId.includes('alumni') || catTitleLower.includes('alumni'))) ||
+                    (cat.id === 'cat-4' && (isPengurusCategoryItem(n.categoryId, '') || isPengurusCategoryItem(cat.id, cat.title))) ||
+                    (cat.id === 'cat-5' && (nomCatId.includes('santri') || catTitleLower.includes('santri'))) ||
+                    (cat.id === 'cat-6' && (nomCatId.includes('murid') || catTitleLower.includes('murid')))
+                  );
+                }).length;
                 const isSelected = selectedCategory === cat.id;
 
                 return (
@@ -1416,6 +1757,144 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                             </div>
                           )}
 
+                          {/* 5 Identitas Guru MMU jika ada */}
+                          {nom.guruIdentitas && nom.guruIdentitas.some((g) => g.nama || g.idPersonalia) && (
+                            <div className="bg-[#faf8f4] border border-[#dcd7cb] rounded-2xl p-3.5 space-y-2.5">
+                              <div className="flex items-center justify-between border-b border-[#e8e4da] pb-1.5">
+                                <span className="font-extrabold text-[#675c37] text-[10.5px] uppercase tracking-wider flex items-center space-x-1.5">
+                                  <Users className="w-3.5 h-3.5 text-[#8a7c4c]" />
+                                  <span>5 Identitas Guru yang Tercantum:</span>
+                                </span>
+                                <span className="text-[10px] font-bold text-[#8a7c4c] bg-white px-2 py-0.5 rounded-md border border-[#dcd7cb]">
+                                  {nom.guruIdentitas.filter((g) => g.nama || g.idPersonalia).length} Terdata
+                                </span>
+                              </div>
+                              <div className="space-y-1.5">
+                                {nom.guruIdentitas.map((g, gi) => {
+                                  if (!g.nama && !g.idPersonalia) return null;
+                                  return (
+                                    <div key={gi} className="text-xs bg-white p-2 rounded-xl border border-[#e8e4da] flex flex-wrap items-center justify-between gap-1.5 shadow-2xs">
+                                      <div className="flex items-center space-x-2">
+                                        <span className="w-5 h-5 rounded-lg bg-[#8a7c4c] text-white text-[10px] font-black flex items-center justify-center shrink-0">
+                                          0{gi + 1}
+                                        </span>
+                                        <span className="font-bold text-[#24211c]">{g.nama || '-'}</span>
+                                        {g.idPersonalia && (
+                                          <span className="text-[10px] font-mono font-bold text-[#8a7c4c] bg-[#faf8f4] px-1.5 py-0.2 rounded border border-[#dcd7cb]">
+                                            {g.idPersonalia}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="text-[11px] text-[#5c5b57] flex flex-wrap items-center gap-1.5">
+                                        {g.domisiliAlamat && <span>📍 {g.domisiliAlamat}</span>}
+                                        {g.jabatan && <span className="font-semibold text-[#8a7c4c]">• {g.jabatan}</span>}
+                                        {g.checklist && Object.values(g.checklist).filter(Boolean).length > 0 && (
+                                          <span className="text-[9.5px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                                            ✓ {Object.values(g.checklist).filter(Boolean).length}/13 Kriteria
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* 2 Identitas Santri / Murid Terbaik jika ada */}
+                          {nom.santriMuridIdentitas && nom.santriMuridIdentitas.some((s) => s.nama || s.idPersonalia) && (
+                            <div className="bg-[#faf8f4] border border-[#dcd7cb] rounded-2xl p-3.5 space-y-2.5">
+                              <div className="flex items-center justify-between border-b border-[#e8e4da] pb-1.5">
+                                <span className="font-extrabold text-[#675c37] text-[10.5px] uppercase tracking-wider flex items-center space-x-1.5">
+                                  <GraduationCap className="w-3.5 h-3.5 text-[#8a7c4c]" />
+                                  <span>2 Identitas Santri / Murid Tercantum:</span>
+                                </span>
+                                <span className="text-[10px] font-bold text-[#8a7c4c] bg-white px-2 py-0.5 rounded-md border border-[#dcd7cb]">
+                                  {nom.santriMuridIdentitas.filter((s) => s.nama || s.idPersonalia).length} Terdata
+                                </span>
+                              </div>
+                              <div className="space-y-2">
+                                {nom.santriMuridIdentitas.map((s, si) => {
+                                  if (!s.nama && !s.idPersonalia) return null;
+                                  return (
+                                    <div key={si} className="text-xs bg-white p-2.5 rounded-xl border border-[#e8e4da] space-y-1.5 shadow-2xs">
+                                      <div className="flex flex-wrap items-center justify-between gap-1.5">
+                                        <div className="flex items-center space-x-2">
+                                          <span className="w-5 h-5 rounded-lg bg-[#8a7c4c] text-white text-[10px] font-black flex items-center justify-center shrink-0">
+                                            0{si + 1}
+                                          </span>
+                                          <span className="font-bold text-[#24211c]">{s.nama || '-'}</span>
+                                          {s.idPersonalia && (
+                                            <span className="text-[10px] font-mono font-bold text-[#8a7c4c] bg-[#faf8f4] px-1.5 py-0.2 rounded border border-[#dcd7cb]">
+                                              {s.idPersonalia}
+                                            </span>
+                                          )}
+                                        </div>
+                                        <div className="flex flex-wrap items-center gap-1.5">
+                                          {s.domisiliAlamat && (
+                                            <span className="text-[11px] text-[#5c5b57]">📍 {s.domisiliAlamat}</span>
+                                          )}
+                                          {s.checklist && Object.values(s.checklist).filter(Boolean).length > 0 && (
+                                            <span className="text-[9.5px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                                              ✓ {Object.values(s.checklist).filter(Boolean).length} Kriteria Terpenuhi
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-1 border-t border-[#f2eee3] text-[10.5px]">
+                                        <div className="bg-[#faf8f4] px-2 py-1 rounded border border-[#e8e4da]">
+                                          <span className="text-[#7c7b77] block text-[9.5px]">Imda I:</span>
+                                          <span className="font-bold text-[#24211c]">{s.nilaiImda1 || '-'}</span>
+                                        </div>
+                                        <div className="bg-[#faf8f4] px-2 py-1 rounded border border-[#e8e4da]">
+                                          <span className="text-[#7c7b77] block text-[9.5px]">Imda II:</span>
+                                          <span className="font-bold text-[#24211c]">{s.nilaiImda2 || '-'}</span>
+                                        </div>
+                                        <div className="bg-[#faf8f4] px-2 py-1 rounded border border-[#e8e4da]">
+                                          <span className="text-[#7c7b77] block text-[9.5px]">Sem 1 'Aly:</span>
+                                          <span className="font-bold text-[#24211c]">{s.nilaiSemester1Aly || '-'}</span>
+                                        </div>
+                                        <div className="bg-[#faf8f4] px-2 py-1 rounded border border-[#e8e4da]">
+                                          <span className="text-[#7c7b77] block text-[9.5px]">Presensi:</span>
+                                          <span className="font-bold text-emerald-700">{s.presensiKehadiran || '-'}</span>
+                                        </div>
+                                      </div>
+                                      {s.lainLainNote && (
+                                        <div className="text-[10.5px] text-[#5c5b57] italic bg-[#faf8f4] p-1.5 rounded-lg border border-[#e8e4da]">
+                                          <span className="font-bold not-italic text-[#7c7b77]">Catatan: </span>
+                                          {s.lainLainNote}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Bukti & Alasan Kriteria Alumni */}
+                          {nom.alumniCriteriaReasons && Object.keys(nom.alumniCriteriaReasons).length > 0 && (
+                            <div className="bg-[#faf8f4] border border-[#dcd7cb] rounded-2xl p-3 space-y-2">
+                              <span className="font-extrabold text-[#675c37] text-[10.5px] uppercase tracking-wider flex items-center space-x-1.5 border-b border-[#e8e4da] pb-1">
+                                <FileCheck className="w-3.5 h-3.5 text-[#8a7c4c]" />
+                                <span>Alasan Pembuktian Kriteria Alumni:</span>
+                              </span>
+                              <div className="space-y-1.5 text-xs">
+                                {Object.entries(nom.alumniCriteriaReasons).map(([critId, reason]) => {
+                                  const critObj = ALUMNI_CRITERIA_LIST.find((c) => c.id === critId);
+                                  return (
+                                    <div key={critId} className="bg-white p-2.5 rounded-xl border border-[#e8e4da] shadow-2xs">
+                                      <strong className="text-[#8a7c4c] block text-[11px]">
+                                        {critObj?.title || critId}:
+                                      </strong>
+                                      <p className="text-[#24211c] text-xs mt-0.5 leading-relaxed">{reason}</p>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
                           {/* Alasan / Justifikasi Pengusulan */}
                           {nom.justification && (
                             <div className="p-3 rounded-2xl bg-[#faf8f4] border border-[#e8e4da] text-xs text-[#5c5b57] leading-relaxed">
@@ -1520,6 +1999,18 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                                 <span>{nom.candidateName}</span>
                                 {isWinner && <Trophy className="w-3.5 h-3.5 text-[#8a7c4c] shrink-0 inline" />}
                               </div>
+                              {nom.guruIdentitas && nom.guruIdentitas.some((g) => g.nama || g.idPersonalia) && (
+                                <div className="text-[9.5px] font-extrabold text-[#675c37] bg-[#ede9df] px-1.5 py-0.2 rounded border border-[#c3b68b]/30 w-fit mt-0.5 flex items-center space-x-1">
+                                  <Users className="w-3 h-3 text-[#8a7c4c]" />
+                                  <span>5 Guru Terdaftar</span>
+                                </div>
+                              )}
+                              {nom.santriMuridIdentitas && nom.santriMuridIdentitas.some((s) => s.nama || s.idPersonalia) && (
+                                <div className="text-[9.5px] font-extrabold text-[#675c37] bg-[#ede9df] px-1.5 py-0.2 rounded border border-[#c3b68b]/30 w-fit mt-0.5 flex items-center space-x-1">
+                                  <GraduationCap className="w-3 h-3 text-[#8a7c4c]" />
+                                  <span>2 Santri/Murid Terdaftar</span>
+                                </div>
+                              )}
                               {nom.phone && (
                                 <div className="text-[10px] text-[#8a7c4c] font-mono mt-0.5">📱 {nom.phone}</div>
                               )}
@@ -1611,7 +2102,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
       {/* Modal Add / Edit Nomination (Form LENGKAP Data Peserta & Rubrik Dinamis Sesuai Kategori) */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-[#24211c]/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-fadeIn">
-          <div className="bg-white w-full max-w-2xl sm:max-w-3xl rounded-3xl shadow-2xl border border-[rgba(36,33,28,0.15)] overflow-hidden text-[#24211c] max-h-[92vh] flex flex-col my-auto">
+          <div className="bg-white w-full max-w-2xl sm:max-w-4xl rounded-3xl shadow-2xl border border-[rgba(36,33,28,0.15)] overflow-hidden text-[#24211c] max-h-[92vh] flex flex-col my-auto">
             {/* Signature Milad Sidogiri 3-Stripes Accent */}
             <div aria-hidden="true" className="grid grid-cols-[26%_1fr_8%] h-1.5 w-full shrink-0">
               <span className="bg-[#8a7c4c]"></span>
@@ -1654,6 +2145,45 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
             </div>
 
             <form onSubmit={handleSubmit} className="p-5 sm:p-7 space-y-5 overflow-y-auto flex-1">
+              {/* Info Cabang Penganugerahan (Ditentukan Langsung dari Kolom CABANG PENGANUGERAHAN, Tanpa Perlu Klik Pilihan Lagi di Form) */}
+              {(() => {
+                const activeFormCat = (categories.length === 6 ? categories : OFFICIAL_AWARD_RUBRICS).find((c) => c.id === categoryId) || categories.find((c) => c.id === categoryId) || OFFICIAL_AWARD_RUBRICS[0];
+                const isGuru = isGuruCategoryItem(categoryId, activeFormCat?.title);
+                const isSantriMurid = isSantriMuridCategoryItem(categoryId, activeFormCat?.title);
+
+                return (
+                  <div className="bg-[#ede9df]/75 border border-[#c3b68b]/70 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 rounded-xl bg-[#8a7c4c] text-white flex items-center justify-center shrink-0 shadow-2xs">
+                        <Award className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center space-x-1.5">
+                          <span className="text-[10px] font-mono font-black uppercase tracking-wider text-[#8a7c4c]">
+                            Cabang Penganugerahan
+                          </span>
+                          <span className="text-[9.5px] font-bold bg-[#f2eee3] text-[#675c37] border border-[#c3b68b]/40 px-2 py-0.2 rounded-md">
+                            Dipilih dari Halaman Cabang Penganugerahan
+                          </span>
+                        </div>
+                        <h4 className="text-base sm:text-lg font-black text-[#24211c] tracking-tight">
+                          {activeFormCat?.title}
+                        </h4>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2 shrink-0">
+                      <span className="text-xs font-bold text-[#675c37] bg-white px-3 py-1.5 rounded-xl border border-[#dcd7cb] shadow-2xs">
+                        {isGuru
+                          ? '⚡ Format Khusus: 5 Identitas Guru Terstruktur'
+                          : isSantriMurid
+                          ? "⚡ Format Khusus: 2 Identitas & Nilai Imda I, II, Semester I 'Aly & Presensi"
+                          : '⚡ Format Standar: 1 Identitas Calon Penerima Anugerah'}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* Seksi 1: Identitas Pengusul (Otomatis Terisi Sesuai Login Akun) */}
               <div className="bg-[#faf8f4] border border-[#e8e4da] rounded-2xl p-4 sm:p-5 space-y-3.5">
                 <div className="flex flex-wrap items-center justify-between border-b border-[#e8e4da] pb-2.5 gap-2">
@@ -1784,249 +2314,759 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                 </div>
               </div>
 
-              {/* Seksi 2: Identitas Ranting / Peserta yang Diusulkan */}
-              <div className="bg-[#faf8f4] border border-[#e8e4da] rounded-2xl p-4 sm:p-5 space-y-3.5">
-                <div className="flex items-center justify-between border-b border-[#e8e4da] pb-2.5">
-                  <div className="flex items-center space-x-2 text-[#8a7c4c]">
-                    <IdCard className="w-4 h-4" />
-                    <h4 className="text-xs font-black uppercase tracking-wider">
-                      2. Identitas Ranting / Peserta yang Diusulkan
-                    </h4>
-                  </div>
-                  <span className="text-[10.5px] font-bold text-[#7c7b77]">
-                    A. ID PPS • B. Nama • C. Domisili • D. Kelas • E. Tingkat • F. Alamat
-                  </span>
-                </div>
+              {/* Seksi 2: Identitas Peserta yang Diusulkan (Kondisional: HANYA 5 Identitas Guru ATAU 1 Identitas Tunggal untuk Pengurus, Ranting, dll) */}
+              {(() => {
+                const activeCatObj = (categories.length === 6 ? categories : OFFICIAL_AWARD_RUBRICS).find((c) => c.id === categoryId) || categories.find((c) => c.id === categoryId) || OFFICIAL_AWARD_RUBRICS[0];
+                const isGuruSelected = isGuruCategoryItem(categoryId, activeCatObj?.title);
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  {/* A. ID PPS / ID PERSONALIA */}
-                  <div>
-                    <label className="block text-xs font-bold text-[#24211c] mb-1.5">
-                      A. ID PPS / ID Personalia (kalau ada)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Contoh: PPS-2026-001 / ID Personalia"
-                      value={idPps}
-                      readOnly={!isAdmin && !!editingNomination}
-                      onChange={(e) => setIdPps(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm text-[#8a7c4c] font-mono font-bold focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs"
-                    />
-                  </div>
-
-                  {/* B. Nama yang Diusulkan */}
-                  <div>
-                    <label className="block text-xs font-bold text-[#24211c] mb-1.5">
-                      B. Nama Ranting / Nama Peserta <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Nama lengkap ranting atau figur calon yang diusulkan"
-                      value={candidateName}
-                      readOnly={!isAdmin && !!editingNomination}
-                      onChange={(e) => setCandidateName(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm text-[#24211c] font-semibold focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-3 pt-1">
-                  {/* C. Domisili yang Diusulkan (Pilihan PPS & LPPS) */}
-                  <div>
-                    <label className="block text-xs font-bold text-[#24211c] mb-1.5">
-                      C. Domisili Calon / Ranting
-                    </label>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <div className="flex items-center gap-2">
-                        <label className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl border text-xs font-bold transition cursor-pointer ${
-                          candidateDomisiliType === 'PPS'
-                            ? 'bg-[#8a7c4c] text-white border-[#8a7c4c] shadow-2xs'
-                            : 'bg-white text-[#24211c] border-[#dcd7cb] hover:bg-[#f7f6f2]'
-                        }`}>
-                          <input
-                            type="radio"
-                            name="candidateDomisiliRadio"
-                            value="PPS"
-                            checked={candidateDomisiliType === 'PPS'}
-                            disabled={!isAdmin && !!editingNomination}
-                            onChange={() => setCandidateDomisiliType('PPS')}
-                            className="sr-only"
-                          />
-                          <span>PPS</span>
-                        </label>
-
-                        <label className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl border text-xs font-bold transition cursor-pointer ${
-                          candidateDomisiliType === 'LPPS'
-                            ? 'bg-[#8a7c4c] text-white border-[#8a7c4c] shadow-2xs'
-                            : 'bg-white text-[#24211c] border-[#dcd7cb] hover:bg-[#f7f6f2]'
-                        }`}>
-                          <input
-                            type="radio"
-                            name="candidateDomisiliRadio"
-                            value="LPPS"
-                            checked={candidateDomisiliType === 'LPPS'}
-                            disabled={!isAdmin && !!editingNomination}
-                            onChange={() => setCandidateDomisiliType('LPPS')}
-                            className="sr-only"
-                          />
-                          <span>LPPS</span>
-                        </label>
+                if (isGuruSelected) {
+                  return (
+                    <div className="bg-[#faf8f4] border border-[#e8e4da] rounded-2xl p-4 sm:p-5 space-y-4">
+                      <div className="flex flex-wrap items-center justify-between border-b border-[#e8e4da] pb-2.5 gap-2">
+                        <div className="flex items-center space-x-2 text-[#8a7c4c]">
+                          <IdCard className="w-4 h-4" />
+                          <h4 className="text-xs font-black uppercase tracking-wider">
+                            2. Identitas Pengusulan Guru (Mencakup 5 Identitas Lengkap)
+                          </h4>
+                        </div>
+                        <span className="text-[10.5px] font-extrabold bg-[#ede9df] text-[#675c37] border border-[#c3b68b]/40 px-2.5 py-0.5 rounded-full">
+                          Peraturan Resmi: Wajib 5 Identitas Terstruktur
+                        </span>
                       </div>
 
-                      <div className="flex-1 min-w-[180px]">
+                      <p className="text-xs text-[#5c5b57] leading-relaxed">
+                        Sesuai peraturan untuk penghargaan guru: mencantumkan <strong>5 identitas</strong> yang dari masing-masing identitas mencakup (<strong>id personalia</strong>, <strong>nama</strong>, <strong>dom/alamat</strong>, <strong>Jabatan</strong>). Seluruh kolom diurut dari atas ke bawah dengan panjang dan lebar kolom yang sama.
+                      </p>
+
+                      {/* 5 Identitas Guru Diurut dari Atas ke Bawah */}
+                      <div className="space-y-4">
+                        {[0, 1, 2, 3, 4].map((idx) => {
+                          const numStr = String(idx + 1).padStart(2, '0');
+                          const item = guruIdentitas[idx] || { idPersonalia: '', nama: '', domisiliAlamat: '', jabatan: '' };
+
+                          return (
+                            <div
+                              key={idx}
+                              className="bg-white rounded-2xl p-4 sm:p-5 border border-[#dcd7cb] shadow-2xs space-y-4 transition hover:border-[#8a7c4c]/60"
+                            >
+                              {/* Header Identitas Sesuai Format Permintaan User: identitas 0X. mencakup ( id personalia , nama, dom/alamat, Jabatan ) */}
+                              <div className="flex items-center justify-between border-b border-[#f2eee3] pb-2.5">
+                                <div className="flex items-center space-x-2.5">
+                                  <span className="w-7 h-7 rounded-xl bg-[#8a7c4c] text-white text-xs font-black flex items-center justify-center shadow-2xs shrink-0">
+                                    {numStr}
+                                  </span>
+                                  <h5 className="text-xs sm:text-sm font-extrabold text-[#24211c] tracking-tight">
+                                    identitas {numStr}. mencakup ( id personalia , nama, dom/alamat, Jabatan )
+                                  </h5>
+                                </div>
+                                <span className="text-[10px] font-bold text-[#8a7c4c] bg-[#faf8f4] px-2.5 py-0.5 rounded-md border border-[#e8e4da] hidden sm:inline-block">
+                                  Figur Guru {numStr}
+                                </span>
+                              </div>
+
+                              {/* Kolom-kolom diurut dari atas ke bawah dengan panjang kolom dan lebarnya sama persis */}
+                              <div className="space-y-3.5">
+                                {/* 1. Kolom ID Personalia */}
+                                <div>
+                                  <div className="flex items-center justify-between mb-1.5">
+                                    <label className="block text-xs font-bold text-[#24211c]">
+                                      ID Personalia {idx === 0 && <span className="text-rose-500">*</span>}
+                                    </label>
+                                    <span className="text-[10px] text-[#7c7b77] italic font-medium">
+                                      Kolom ID Personalia (Panjang & lebar sama)
+                                    </span>
+                                  </div>
+                                  <input
+                                    type="text"
+                                    required={idx === 0}
+                                    placeholder={`ID Personalia guru identitas ${numStr}... (contoh: IDP-MMU-${numStr})`}
+                                    value={item.idPersonalia}
+                                    readOnly={!isAdmin && !!editingNomination}
+                                    onChange={(e) => updateGuruIdentitas(idx, 'idPersonalia', e.target.value)}
+                                    className="w-full h-11 px-3.5 py-2.5 bg-[#faf8f4] border border-[#dcd7cb] rounded-xl text-xs sm:text-sm font-mono font-bold text-[#8a7c4c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:bg-white focus:outline-none transition shadow-2xs"
+                                  />
+                                </div>
+
+                                {/* 2. Kolom Nama */}
+                                <div>
+                                  <div className="flex items-center justify-between mb-1.5">
+                                    <label className="block text-xs font-bold text-[#24211c]">
+                                      Nama {idx === 0 && <span className="text-rose-500">*</span>}
+                                    </label>
+                                    <span className="text-[10px] text-[#7c7b77] italic font-medium">
+                                      Kolom Nama (Panjang & lebar sama)
+                                    </span>
+                                  </div>
+                                  <input
+                                    type="text"
+                                    required={idx === 0}
+                                    placeholder={`Nama lengkap figur guru identitas ${numStr}...`}
+                                    value={item.nama}
+                                    readOnly={!isAdmin && !!editingNomination}
+                                    onChange={(e) => {
+                                      updateGuruIdentitas(idx, 'nama', e.target.value);
+                                      if (idx === 0 && (!candidateName || candidateName.startsWith('Nominasi 5 Guru'))) {
+                                        setCandidateName(e.target.value);
+                                      }
+                                    }}
+                                    className="w-full h-11 px-3.5 py-2.5 bg-[#faf8f4] border border-[#dcd7cb] rounded-xl text-xs sm:text-sm font-semibold text-[#24211c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:bg-white focus:outline-none transition shadow-2xs"
+                                  />
+                                </div>
+
+                                {/* 3. Kolom Dom/Alamat */}
+                                <div>
+                                  <div className="flex items-center justify-between mb-1.5">
+                                    <label className="block text-xs font-bold text-[#24211c]">
+                                      Dom / Alamat {idx === 0 && <span className="text-rose-500">*</span>}
+                                    </label>
+                                    <span className="text-[10px] text-[#7c7b77] italic font-medium">
+                                      Kolom Dom/Alamat (Panjang & lebar sama)
+                                    </span>
+                                  </div>
+                                  <input
+                                    type="text"
+                                    required={idx === 0}
+                                    placeholder={`Domisili atau alamat lengkap figur guru identitas ${numStr}...`}
+                                    value={item.domisiliAlamat}
+                                    readOnly={!isAdmin && !!editingNomination}
+                                    onChange={(e) => updateGuruIdentitas(idx, 'domisiliAlamat', e.target.value)}
+                                    className="w-full h-11 px-3.5 py-2.5 bg-[#faf8f4] border border-[#dcd7cb] rounded-xl text-xs sm:text-sm text-[#24211c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:bg-white focus:outline-none transition shadow-2xs"
+                                  />
+                                </div>
+
+                                {/* 4. Kolom Jabatan */}
+                                <div>
+                                  <div className="flex items-center justify-between mb-1.5">
+                                    <label className="block text-xs font-bold text-[#24211c]">
+                                      Jabatan {idx === 0 && <span className="text-rose-500">*</span>}
+                                    </label>
+                                    <span className="text-[10px] text-[#7c7b77] italic font-medium">
+                                      Kolom Jabatan (Panjang & lebar sama)
+                                    </span>
+                                  </div>
+                                  <input
+                                    type="text"
+                                    required={idx === 0}
+                                    placeholder={`Jabatan pengajaran / kepengurusan guru identitas ${numStr}...`}
+                                    value={item.jabatan}
+                                    readOnly={!isAdmin && !!editingNomination}
+                                    onChange={(e) => updateGuruIdentitas(idx, 'jabatan', e.target.value)}
+                                    className="w-full h-11 px-3.5 py-2.5 bg-[#faf8f4] border border-[#dcd7cb] rounded-xl text-xs sm:text-sm text-[#24211c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:bg-white focus:outline-none transition shadow-2xs"
+                                  />
+                                </div>
+
+                                {/* Kriteria & Alasan Penilaian Resmi Khusus Guru Identitas {numStr} */}
+                                <div className="mt-4 pt-3.5 border-t border-[#dcd7cb] bg-[#f7f5ef] -mx-4 -mb-4 sm:-mx-5 sm:-mb-5 p-4 sm:p-5 rounded-b-2xl space-y-3">
+                                  <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <div className="flex items-center space-x-2 text-[#8a7c4c]">
+                                      <CheckSquare className="w-4 h-4 shrink-0" />
+                                      <h5 className="text-xs font-black uppercase tracking-wider text-[#24211c]">
+                                        Kriteria & Alasan Penilaian Resmi: Identitas {numStr} {item.nama ? `(${item.nama})` : ''}
+                                      </h5>
+                                    </div>
+                                    <div className="flex items-center space-x-1.5">
+                                      {isAdmin && (
+                                        <>
+                                          <button
+                                            type="button"
+                                            onClick={() => checkAllGuru(idx)}
+                                            className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#ede9df] hover:bg-[#e2ded2] text-[#675c37] border border-[#c3b68b]/40 cursor-pointer transition shadow-2xs"
+                                          >
+                                            ✓ Centang Semua
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => uncheckAllGuru(idx)}
+                                            className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white hover:bg-slate-100 text-slate-600 border border-slate-300 cursor-pointer transition shadow-2xs"
+                                          >
+                                            ✕ Reset
+                                          </button>
+                                        </>
+                                      )}
+                                      <span className="text-[10.5px] font-bold bg-[#ede9df] text-[#675c37] border border-[#c3b68b]/40 px-2.5 py-0.5 rounded-full">
+                                        Tercentang: {GURU_CRITERIA_LIST.filter((c) => !!item.checklist?.[c.id]).length} / 13 Kriteria
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  {/* 13 Checklist Kriteria Resmi Guru */}
+                                  <div className="bg-white p-3.5 rounded-xl border border-[#dcd7cb] shadow-2xs space-y-2">
+                                    <span className="font-extrabold text-[11px] text-[#24211c] block border-b border-[#f2eee3] pb-1.5">
+                                      1. KRITERIA / ALASAN YANG DINILAI (13 POIN RESMI ASATIDZ / GURU)
+                                    </span>
+                                    <div className="space-y-2.5 pt-1 text-xs">
+                                      {GURU_CRITERIA_LIST.map((crit) => (
+                                        <label key={crit.id} className="flex items-start space-x-2.5 cursor-pointer select-none">
+                                          <input
+                                            type="checkbox"
+                                            checked={!!item.checklist?.[crit.id]}
+                                            onChange={() => toggleGuruChecklist(idx, crit.id)}
+                                            className="w-4 h-4 rounded text-[#8a7c4c] focus:ring-[#8a7c4c] accent-[#8a7c4c] cursor-pointer mt-0.5 shrink-0"
+                                          />
+                                          <span className="text-slate-800 leading-snug font-medium text-xs">
+                                            {crit.label}
+                                          </span>
+                                        </label>
+                                      ))}
+                                    </div>
+                                  </div>
+
+                                  {/* 2. LAIN-LAIN (Catatan Tambahan untuk Guru {numStr}) */}
+                                  <div className="bg-white p-3.5 rounded-xl border border-[#dcd7cb] shadow-2xs space-y-1.5">
+                                    <div className="flex items-center justify-between">
+                                      <label className="block font-extrabold text-[11px] text-[#24211c]">
+                                        2. LAIN-LAIN (Catatan Tambahan untuk Identitas {numStr}):
+                                      </label>
+                                      <span className="text-[10px] text-[#8a7c4c] font-semibold italic">
+                                        Kolom isian bebas (dapat diedit)
+                                      </span>
+                                    </div>
+                                    <textarea
+                                      rows={2}
+                                      placeholder={`Catatan tambahan pertimbangan khusus untuk asatidz/guru identitas ${numStr}...`}
+                                      value={item.lainLainNote || ''}
+                                      readOnly={!isAdmin && !!editingNomination}
+                                      onChange={(e) => updateGuruIdentitas(idx, 'lainLainNote', e.target.value)}
+                                      className="w-full px-3 py-2 bg-slate-50 border border-[#dcd7cb] rounded-xl text-xs text-[#24211c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:bg-white focus:outline-none transition shadow-2xs resize-none"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                }
+
+                const isSantriMuridSelected = isSantriMuridCategoryItem(categoryId, activeCatObj?.title);
+
+                if (isSantriMuridSelected) {
+                  const isCurrentSantri = categoryId === 'cat-5' || toSafeLower(activeCatObj?.title).includes('santri');
+                  const categoryTitleDisplay = isCurrentSantri ? 'Penghargaan Santri Terbaik' : 'Penghargaan Murid Terbaik';
+                  const activeCriteriaList = isCurrentSantri ? SANTRI_CRITERIA_LIST : MURID_CRITERIA_LIST;
+                  const criteriaTitleSection = isCurrentSantri
+                    ? '1. KRITERIA & KETERTIBAN SANTRI (4 POIN RESMI SANTRI MUKIM)'
+                    : '1. PRESTASI AKADEMIK MADRASAH MMU (3 POIN RESMI MURID MMU)';
+
+                  return (
+                    <div className="bg-[#faf8f4] border border-[#e8e4da] rounded-2xl p-4 sm:p-5 space-y-4">
+                      <div className="flex flex-wrap items-center justify-between border-b border-[#e8e4da] pb-2.5 gap-2">
+                        <div className="flex items-center space-x-2 text-[#8a7c4c]">
+                          <GraduationCap className="w-4 h-4" />
+                          <h4 className="text-xs font-black uppercase tracking-wider">
+                            2. Identitas Pengusulan Calon: {categoryTitleDisplay} (Mencakup 2 Identitas Lengkap)
+                          </h4>
+                        </div>
+                        <span className="text-[10.5px] font-extrabold bg-[#ede9df] text-[#675c37] border border-[#c3b68b]/40 px-2.5 py-0.5 rounded-full">
+                          Peraturan Resmi: Wajib 2 Identitas Terstruktur
+                        </span>
+                      </div>
+
+                      <p className="text-xs text-[#5c5b57] leading-relaxed">
+                        Sesuai peraturan untuk {categoryTitleDisplay.toLowerCase()}: mencantumkan <strong>2 identitas</strong> yang dari masing-masing identitas mencakup (<strong>id personalia</strong>, <strong>nama</strong>, <strong>dom/alamat</strong>), <strong>nilai imda I, II &amp; semester I untuk tingkat 'Aly</strong>, <strong>presensi kehadiran</strong>, serta <strong>kriteria &amp; alasan penilaian resmi</strong> sebagai syarat dari masing-masing identitas. Seluruh kolom diurut dari atas ke bawah dengan panjang dan lebar kolom yang sama.
+                      </p>
+
+                      {/* 2 Identitas Santri / Murid Diurut dari Atas ke Bawah */}
+                      <div className="space-y-4">
+                        {[0, 1].map((idx) => {
+                          const numStr = String(idx + 1).padStart(2, '0');
+                          const item = santriMuridIdentitas[idx] || {
+                            idPersonalia: '',
+                            nama: '',
+                            domisiliAlamat: '',
+                            nilaiImda1: '',
+                            nilaiImda2: '',
+                            nilaiSemester1Aly: '',
+                            presensiKehadiran: '',
+                            checklist: {},
+                            lainLainNote: '',
+                          };
+
+                          return (
+                            <div
+                              key={idx}
+                              className="bg-white rounded-2xl p-4 sm:p-5 border border-[#dcd7cb] shadow-2xs space-y-4 transition hover:border-[#8a7c4c]/60"
+                            >
+                              {/* Header Identitas */}
+                              <div className="flex items-center justify-between border-b border-[#f2eee3] pb-2.5">
+                                <div className="flex items-center space-x-2.5">
+                                  <span className="w-7 h-7 rounded-xl bg-[#8a7c4c] text-white text-xs font-black flex items-center justify-center shadow-2xs shrink-0">
+                                    {numStr}
+                                  </span>
+                                  <h5 className="text-xs sm:text-sm font-extrabold text-[#24211c] tracking-tight">
+                                    identitas {numStr}. mencakup ( id personalia , nama, dom/alamat ) &amp; syarat prestasi
+                                  </h5>
+                                </div>
+                                <span className="text-[10px] font-bold text-[#8a7c4c] bg-[#faf8f4] px-2.5 py-0.5 rounded-md border border-[#e8e4da] hidden sm:inline-block">
+                                  Figur Calon {numStr}
+                                </span>
+                              </div>
+
+                              {/* Kolom-kolom diurut dari atas ke bawah dengan panjang kolom dan lebarnya sama persis */}
+                              <div className="space-y-3.5">
+                                {/* 1. Kolom ID Personalia */}
+                                <div>
+                                  <div className="flex items-center justify-between mb-1.5">
+                                    <label className="block text-xs font-bold text-[#24211c]">
+                                      ID Personalia {idx === 0 && <span className="text-rose-500">*</span>}
+                                    </label>
+                                    <span className="text-[10px] text-[#7c7b77] italic font-medium">
+                                      Kolom ID Personalia (Panjang &amp; lebar sama)
+                                    </span>
+                                  </div>
+                                  <input
+                                    type="text"
+                                    required={idx === 0}
+                                    placeholder={`ID Personalia santri/murid identitas ${numStr}... (contoh: IDP-MMU-${numStr})`}
+                                    value={item.idPersonalia}
+                                    readOnly={!isAdmin && !!editingNomination}
+                                    onChange={(e) => updateSantriMuridIdentitas(idx, 'idPersonalia', e.target.value)}
+                                    className="w-full h-11 px-3.5 py-2.5 bg-[#faf8f4] border border-[#dcd7cb] rounded-xl text-xs sm:text-sm font-mono font-bold text-[#8a7c4c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:bg-white focus:outline-none transition shadow-2xs"
+                                  />
+                                </div>
+
+                                {/* 2. Kolom Nama */}
+                                <div>
+                                  <div className="flex items-center justify-between mb-1.5">
+                                    <label className="block text-xs font-bold text-[#24211c]">
+                                      Nama {idx === 0 && <span className="text-rose-500">*</span>}
+                                    </label>
+                                    <span className="text-[10px] text-[#7c7b77] italic font-medium">
+                                      Kolom Nama (Panjang &amp; lebar sama)
+                                    </span>
+                                  </div>
+                                  <input
+                                    type="text"
+                                    required={idx === 0}
+                                    placeholder={`Nama lengkap santri/murid identitas ${numStr}...`}
+                                    value={item.nama}
+                                    readOnly={!isAdmin && !!editingNomination}
+                                    onChange={(e) => {
+                                      updateSantriMuridIdentitas(idx, 'nama', e.target.value);
+                                      if (idx === 0 && (!candidateName || candidateName.startsWith('Nominasi 2 Santri') || candidateName.startsWith('Nominasi 2 Murid'))) {
+                                        setCandidateName(e.target.value);
+                                      }
+                                    }}
+                                    className="w-full h-11 px-3.5 py-2.5 bg-[#faf8f4] border border-[#dcd7cb] rounded-xl text-xs sm:text-sm font-semibold text-[#24211c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:bg-white focus:outline-none transition shadow-2xs"
+                                  />
+                                </div>
+
+                                {/* 3. Kolom Dom/Alamat */}
+                                <div>
+                                  <div className="flex items-center justify-between mb-1.5">
+                                    <label className="block text-xs font-bold text-[#24211c]">
+                                      Dom / Alamat {idx === 0 && <span className="text-rose-500">*</span>}
+                                    </label>
+                                    <span className="text-[10px] text-[#7c7b77] italic font-medium">
+                                      Kolom Dom/Alamat (Panjang &amp; lebar sama)
+                                    </span>
+                                  </div>
+                                  <input
+                                    type="text"
+                                    required={idx === 0}
+                                    placeholder={`Domisili atau alamat lengkap santri/murid identitas ${numStr}...`}
+                                    value={item.domisiliAlamat}
+                                    readOnly={!isAdmin && !!editingNomination}
+                                    onChange={(e) => updateSantriMuridIdentitas(idx, 'domisiliAlamat', e.target.value)}
+                                    className="w-full h-11 px-3.5 py-2.5 bg-[#faf8f4] border border-[#dcd7cb] rounded-xl text-xs sm:text-sm text-[#24211c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:bg-white focus:outline-none transition shadow-2xs"
+                                  />
+                                </div>
+
+                                {/* Syarat Nilai Imda I, II & Semester I untuk Tingkat 'Aly serta Presensi Kehadiran & Kriteria Resmi sebagai syarat identitas {numStr} */}
+                                <div className="mt-4 pt-3.5 border-t border-[#dcd7cb] bg-[#f7f5ef] -mx-4 -mb-4 sm:-mx-5 sm:-mb-5 p-4 sm:p-5 rounded-b-2xl space-y-3">
+                                  <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <div className="flex items-center space-x-2 text-[#8a7c4c]">
+                                      <ClipboardCheck className="w-4 h-4 shrink-0" />
+                                      <h5 className="text-xs font-black uppercase tracking-wider text-[#24211c]">
+                                        Syarat Penilaian: Nilai Imda &amp; Presensi Identitas {numStr} {item.nama ? `(${item.nama})` : ''}
+                                      </h5>
+                                    </div>
+                                    <span className="text-[10px] font-bold bg-[#ede9df] text-[#675c37] border border-[#c3b68b]/40 px-2.5 py-0.5 rounded-full">
+                                      Syarat Wajib Identitas {numStr}
+                                    </span>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                    {/* 1. Nilai Imda I */}
+                                    <div>
+                                      <div className="flex items-center justify-between mb-1.5">
+                                        <label className="block text-xs font-bold text-[#24211c]">
+                                          Nilai Imda I {idx === 0 && <span className="text-rose-500">*</span>}
+                                        </label>
+                                        <span className="text-[10px] text-[#7c7b77] italic font-medium">
+                                          Syarat Imda I
+                                        </span>
+                                      </div>
+                                      <input
+                                        type="text"
+                                        required={idx === 0}
+                                        placeholder="Contoh: 90 / 89.5"
+                                        value={item.nilaiImda1}
+                                        readOnly={!isAdmin && !!editingNomination}
+                                        onChange={(e) => updateSantriMuridIdentitas(idx, 'nilaiImda1', e.target.value)}
+                                        className="w-full h-11 px-3.5 py-2.5 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm font-semibold text-[#8a7c4c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs"
+                                      />
+                                    </div>
+
+                                    {/* 2. Nilai Imda II */}
+                                    <div>
+                                      <div className="flex items-center justify-between mb-1.5">
+                                        <label className="block text-xs font-bold text-[#24211c]">
+                                          Nilai Imda II {idx === 0 && <span className="text-rose-500">*</span>}
+                                        </label>
+                                        <span className="text-[10px] text-[#7c7b77] italic font-medium">
+                                          Syarat Imda II
+                                        </span>
+                                      </div>
+                                      <input
+                                        type="text"
+                                        required={idx === 0}
+                                        placeholder="Contoh: 92 / 91.5"
+                                        value={item.nilaiImda2}
+                                        readOnly={!isAdmin && !!editingNomination}
+                                        onChange={(e) => updateSantriMuridIdentitas(idx, 'nilaiImda2', e.target.value)}
+                                        className="w-full h-11 px-3.5 py-2.5 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm font-semibold text-[#8a7c4c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs"
+                                      />
+                                    </div>
+
+                                    {/* 3. Nilai Semester I untuk Tingkat 'Aly */}
+                                    <div>
+                                      <div className="flex items-center justify-between mb-1.5">
+                                        <label className="block text-xs font-bold text-[#24211c]">
+                                          Nilai Semester I (Tingkat 'Aly) {idx === 0 && <span className="text-rose-500">*</span>}
+                                        </label>
+                                        <span className="text-[10px] text-[#7c7b77] italic font-medium">
+                                          Tingkat 'Aly
+                                        </span>
+                                      </div>
+                                      <input
+                                        type="text"
+                                        required={idx === 0}
+                                        placeholder="Contoh: 95 / Mumtaz"
+                                        value={item.nilaiSemester1Aly}
+                                        readOnly={!isAdmin && !!editingNomination}
+                                        onChange={(e) => updateSantriMuridIdentitas(idx, 'nilaiSemester1Aly', e.target.value)}
+                                        className="w-full h-11 px-3.5 py-2.5 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm font-semibold text-[#8a7c4c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs"
+                                      />
+                                    </div>
+
+                                    {/* 4. Presensi Kehadiran */}
+                                    <div>
+                                      <div className="flex items-center justify-between mb-1.5">
+                                        <label className="block text-xs font-bold text-[#24211c]">
+                                          Presensi Kehadiran {idx === 0 && <span className="text-rose-500">*</span>}
+                                        </label>
+                                        <span className="text-[10px] text-[#7c7b77] italic font-medium">
+                                          Kehadiran / Presensi
+                                        </span>
+                                      </div>
+                                      <input
+                                        type="text"
+                                        required={idx === 0}
+                                        placeholder="Contoh: 100% / Nihil Absen"
+                                        value={item.presensiKehadiran}
+                                        readOnly={!isAdmin && !!editingNomination}
+                                        onChange={(e) => updateSantriMuridIdentitas(idx, 'presensiKehadiran', e.target.value)}
+                                        className="w-full h-11 px-3.5 py-2.5 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm font-semibold text-[#8a7c4c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs"
+                                      />
+                                    </div>
+                                  </div>
+
+                                  {/* Kriteria & Alasan Penilaian Resmi Khusus Identitas {numStr} Sesuai Kategori Santri / Murid */}
+                                  <div className="pt-3.5 border-t border-[#dcd7cb] space-y-3">
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                      <div className="flex items-center space-x-2 text-[#8a7c4c]">
+                                        <CheckSquare className="w-4 h-4 shrink-0" />
+                                        <h5 className="text-xs font-black uppercase tracking-wider text-[#24211c]">
+                                          Kriteria &amp; Alasan Penilaian Resmi: {categoryTitleDisplay} (Identitas {numStr} {item.nama ? `– ${item.nama}` : ''})
+                                        </h5>
+                                      </div>
+                                      <div className="flex items-center space-x-1.5">
+                                        {isAdmin && (
+                                          <>
+                                            <button
+                                              type="button"
+                                              onClick={() => checkAllSantriMurid(idx, activeCriteriaList)}
+                                              className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#ede9df] hover:bg-[#e2ded2] text-[#675c37] border border-[#c3b68b]/40 cursor-pointer transition shadow-2xs"
+                                            >
+                                              ✓ Centang Semua
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={() => uncheckAllSantriMurid(idx)}
+                                              className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white hover:bg-slate-100 text-slate-600 border border-slate-300 cursor-pointer transition shadow-2xs"
+                                            >
+                                              ✕ Reset
+                                            </button>
+                                          </>
+                                        )}
+                                        <span className="text-[10.5px] font-bold bg-[#ede9df] text-[#675c37] border border-[#c3b68b]/40 px-2.5 py-0.5 rounded-full">
+                                          Tercentang: {activeCriteriaList.filter((c) => !!item.checklist?.[c.id]).length} / {activeCriteriaList.length} Kriteria
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    {/* Checklist Kriteria Resmi Sesuai Kategori */}
+                                    <div className="bg-white p-3.5 rounded-xl border border-[#dcd7cb] shadow-2xs space-y-2">
+                                      <span className="font-extrabold text-[11px] text-[#24211c] block border-b border-[#f2eee3] pb-1.5">
+                                        {criteriaTitleSection}
+                                      </span>
+                                      <div className="space-y-2.5 pt-1 text-xs">
+                                        {activeCriteriaList.map((crit) => (
+                                          <label key={crit.id} className="flex items-start space-x-2.5 cursor-pointer select-none">
+                                            <input
+                                              type="checkbox"
+                                              checked={!!item.checklist?.[crit.id]}
+                                              onChange={() => toggleSantriMuridChecklist(idx, crit.id)}
+                                              className="w-4 h-4 rounded text-[#8a7c4c] focus:ring-[#8a7c4c] accent-[#8a7c4c] cursor-pointer mt-0.5 shrink-0"
+                                            />
+                                            <span className="text-slate-800 leading-snug font-medium text-xs">
+                                              {crit.label}
+                                            </span>
+                                          </label>
+                                        ))}
+                                      </div>
+                                    </div>
+
+                                    {/* 2. LAIN-LAIN (Catatan Tambahan untuk Identitas {numStr}) */}
+                                    <div className="bg-white p-3.5 rounded-xl border border-[#dcd7cb] shadow-2xs space-y-1.5">
+                                      <div className="flex items-center justify-between">
+                                        <label className="block font-extrabold text-[11px] text-[#24211c]">
+                                          2. LAIN-LAIN (Catatan Tambahan untuk Identitas {numStr}):
+                                        </label>
+                                        <span className="text-[10px] text-[#8a7c4c] font-semibold italic">
+                                          Kolom isian bebas (dapat diedit)
+                                        </span>
+                                      </div>
+                                      <textarea
+                                        rows={2}
+                                        placeholder={`Catatan tambahan pertimbangan khusus ${isCurrentSantri ? 'keteladanan santri mukim' : 'prestasi akademik murid MMU'} identitas ${numStr}...`}
+                                        value={item.lainLainNote || ''}
+                                        readOnly={!isAdmin && !!editingNomination}
+                                        onChange={(e) => updateSantriMuridIdentitas(idx, 'lainLainNote', e.target.value)}
+                                        className="w-full px-3 py-2 bg-slate-50 border border-[#dcd7cb] rounded-xl text-xs text-[#24211c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:bg-white focus:outline-none transition shadow-2xs resize-none"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                }
+
+                // Default untuk kategori selain Guru, Santri, dan Murid (Ranting, Alumni, Pengurus)
+                return (
+                  <div className="bg-[#faf8f4] border border-[#e8e4da] rounded-2xl p-4 sm:p-5 space-y-3.5">
+                    <div className="flex items-center justify-between border-b border-[#e8e4da] pb-2.5">
+                      <div className="flex items-center space-x-2 text-[#8a7c4c]">
+                        <IdCard className="w-4 h-4" />
+                        <h4 className="text-xs font-black uppercase tracking-wider">
+                          2. Identitas Calon / Peserta yang Diusulkan (1 Identitas Tunggal)
+                        </h4>
+                      </div>
+                      <span className="text-[10.5px] font-bold text-[#7c7b77]">
+                        A. ID PPS • B. Nama • C. Domisili • D. Kelas • E. Tingkat • F. Jabatan/Kontak • G. Alamat
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                      {/* A. ID PPS / ID PERSONALIA */}
+                      <div>
+                        <label className="block text-xs font-bold text-[#24211c] mb-1.5">
+                          A. ID PPS / ID Personalia (kalau ada)
+                        </label>
                         <input
                           type="text"
-                          placeholder="Wilayah / Kota / Daerah asal (misal: Pasuruan, Madura, Surabaya)"
-                          value={domisili}
+                          placeholder="Contoh: PPS-2026-001 / ID Personalia"
+                          value={idPps}
                           readOnly={!isAdmin && !!editingNomination}
-                          onChange={(e) => setDomisili(e.target.value)}
-                          className="w-full px-3.5 py-2 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm text-[#24211c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs"
+                          onChange={(e) => setIdPps(e.target.value)}
+                          className="w-full px-3.5 py-2.5 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm text-[#8a7c4c] font-mono font-bold focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs"
+                        />
+                      </div>
+
+                      {/* B. Nama yang Diusulkan */}
+                      <div>
+                        <label className="block text-xs font-bold text-[#24211c] mb-1.5">
+                          B. Nama Ranting / Nama Peserta <span className="text-rose-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Nama lengkap ranting atau figur calon yang diusulkan"
+                          value={candidateName}
+                          readOnly={!isAdmin && !!editingNomination}
+                          onChange={(e) => setCandidateName(e.target.value)}
+                          className="w-full px-3.5 py-2.5 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm text-[#24211c] font-semibold focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 pt-1">
+                      {/* C. Domisili yang Diusulkan (Pilihan PPS & LPPS) */}
+                      <div>
+                        <label className="block text-xs font-bold text-[#24211c] mb-1.5">
+                          C. Domisili Calon / Ranting
+                        </label>
+                        <div className="flex flex-wrap items-center gap-3">
+                          <div className="flex items-center gap-2">
+                            <label className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl border text-xs font-bold transition cursor-pointer ${
+                              candidateDomisiliType === 'PPS'
+                                ? 'bg-[#8a7c4c] text-white border-[#8a7c4c] shadow-2xs'
+                                : 'bg-white text-[#24211c] border-[#dcd7cb] hover:bg-[#f7f6f2]'
+                            }`}>
+                              <input
+                                type="radio"
+                                name="candidateDomisiliRadio"
+                                value="PPS"
+                                checked={candidateDomisiliType === 'PPS'}
+                                disabled={!isAdmin && !!editingNomination}
+                                onChange={() => setCandidateDomisiliType('PPS')}
+                                className="sr-only"
+                              />
+                              <span>PPS</span>
+                            </label>
+
+                            <label className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl border text-xs font-bold transition cursor-pointer ${
+                              candidateDomisiliType === 'LPPS'
+                                ? 'bg-[#8a7c4c] text-white border-[#8a7c4c] shadow-2xs'
+                                : 'bg-white text-[#24211c] border-[#dcd7cb] hover:bg-[#f7f6f2]'
+                            }`}>
+                              <input
+                                type="radio"
+                                name="candidateDomisiliRadio"
+                                value="LPPS"
+                                checked={candidateDomisiliType === 'LPPS'}
+                                disabled={!isAdmin && !!editingNomination}
+                                onChange={() => setCandidateDomisiliType('LPPS')}
+                                className="sr-only"
+                              />
+                              <span>LPPS</span>
+                            </label>
+                          </div>
+
+                          <div className="flex-1 min-w-[180px]">
+                            <input
+                              type="text"
+                              placeholder="Wilayah / Kota / Daerah asal (misal: Pasuruan, Madura, Surabaya)"
+                              value={domisili}
+                              readOnly={!isAdmin && !!editingNomination}
+                              onChange={(e) => setDomisili(e.target.value)}
+                              className="w-full px-3.5 py-2 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm text-[#24211c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* D. Kelas & E. Tingkat */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        <div>
+                          <label className="block text-xs font-bold text-[#24211c] mb-1.5">
+                            D. Kelas
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Contoh: Kelas 3 Aliyah / MMU"
+                            value={kelas}
+                            readOnly={!isAdmin && !!editingNomination}
+                            onChange={(e) => setKelas(e.target.value)}
+                            className="w-full px-3.5 py-2 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm text-[#24211c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-[#24211c] mb-1.5">
+                            E. Tingkat
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Contoh: Ulya / Tsanawiyah / Asatidz / Pengurus"
+                            value={tingkat}
+                            readOnly={!isAdmin && !!editingNomination}
+                            onChange={(e) => setTingkat(e.target.value)}
+                            className="w-full px-3.5 py-2 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm text-[#24211c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs"
+                          />
+                        </div>
+                      </div>
+
+                      {/* F. Jabatan & G. No. WhatsApp / Kontak (Opsional) */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        <div>
+                          <label className="block text-xs font-bold text-[#24211c] mb-1.5">
+                            F. Jabatan Peserta pada 2 Tahun Terakhir (Opsional)
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Contoh: Ketua Ranting MMU / Asatidz Senior / Koordinator Sie"
+                            value={department}
+                            readOnly={!isAdmin && !!editingNomination}
+                            onChange={(e) => setDepartment(e.target.value)}
+                            className="w-full px-3.5 py-2 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm text-[#24211c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-[#24211c] mb-1.5">
+                            G. No. WhatsApp / Kontak (Opsional)
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Contoh: 081234567890"
+                            value={phone}
+                            readOnly={!isAdmin && !!editingNomination}
+                            onChange={(e) => setPhone(e.target.value)}
+                            className="w-full px-3.5 py-2 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm text-[#8a7c4c] font-mono font-bold focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs"
+                          />
+                        </div>
+                      </div>
+
+                      {/* H. Alamat Lengkap */}
+                      <div>
+                        <label className="block text-xs font-bold text-[#24211c] mb-1.5">
+                          H. Alamat Lengkap
+                        </label>
+                        <textarea
+                          rows={2}
+                          placeholder="Alamat lengkap calon / ranting yang diusulkan..."
+                          value={alamat}
+                          readOnly={!isAdmin && !!editingNomination}
+                          onChange={(e) => setAlamat(e.target.value)}
+                          className="w-full px-3.5 py-2.5 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm text-[#24211c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs resize-none"
                         />
                       </div>
                     </div>
                   </div>
+                );
+              })()}
 
-                  {/* D. Kelas & E. Tingkat */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                    <div>
-                      <label className="block text-xs font-bold text-[#24211c] mb-1.5">
-                        D. Kelas
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Contoh: Kelas 3 Aliyah / MMU"
-                        value={kelas}
-                        readOnly={!isAdmin && !!editingNomination}
-                        onChange={(e) => setKelas(e.target.value)}
-                        className="w-full px-3.5 py-2 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm text-[#24211c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-[#24211c] mb-1.5">
-                        E. Tingkat
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Contoh: Ulya / Tsanawiyah / Asatidz / Pengurus"
-                        value={tingkat}
-                        readOnly={!isAdmin && !!editingNomination}
-                        onChange={(e) => setTingkat(e.target.value)}
-                        className="w-full px-3.5 py-2 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm text-[#24211c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs"
-                      />
-                    </div>
-                  </div>
-
-                  {/* F. Alamat Lengkap */}
-                  <div>
-                    <label className="block text-xs font-bold text-[#24211c] mb-1.5">
-                      F. Alamat Lengkap
-                    </label>
-                    <textarea
-                      rows={2}
-                      placeholder="Alamat lengkap calon / ranting yang diusulkan..."
-                      value={alamat}
-                      readOnly={!isAdmin && !!editingNomination}
-                      onChange={(e) => setAlamat(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm text-[#24211c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs resize-none"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Seksi 3: Kategori Penganugerahan & Kontak */}
-              <div className="bg-[#faf8f4] border border-[#e8e4da] rounded-2xl p-4 sm:p-5 space-y-3.5">
-                <div className="flex items-center space-x-2 text-[#8a7c4c] border-b border-[#e8e4da] pb-2.5">
-                  <Award className="w-4 h-4" />
-                  <h4 className="text-xs font-black uppercase tracking-wider">
-                    3. Kategori Penganugerahan & Kontak
-                  </h4>
-                </div>
-
-                {/* Pilihan Kategori */}
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-xs font-bold text-[#24211c]">
-                      Pilihan Kategori Penghargaan <span className="text-rose-500">*</span>
-                    </label>
-                    <span className="text-[10.5px] font-bold text-[#8a7c4c] flex items-center space-x-1">
-                      <Sparkles className="w-3 h-3" />
-                      <span>Sub-kriteria menyesuaikan otomatis</span>
-                    </span>
-                  </div>
-                  <select
-                    value={categoryId}
-                    disabled={!isAdmin && !!editingNomination}
-                    onChange={(e) => setCategoryId(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-white border border-[#dcd7cb] text-[#24211c] rounded-xl text-xs sm:text-sm font-bold focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs cursor-pointer"
-                  >
-                    {(categories.length === 6 ? categories : OFFICIAL_AWARD_RUBRICS).map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.title}
-                      </option>
-                    ))}
-                  </select>
-
-                  {/* Dynamic Category Preview Badge */}
-                  {(() => {
-                    const activeCat = (categories.length === 6 ? categories : OFFICIAL_AWARD_RUBRICS).find((c) => c.id === categoryId) || categories.find((c) => c.id === categoryId) || OFFICIAL_AWARD_RUBRICS[0];
-                    return (
-                      <div className="mt-2 p-2.5 rounded-xl bg-[#ede9df]/60 border border-[#c3b68b]/40 flex items-center justify-between gap-2 text-xs">
-                        <div className="flex items-center space-x-2">
-                          <Award className="w-4 h-4 text-[#8a7c4c] shrink-0" />
-                          <span className="font-extrabold text-[#675c37]">{activeCat?.title}</span>
-                        </div>
-                        <span className="text-[10px] font-bold text-[#7c7b77] bg-white px-2 py-0.5 rounded-md border border-[#dcd7cb]">
-                          Sub-kriteria aktif dimuat di Seksi 4
-                        </span>
-                      </div>
-                    );
-                  })()}
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
-                  <div>
-                    <label className="block text-xs font-bold text-[#24211c] mb-1.5">
-                      Jabatan Peserta pada 2 Tahun Terakhir
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Contoh: Ketua Ranting MMU / Asatidz Senior / Koordinator Sie"
-                      value={department}
-                      readOnly={!isAdmin && !!editingNomination}
-                      onChange={(e) => setDepartment(e.target.value)}
-                      className="w-full px-3.5 py-2 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm text-[#24211c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-[#24211c] mb-1.5">
-                      No. WhatsApp / Kontak
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Contoh: 081234567890"
-                      value={phone}
-                      readOnly={!isAdmin && !!editingNomination}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="w-full px-3.5 py-2 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm text-[#8a7c4c] font-mono font-bold focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Seksi 4: Rubrik Penilaian Dinamis Sesuai Kategori yang Dipilih */}
+              {/* Seksi 3: Rubrik Penilaian Dinamis Sesuai Kategori yang Dipilih */}
               {(() => {
                 const selectedCatObj = (categories.length === 6 ? categories : OFFICIAL_AWARD_RUBRICS).find((c) => c.id === categoryId) || categories.find((c) => c.id === categoryId) || OFFICIAL_AWARD_RUBRICS[0];
-                const catTitleLower = (selectedCatObj?.title || categoryId || '').toLowerCase();
+                const catTitleLower = toSafeLower(selectedCatObj?.title) || toSafeLower(categoryId);
 
                 const isRanting = categoryId === 'cat-1' || catTitleLower.includes('ranting');
-                const isGuru = categoryId === 'cat-2' || catTitleLower.includes('guru');
-                const isAlumni = categoryId === 'cat-3' || catTitleLower.includes('alumni');
-                const isPengurus = categoryId === 'cat-4' || catTitleLower.includes('pengurus');
+                const isGuru = isGuruCategoryItem(categoryId, selectedCatObj?.title);
+
+                // Khusus Penghargaan Khidmah (Guru): 13 Kriteria & Alasan Penilaian Resmi sudah disematkan lengkap langsung di bawah masing-masing 5 identitas guru
+                if (isGuru) {
+                  return null;
+                }
+
+                // Khusus Penghargaan Santri Terbaik & Murid Terbaik: Kriteria & Alasan Penilaian Resmi sudah disematkan lengkap langsung di bawah masing-masing 2 identitas
                 const isSantri = categoryId === 'cat-5' || catTitleLower.includes('santri');
                 const isMurid = categoryId === 'cat-6' || catTitleLower.includes('murid');
+                if (isSantri || isMurid) {
+                  return null;
+                }
+
+                const isAlumni = categoryId === 'cat-3' || catTitleLower.includes('alumni');
+                const isPengurus = isPengurusCategoryItem(categoryId, selectedCatObj?.title);
 
                 const rantingKeys = [
                   'ranting_prestasi_imda',
@@ -2118,7 +3158,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                       <div className="flex items-center space-x-2 text-[#8a7c4c]">
                         <CheckSquare className="w-4 h-4" />
                         <h4 className="text-xs font-black uppercase tracking-wider">
-                          4. Kriteria & Alasan Penilaian Resmi: <span className="text-[#24211c]">{selectedCatObj?.title}</span>
+                          3. Kriteria & Alasan Penilaian Resmi: <span className="text-[#24211c]">{selectedCatObj?.title}</span>
                         </h4>
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
@@ -2361,29 +3401,61 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                             1. KRITERIA YANG DINILAI
                           </span>
                           <div className="space-y-2.5 pt-1 text-xs">
-                            {[
-                              { id: 'alumni_dedikasi', title: 'a. Dedikasi', desc: 'Memiliki dedikasi yang tinggi pada Agama, Dakwah, Pondok Pesantren Sidogiri dan/atau Madrasah Miftahul Ulum' },
-                              { id: 'alumni_ketaatan', title: 'b. Ketaatan', desc: 'Ketaatan ditunjukkan dengan ketundukan serta kepatuhan secara penuh pada titah Masyayikh dan Pengurus atasan, serta aturan yang telah ditetapkan, meskipun tidak searah dengan pandangan pribadinya. Termasuk juga keaktifan mengikuti kegiatan IASS' },
-                              { id: 'alumni_kapabilitas', title: 'c. Kapabilitas', desc: 'Yaitu kemampuan dan keahlian yang dibutuhkan untuk melakukan pekerjaannya, seperti mengajar, berniaga, bertani, dls. Biasanya hal ini berkaitan dengan kemampuan di bidangnya, nalar, kecerdasan, serta cara berpikir sistematis' },
-                              { id: 'alumni_kapasitas', title: 'd. Kapasitas', desc: 'Yaitu kapasitas maksimum atau potensi kemampuan seseorang yang ditunjukkan dengan keahlian memecahkan masalah (problem solving skill) di tengah-tengah masyarakatnya' },
-                              { id: 'alumni_kreativitas', title: 'e. Kreativitas', desc: 'Kreativitas ditunjukan dengan karya atau pekerjaaan yang tidak biasa dilakukan oleh orang banyak, yang manfaatnya dapat dirasakan oleh agama, masyarakat dan atau Ikatan Alumni Santri Sidogiri' },
-                              { id: 'alumni_karakter', title: 'f. Karakter', desc: 'Karakter yang baik yaitu watak dasar manusia yang ditunjukkan dalam perilaku sehari-hari, seperti sikap tawadhu’, kemampuan mengendalikan emosi, dan bagaimana merespon sebuah kejadian' },
-                              { id: 'alumni_kredibilitas', title: 'g. Kredibilitas', desc: 'Ditunjukkan dengan kejujuran dan integritas yang tinggi, sehingga dapat dipercaya dan diandalkan untuk memikul amanah dan tanggung jawab dengan benar' },
-                              { id: 'alumni_komitmen', title: 'h. Komitmen', desc: 'Ditunjukkan dengan kesungguhan menyelesaikan tugas dan kewajiban, walaupun dalam kondisi yang sulit dan tidak menguntungkan' },
-                            ].map((item) => (
-                              <label key={item.id} className="flex items-start space-x-2.5 cursor-pointer select-none">
-                                <input
-                                  type="checkbox"
-                                  checked={!!checklist[item.id]}
-                                  onChange={() => toggleChecklist(item.id)}
-                                  className="w-4 h-4 rounded text-[#8a7c4c] focus:ring-[#8a7c4c] accent-[#8a7c4c] cursor-pointer mt-0.5 shrink-0"
-                                />
-                                <div className="leading-snug">
-                                  <strong className="text-[#24211c]">{item.title}: </strong>
-                                  <span className="text-slate-700">{item.desc}</span>
+                            {ALUMNI_CRITERIA_LIST.map((item) => {
+                              const isChecked = !!checklist[item.id];
+                              return (
+                                <div
+                                  key={item.id}
+                                  className={`p-3 rounded-xl border transition ${
+                                    isChecked
+                                      ? 'bg-[#f7f5ef] border-[#8a7c4c]/50 ring-1 ring-[#8a7c4c]/20'
+                                      : 'bg-[#faf8f4]/60 border-[#e8e4da] hover:bg-[#faf8f4]'
+                                  }`}
+                                >
+                                  <label className="flex items-start space-x-2.5 cursor-pointer select-none">
+                                    <input
+                                      type="checkbox"
+                                      checked={isChecked}
+                                      onChange={() => toggleChecklist(item.id)}
+                                      className="w-4 h-4 rounded text-[#8a7c4c] focus:ring-[#8a7c4c] accent-[#8a7c4c] cursor-pointer mt-0.5 shrink-0"
+                                    />
+                                    <div className="leading-snug flex-1">
+                                      <strong className="text-[#24211c]">{item.title}: </strong>
+                                      <span className="text-slate-700">{item.desc}</span>
+                                    </div>
+                                  </label>
+
+                                  {/* Ketika mencentang kriteria yang dinilai maka dibawahnya otomatis menampilkan kolom alasan sebagai pembuktian dan wajib diisi */}
+                                  {isChecked && (
+                                    <div className="mt-3 ml-6.5 p-3 rounded-xl bg-white border border-[#c3b68b]/70 space-y-1.5 animate-fadeIn shadow-2xs">
+                                      <div className="flex flex-wrap items-center justify-between gap-1.5">
+                                        <label className="block text-xs font-black text-[#675c37] flex items-center space-x-1.5">
+                                          <FileCheck className="w-4 h-4 text-[#8a7c4c] shrink-0" />
+                                          <span>Alasan & Pembuktian Nyata ({item.title}) <span className="text-rose-500">*</span></span>
+                                        </label>
+                                        <span className="text-[9.5px] font-extrabold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md uppercase tracking-wider">
+                                          Wajib Diisi sebagai Pembuktian
+                                        </span>
+                                      </div>
+                                      <textarea
+                                        rows={2}
+                                        required
+                                        placeholder={`Tuliskan uraian alasan konkret dan bukti nyata pemenuhan kriteria ${item.title} untuk calon alumni ini...`}
+                                        value={alumniCriteriaReasons[item.id] || ''}
+                                        readOnly={!isAdmin && !!editingNomination}
+                                        onChange={(e) =>
+                                          setAlumniCriteriaReasons((prev) => ({
+                                            ...prev,
+                                            [item.id]: e.target.value,
+                                          }))
+                                        }
+                                        className="w-full px-3 py-2 bg-[#faf8f4] border border-[#dcd7cb] rounded-xl text-xs text-[#24211c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:bg-white focus:outline-none transition shadow-2xs resize-none font-medium placeholder:text-stone-400"
+                                      />
+                                    </div>
+                                  )}
                                 </div>
-                              </label>
-                            ))}
+                              );
+                            })}
                           </div>
                         </div>
 
