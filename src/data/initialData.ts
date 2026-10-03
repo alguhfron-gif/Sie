@@ -442,77 +442,97 @@ export const INITIAL_RUNDOWN: RundownItem[] = [
 ];
 
 export const INITIAL_ACCOUNTS: CommitteeAccount[] = [
-  // TINGKAT ADMIN (Panitia Inti / Pimpinan)
+  // 1. Panitia (admin)
   {
     id: '1',
+    idPersonalia: 'PERS-001',
     name: 'BIRRIL WALID',
     role: 'KETUA SIE PENGANUGERAHAN',
     category: 'admin',
-    defaultPin: '12345678',
-    badge: 'Ketua / Admin',
+    accountType: 'panitia',
+    defaultPin: '12345678', // 8 angka (> 6 angka)
+    badge: 'Panitia (Admin)',
     avatarBg: 'bg-emerald-600 text-white font-black',
     createdAt: '2026-07-01',
   },
   {
     id: '2',
+    idPersonalia: 'PERS-002',
     name: 'LAILUR MUBAROK',
     role: 'WAKIL KETUA SIE',
     category: 'admin',
-    defaultPin: '12345678',
-    badge: 'Wakil / Admin',
+    accountType: 'panitia',
+    defaultPin: '12345678', // 8 angka (> 6 angka)
+    badge: 'Panitia (Admin)',
     avatarBg: 'bg-emerald-700 text-white font-extrabold',
     createdAt: '2026-07-01',
   },
   {
     id: '3',
+    idPersonalia: 'PERS-003',
     name: 'MAJID',
     role: 'SEKRETARIS SIE',
     category: 'admin',
-    defaultPin: '12345678',
-    badge: 'Sekretaris / Admin',
+    accountType: 'panitia',
+    defaultPin: '12345678', // 8 angka (> 6 angka)
+    badge: 'Panitia (Admin)',
     avatarBg: 'bg-teal-600 text-white font-bold',
     createdAt: '2026-07-01',
   },
 
-  // TINGKAT PETUGAS (Petugas Lapangan & Operasional)
+  // 2. Madrasah (petugas)
   {
     id: '4',
+    idPersonalia: 'PERS-004',
     name: 'MUZAMMIL & GUFRON',
-    role: 'PETUGAS SISTEM & KOORDINASI',
+    role: 'PETUGAS SISTEM & MADRASAH',
     category: 'petugas',
-    defaultPin: '1234',
-    badge: 'Petugas Sistem',
+    accountType: 'madrasah',
+    defaultPin: '12345678', // 8 angka (> 6 angka)
+    badge: 'Madrasah (Petugas)',
     avatarBg: 'bg-sky-500 text-white font-bold',
     createdAt: '2026-07-01',
   },
+
+  // 4. Pengurus Instansi (petugas)
   {
     id: '5',
+    idPersonalia: 'PERS-005',
     name: 'GHONI',
-    role: 'PETUGAS PENGADAAN & MADRASAH',
+    role: 'PENGURUS INSTANSI PESANTREN',
     category: 'petugas',
-    defaultPin: '1234',
-    badge: 'Petugas Pengadaan',
-    avatarBg: 'bg-emerald-600 text-white font-bold',
-    createdAt: '2026-07-01',
-  },
-  {
-    id: '6',
-    name: 'FARIHIN & FITRA',
-    role: 'PETUGAS INVENTARIS & LOGISTIK',
-    category: 'petugas',
-    defaultPin: '1234',
-    badge: 'Petugas Logistik',
+    accountType: 'pengurus_instansi',
+    defaultPin: '12345678', // 8 angka (> 6 angka)
+    badge: 'Pengurus Instansi (Petugas)',
     avatarBg: 'bg-purple-600 text-white font-bold',
     createdAt: '2026-07-01',
   },
+
+  // 5. Pengurus Daerah (petugas)
+  {
+    id: '6',
+    idPersonalia: 'PERS-006',
+    name: 'FARIHIN & FITRA',
+    role: 'PENGURUS DAERAH & SANTRI',
+    category: 'petugas',
+    accountType: 'pengurus_daerah',
+    defaultPin: '12345678', // 8 angka (> 6 angka)
+    badge: 'Pengurus Daerah (Petugas)',
+    avatarBg: 'bg-amber-600 text-white font-bold',
+    createdAt: '2026-07-01',
+  },
+
+  // 3. Alumni (petugas)
   {
     id: '7',
+    idPersonalia: 'PERS-007',
     name: 'SULTAN & HALIM',
-    role: 'PETUGAS DESAIN & DOKUMENTASI',
+    role: 'PETUGAS KHIDMAH ALUMNI IASS',
     category: 'petugas',
-    defaultPin: '1234',
-    badge: 'Petugas Media',
-    avatarBg: 'bg-rose-500 text-white font-bold',
+    accountType: 'alumni',
+    defaultPin: '12345678', // 8 angka (> 6 angka)
+    badge: 'Alumni (Petugas)',
+    avatarBg: 'bg-teal-600 text-white font-bold',
     createdAt: '2026-07-01',
   },
 ];

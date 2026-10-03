@@ -111,6 +111,7 @@ export function sanitizeNomination(raw: any, index: number = 0): Nomination {
     pengusulJabatan: raw.pengusulJabatan ? String(raw.pengusulJabatan) : undefined,
     pengusulDomisili: raw.pengusulDomisili ? String(raw.pengusulDomisili) : undefined,
     pengusulAlamat: raw.pengusulAlamat ? String(raw.pengusulAlamat) : undefined,
+    pengusulPhone: raw.pengusulPhone ? String(raw.pengusulPhone) : undefined,
     candidateDomisiliType: raw.candidateDomisiliType ? String(raw.candidateDomisiliType) : undefined,
 
     // Rubrik Penilaian Dinamis (Checklist & Isian Mandiri)
@@ -119,6 +120,42 @@ export function sanitizeNomination(raw: any, index: number = 0): Nomination {
     integritasNote: raw.integritasNote ? String(raw.integritasNote) : undefined,
     transparansiLaporanNote: raw.transparansiLaporanNote ? String(raw.transparansiLaporanNote) : undefined,
     lainLainNote: raw.lainLainNote ? String(raw.lainLainNote) : undefined,
+
+    // 5 Identitas Guru MMU jika ada
+    guruIdentitas: Array.isArray(raw.guruIdentitas)
+      ? raw.guruIdentitas.map((g: any) => ({
+          idPersonalia: String(g?.idPersonalia || ''),
+          nama: String(g?.nama || ''),
+          domisiliAlamat: String(g?.domisiliAlamat || ''),
+          jabatan: String(g?.jabatan || ''),
+          checklist: g?.checklist && typeof g.checklist === 'object' ? g.checklist : {},
+          lainLainNote: g?.lainLainNote ? String(g.lainLainNote) : '',
+        }))
+      : undefined,
+
+    // 2 Identitas Santri / Murid Terbaik jika ada
+    santriMuridIdentitas: Array.isArray(raw.santriMuridIdentitas)
+      ? raw.santriMuridIdentitas.map((s: any) => ({
+          idPersonalia: String(s?.idPersonalia || ''),
+          nama: String(s?.nama || ''),
+          domisiliAlamat: String(s?.domisiliAlamat || ''),
+          jenjangTingkat: s?.jenjangTingkat ? String(s.jenjangTingkat) : undefined,
+          nilaiImda1: String(s?.nilaiImda1 || ''),
+          nilaiImda2: String(s?.nilaiImda2 || ''),
+          nilaiSemester1Aly: String(s?.nilaiSemester1Aly || ''),
+          presensiKehadiran: String(s?.presensiKehadiran || ''),
+          checklist: s?.checklist && typeof s.checklist === 'object' ? s.checklist : {},
+          alasanPenilaian: s?.alasanPenilaian ? String(s.alasanPenilaian) : '',
+          lainLainNote: s?.lainLainNote ? String(s.lainLainNote) : '',
+          kriteriaReasons: s?.kriteriaReasons && typeof s.kriteriaReasons === 'object' ? s.kriteriaReasons : undefined,
+        }))
+      : undefined,
+
+    // Bukti & Alasan Kriteria Alumni
+    alumniCriteriaReasons:
+      raw.alumniCriteriaReasons && typeof raw.alumniCriteriaReasons === 'object'
+        ? raw.alumniCriteriaReasons
+        : undefined,
   };
 }
 

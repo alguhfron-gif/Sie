@@ -48,6 +48,7 @@ import {
   deleteRegulationFromFirestore,
 } from './services/documentsService';
 import { subscribeToAuthChanges, logoutFirebase } from './services/authService';
+import { getRoleOptionById, getAllowedCategoryIdsForUser } from './utils/accountRoles';
 import { setUserOnline, setUserOffline } from './services/presenceService';
 import { subscribeCertificates, CertificateRecord } from './services/certificatesService';
 import { subscribeCustomLogo } from './services/logoService';
@@ -690,14 +691,25 @@ export default function App() {
 
   // Nomination Handlers with Firestore Real-time Integration
   const handleAddNomination = async (newNom: Omit<Nomination, 'id' | 'createdAt'>) => {
+    const docId = `nom-${Date.now()}`;
+    const createdAt = new Date().toISOString().split('T')[0];
+    const createdNom: Nomination = {
+      ...newNom,
+      id: docId,
+      createdAt,
+    };
+    // Optimistic update locally immediately
+    setNominations((prev) => [sanitizeNomination(createdNom), ...prev.filter((p) => p.id !== docId)]);
     try {
-      await addNominationToFirestore(newNom);
+      await addNominationToFirestore(newNom, docId);
     } catch (err) {
       console.error('Firestore sync failed on add nomination:', err);
     }
   };
 
   const handleUpdateNomination = async (updatedNom: Nomination) => {
+    // Optimistic update locally immediately
+    setNominations((prev) => prev.map((n) => (n.id === updatedNom.id ? sanitizeNomination(updatedNom) : n)));
     try {
       await updateNominationInFirestore(updatedNom);
     } catch (err) {
@@ -706,6 +718,8 @@ export default function App() {
   };
 
   const handleDeleteNomination = async (id: string) => {
+    // Optimistic delete locally immediately
+    setNominations((prev) => prev.filter((n) => n.id !== id));
     try {
       await deleteNominationFromFirestore(id);
     } catch (err) {
@@ -798,18 +812,27 @@ export default function App() {
     }
   };
 
+  const handleAddBatchAccounts = async (newAccs: Array<Omit<CommitteeAccount, 'id'>>) => {
+    for (const newAcc of newAccs) {
+      await handleAddAccount(newAcc);
+    }
+  };
+
   const handleUpdateAccount = async (updatedAcc: CommitteeAccount) => {
     setAccounts((prev) =>
       prev.map((a) => (a.id === updatedAcc.id || a.name.toUpperCase().trim() === updatedAcc.name.toUpperCase().trim() ? updatedAcc : a))
     );
 
     if (currentUser && (currentUser.id === updatedAcc.id || currentUser.name.toUpperCase().trim() === updatedAcc.name.toUpperCase().trim())) {
+      const roleOpt = getRoleOptionById(updatedAcc.accountType || (updatedAcc.category === 'admin' ? 'panitia' : 'madrasah'));
       const updatedSession: UserSession = {
         ...currentUser,
         id: updatedAcc.id,
+        idPersonalia: updatedAcc.idPersonalia,
         name: updatedAcc.name,
-        role: `${updatedAcc.role} (${updatedAcc.category === 'admin' ? 'ADMIN' : 'PETUGAS'})`,
+        role: `${updatedAcc.role} (${roleOpt.name.toUpperCase()})`,
         category: updatedAcc.category,
+        accountType: roleOpt.id,
       };
       setCurrentUser(updatedSession);
       try {
@@ -842,6 +865,25 @@ export default function App() {
   if (!currentUser) {
     return <LoginView onLoginSuccess={handleLoginSuccess} accounts={accounts} />;
   }
+
+  // User Role Category Filtering sesuai 5 Pilihan Akun
+  const allowedCategoryIds = React.useMemo(() => {
+    return getAllowedCategoryIdsForUser(currentUser);
+  }, [currentUser]);
+
+  const userVisibleCategories = React.useMemo(() => {
+    if (currentUser?.category === 'admin') return categories;
+    return categories.filter((c) => allowedCategoryIds.includes(c.id));
+  }, [categories, allowedCategoryIds, currentUser]);
+
+  const userVisibleNominations = React.useMemo(() => {
+    if (currentUser?.category === 'admin') return nominations;
+    return nominations.filter((n) => {
+      if (allowedCategoryIds.includes(n.categoryId)) return true;
+      const cat = categories.find((c) => c.id === n.categoryId);
+      return cat ? allowedCategoryIds.includes(cat.id) : false;
+    });
+  }, [nominations, allowedCategoryIds, categories, currentUser]);
 
   return (
     <div className="min-h-screen bg-[#efede7] text-[#24211c] font-sans flex flex-col antialiased selection:bg-[#8a7c4c] selection:text-white relative overflow-x-hidden">
@@ -897,8 +939,8 @@ export default function App() {
                 <DashboardView
                   setActiveTab={setActiveTab}
                   transactions={transactions}
-                  nominations={nominations}
-                  categories={categories}
+                  nominations={userVisibleNominations}
+                  categories={userVisibleCategories}
                   tasks={tasks}
                   currentUser={currentUser}
                   onOpenAddNomination={() => {
@@ -917,8 +959,8 @@ export default function App() {
             {activeTab === 'nominasi' && (
               <ViewErrorBoundary viewName="Data Nominasi">
                 <NominationsView
-                  nominations={nominations}
-                  categories={categories}
+                  nominations={userVisibleNominations}
+                  categories={userVisibleCategories}
                   onUpdateCategory={handleUpdateCategory}
                   onAddNomination={handleAddNomination}
                   onUpdateNomination={handleUpdateNomination}
@@ -990,16 +1032,20 @@ export default function App() {
                 <AccountsView
                   accounts={accounts}
                   onAddAccount={handleAddAccount}
+                  onAddBatchAccounts={handleAddBatchAccounts}
                   onDeleteAccount={handleDeleteAccount}
                   onUpdateAccount={handleUpdateAccount}
                   currentUser={currentUser}
                   onLogout={handleLogout}
                   onSwitchUser={(acc) => {
+                    const roleOpt = getRoleOptionById(acc.accountType || (acc.category === 'admin' ? 'panitia' : 'madrasah'));
                     const session: UserSession = {
                       id: acc.id,
+                      idPersonalia: acc.idPersonalia,
                       name: acc.name,
-                      role: `${acc.role} (${acc.category === 'admin' ? 'ADMIN' : 'PETUGAS'})`,
+                      role: `${acc.role} (${roleOpt.name.toUpperCase()})`,
                       category: acc.category,
+                      accountType: roleOpt.id,
                       email: `${acc.name.toLowerCase().replace(/[^a-z]/g, '')}@penganugerahan.id`,
                       loginTime: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
                     };

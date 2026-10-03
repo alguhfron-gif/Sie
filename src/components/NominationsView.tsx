@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Award, Plus, Search, Filter, CheckCircle2, Edit2, Trash2, Trophy, Star, UserCheck, ShieldCheck, LayoutGrid, List, Phone, Briefcase, IdCard, Sparkles, FileSpreadsheet, Download, Loader2, Scale, FileText, FileCheck, Building2, GraduationCap, HeartHandshake, BookOpen, Info, Check, ChevronDown, ChevronUp, Lock, X, CheckSquare, Users, ClipboardCheck } from 'lucide-react';
+import { Award, Plus, Search, Filter, CheckCircle2, Edit2, Trash2, Trophy, Star, UserCheck, ShieldCheck, LayoutGrid, List, Phone, Briefcase, IdCard, Sparkles, FileSpreadsheet, Download, Loader2, Scale, FileText, FileCheck, Building2, GraduationCap, HeartHandshake, BookOpen, Info, Check, ChevronDown, ChevronUp, Lock, X, CheckSquare, Users, ClipboardCheck, Eye } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import ExcelJS from 'exceljs';
 import { AwardCategory, Nomination, NominationStatus, UserSession, GuruIdentityItem, SantriMuridIdentityItem } from '../types';
 import { sendWebhookPayload, exportToCSV } from '../services/webhookService';
 import { ContentHeader } from './ContentHeader';
 import { CollapsibleSection } from './CollapsibleSection';
+import { getAllowedCategoryIdsForUser, getRoleOptionById } from '../utils/accountRoles';
 
 export interface AssessmentRubric {
   number: number;
@@ -255,6 +256,16 @@ export const ALUMNI_CRITERIA_LIST = [
   { id: 'alumni_komitmen', title: 'h. Komitmen', desc: 'Ditunjukkan dengan kesungguhan menyelesaikan tugas dan kewajiban, walaupun dalam kondisi yang sulit dan tidak menguntungkan' },
 ];
 
+export const PENGURUS_CRITERIA_LIST = [
+  { id: 'pengurus_dedikasi', title: 'a. Dedikasi', desc: 'Memiliki dedikasi yang tinggi pada Agama, Dakwah, Pondok Pesantren Sidogiri dan/atau Madrasah Miftahul Ulum' },
+  { id: 'pengurus_ketaatan', title: 'b. Ketaatan', desc: 'Ketaatan ditunjukkan melalui ketundukan serta kepatuhan secara penuh pada titah Masyayikh dan Pengurus atasan meskipun berbeda dengan pandangan pribadinya' },
+  { id: 'pengurus_kapabilitas', title: 'c. Kapabilitas', desc: 'Kemampuan dan keahlian yang dibutuhkan untuk melakukan pekerjaannya (bidang keahlian, nalar, kecerdasan, berpikir sistematis)' },
+  { id: 'pengurus_kreativitas', title: 'd. Kreativitas', desc: 'Kemampuan memecahkan masalah di luar kebiasaan sehingga lebih efektif, efisien, cepat, dan menguntungkan' },
+  { id: 'pengurus_karakter', title: 'e. Karakter', desc: 'Watak dasar manusia dalam perilaku sehari-hari, sikap, tawadhu’, kemampuan mengendalikan emosi, dan merespon kejadian' },
+  { id: 'pengurus_kredibilitas', title: 'f. Kredibilitas', desc: 'Kejujuran dan integritas yang tinggi, sehingga dapat dipercaya dan diandalkan memikul amanah' },
+  { id: 'pengurus_komitmen', title: 'g. Komitmen', desc: 'Kesungguhan dalam menyelesaikan tugas, walaupun dalam kondisi yang sulit dan tidak menguntungkan' },
+];
+
 export const SANTRI_CRITERIA_LIST = [
   { id: 'santri_jamaah', label: 'a. Istiqamah shalat berjamaah 5 waktu di saf awal masjid dan wirid bersama' },
   { id: 'santri_akhlak', label: 'b. Keluhuran akhlak, adab sopan santun terhadap Masyayikh, asatidz, dan sesama thalabah' },
@@ -267,6 +278,72 @@ export const MURID_CRITERIA_LIST = [
   { id: 'murid_maknani', label: 'b. Kelengkapan, kerapian catatan kitab kuning (makna gandul), dan presensi mutlak' },
   { id: 'murid_musyawarah', label: 'c. Keaktifan dalam musyawarah ilmiyah fathul qorib dan kedisiplinan belajar' },
 ];
+
+export const RANTING_PRESTASI_MAP: Record<string, string> = {
+  ranting_prestasi_imda: 'Nilai Imda/Imni',
+  ranting_prestasi_almiftah: 'Nilai Ujian al-Miftah',
+  ranting_prestasi_muammar: 'Nilai Muammar',
+};
+
+export const RANTING_LOYALITAS_MAP: Record<string, string> = {
+  ranting_loyalitas_laporan_bulanan: 'Laporan Bulanan',
+  ranting_loyalitas_laporan_lisan_triwulan: 'Laporan Lisan Triwulan',
+  ranting_loyalitas_kurikulum: 'Pelaksanaan Kurikulum',
+  ranting_loyalitas_pedoman_kerantingan: 'Pelaksanaan Pedoman Kerantingan',
+  ranting_loyalitas_akreditasi_batartama: 'Hasil Akreditasi Batartama',
+  ranting_loyalitas_rapim: 'Rapim I & II',
+  ranting_loyalitas_keaktifan_pembinaan: 'Keaktifan Ikut Pembinaan',
+};
+
+export const GURU_CRITERIA_MAP: Record<string, string> = {
+  guru_dedikasi: 'Memiliki dedikasi yang tinggi pada Agama, Dakwah, PP Sidogiri & MMU',
+  guru_disiplin_tatatertib: 'Selalu disiplin dan taat pada tata tertib Madrasah & Pondok Pesantren Sidogiri',
+  guru_teladan_akhlak: 'Menjadi teladan bagi murid dalam bertutur kata, bersikap, beribadah serta akhlak karimah',
+  guru_materi_aswaja: 'Menguasai materi pembelajaran Ahlussunnah wal Jamaah dengan sangat baik',
+  guru_penjelasan_lugas: 'Mampu memberikan penjelasan dengan baik, jelas, lugas, dan tepat',
+  guru_hadir_kbm: 'Selalu hadir/keluar tepat waktu pada proses KBM di kelas',
+  guru_bimbing_disiplin: 'Selalu gigih mengingatkan dan membimbing murid untuk selalu berperilaku baik dan disiplin',
+  guru_tegur_sanksi: 'Selalu menegur atau memberikan sanksi kepada murid yang melanggar tata tertib',
+  guru_tamrin_masal: 'Selalu melaksanakan tamrin masal dengan tertib dan tepat waktu',
+  guru_kegiatan_madrasah: 'Selalu hadir pada kegiatan madrasah lainnya (gerak batin dll)',
+  guru_ramah_senyum: 'Ramah dan enak diajak bicara serta murah senyum',
+  guru_bersahabat_muruah: 'Dekat dan bersahabat dengan murid dengan tetap menjaga wibawa dan muru’ah guru',
+  guru_bersih_rapi: 'Selalu berpenampilan bersih, rapi, wangi, serasi, dan enak dipandang',
+};
+
+export const SANTRI_CRITERIA_MAP: Record<string, string> = {
+  santri_jamaah: 'Istiqamah shalat berjamaah 5 waktu di saf awal masjid dan wirid bersama',
+  santri_akhlak: 'Keluhuran akhlak, adab sopan santun terhadap Masyayikh, asatidz, dan sesama thalabah',
+  santri_tatatertib: 'Kebersihan catatan ketertiban asrama, bebas dari ta\'zir atau pelanggaran',
+  santri_taklim: 'Keaktifan dalam pengajian kitab (taklim asrama) dan kegiatan pondok',
+};
+
+export const MURID_CRITERIA_MAP: Record<string, string> = {
+  murid_ujian: 'Perolehan nilai ujian (ikhtibar) caturwulan dan semester tertinggi di MMU',
+  murid_maknani: 'Kelengkapan, kerapian catatan kitab kuning (makna gandul), dan presensi mutlak',
+  murid_musyawarah: 'Keaktifan dalam musyawarah ilmiyah fathul qorib dan kedisiplinan belajar',
+};
+
+export const ALUMNI_CRITERIA_MAP: Record<string, string> = {
+  alumni_dedikasi: 'Dedikasi tinggi pada Agama, Dakwah, PP Sidogiri / MMU',
+  alumni_ketaatan: 'Ketaatan penuh pada titah Masyayikh dan Pengurus atasan',
+  alumni_kapabilitas: 'Kapabilitas dan keahlian di bidangnya, nalar, dan berpikir sistematis',
+  alumni_kapasitas: 'Kapasitas dan keahlian memecahkan masalah di tengah masyarakat',
+  alumni_kreativitas: 'Kreativitas pekerjaan yang manfaatnya dirasakan masyarakat / IASS',
+  alumni_karakter: 'Karakter baik, tawadhu’, dan mengendalikan emosi',
+  alumni_kredibilitas: 'Kredibilitas, kejujuran dan integritas tinggi',
+  alumni_komitmen: 'Komitmen kesungguhan menyelesaikan tugas dalam kondisi sulit',
+};
+
+export const PENGURUS_CRITERIA_MAP: Record<string, string> = {
+  pengurus_dedikasi: 'Dedikasi tinggi pada Agama, Dakwah, PP Sidogiri / MMU',
+  pengurus_ketaatan: 'Ketaatan penuh pada titah Masyayikh dan Pengurus atasan',
+  pengurus_kapabilitas: 'Kapabilitas dan keahlian di bidangnya',
+  pengurus_kreativitas: 'Kreativitas dalam memecahkan masalah',
+  pengurus_karakter: 'Karakter baik, tawadhu’, dan mengendalikan emosi',
+  pengurus_kredibilitas: 'Kredibilitas, kejujuran dan integritas tinggi',
+  pengurus_komitmen: 'Komitmen kesungguhan menyelesaikan tugas',
+};
 
 interface NominationsViewProps {
   nominations: Nomination[];
@@ -342,15 +419,40 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
 }) => {
   const isPetugas = currentUser?.category === 'petugas' || (currentUser?.role ? currentUser.role.toUpperCase().includes('PETUGAS') : false);
   const isAdmin = !isPetugas;
+
+  // Allowed categories based on the 5 Account Role Options
+  const allowedCategoryIds = React.useMemo(() => {
+    return getAllowedCategoryIdsForUser(currentUser);
+  }, [currentUser]);
+
+  const visibleAwardRubrics = React.useMemo(() => {
+    if (isAdmin) return OFFICIAL_AWARD_RUBRICS;
+    return OFFICIAL_AWARD_RUBRICS.filter((r) => allowedCategoryIds.includes(r.id));
+  }, [isAdmin, allowedCategoryIds]);
+
+  const userRoleOption = React.useMemo(() => {
+    return getRoleOptionById(currentUser?.accountType || (currentUser?.category === 'admin' ? 'panitia' : 'madrasah'));
+  }, [currentUser]);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
-  const [isModalOpen, setIsModalOpen] = useState(isAdmin ? isAddModalOpenOpenDirectly : false);
+  const [isModalOpen, setIsModalOpen] = useState(isAddModalOpenOpenDirectly);
   const [editingNomination, setEditingNomination] = useState<Nomination | null>(null);
 
-  // Active rubric tab ID for full view (defaults to 1st category: Penghargaan Khidmah Ranting)
-  const [activeRubricId, setActiveRubricId] = useState<string>('cat-1');
+  // Active rubric tab ID for full view (defaults to user's first allowed category)
+  const [activeRubricId, setActiveRubricId] = useState<string>(() => {
+    const allowed = getAllowedCategoryIdsForUser(currentUser);
+    return allowed[0] || 'cat-1';
+  });
+
+  useEffect(() => {
+    const allowed = getAllowedCategoryIdsForUser(currentUser);
+    if (allowed.length > 0 && !allowed.includes(activeRubricId)) {
+      setActiveRubricId(allowed[0]);
+    }
+  }, [currentUser, activeRubricId]);
 
   // Accordion state for 6 award category columns (expand on click to reveal syarat & ketentuan)
   const [expandedRubricIds, setExpandedRubricIds] = useState<Record<string, boolean>>({});
@@ -433,6 +535,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
   const [pengusulJabatan, setPengusulJabatan] = useState(initialPengusulRole);
   const [pengusulDomisili, setPengusulDomisili] = useState<'PPS' | 'LPPS'>('PPS');
   const [pengusulAlamat, setPengusulAlamat] = useState('Pondok Pesantren Sidogiri, Kraton, Pasuruan');
+  const [pengusulPhone, setPengusulPhone] = useState(currentUser?.phone || '');
 
   // Auto-sync identitas pengusul saat sesi login berubah atau tersedia
   useEffect(() => {
@@ -441,6 +544,9 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
       const activeRole = currentUser.role || '';
       if (activeName) setPengusulNama(activeName);
       if (activeRole) setPengusulJabatan(activeRole);
+      if (currentUser.domisili) setPengusulDomisili(currentUser.domisili === 'LPPS' ? 'LPPS' : 'PPS');
+      if (currentUser.alamat) setPengusulAlamat(currentUser.alamat);
+      if (currentUser.phone) setPengusulPhone(currentUser.phone);
     }
   }, [currentUser, editingNomination]);
 
@@ -606,6 +712,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
     setPengusulJabatan(resolvedRole);
     setPengusulDomisili('PPS');
     setPengusulAlamat('Pondok Pesantren Sidogiri, Kraton, Pasuruan');
+    setPengusulPhone(currentUser?.phone || '');
 
     setIdPps('');
     setCandidateName('');
@@ -640,8 +747,8 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
       { idPersonalia: '', nama: '', domisiliAlamat: '', jabatan: '', checklist: {}, lainLainNote: '' },
     ]);
     setSantriMuridIdentitas([
-      { idPersonalia: '', nama: '', domisiliAlamat: '', nilaiImda1: '', nilaiImda2: '', nilaiSemester1Aly: '', presensiKehadiran: '', checklist: {}, lainLainNote: '' },
-      { idPersonalia: '', nama: '', domisiliAlamat: '', nilaiImda1: '', nilaiImda2: '', nilaiSemester1Aly: '', presensiKehadiran: '', checklist: {}, lainLainNote: '' },
+      { idPersonalia: '', nama: '', domisiliAlamat: '', jenjangTingkat: 'Aliyah', nilaiImda1: '', nilaiImda2: '', nilaiSemester1Aly: '', presensiKehadiran: '', checklist: {}, alasanPenilaian: '', lainLainNote: '' },
+      { idPersonalia: '', nama: '', domisiliAlamat: '', jenjangTingkat: 'Aliyah', nilaiImda1: '', nilaiImda2: '', nilaiSemester1Aly: '', presensiKehadiran: '', checklist: {}, alasanPenilaian: '', lainLainNote: '' },
     ]);
 
     setIsModalOpen(true);
@@ -660,6 +767,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
     setPengusulJabatan(nom.pengusulJabatan || currentUser?.role || '');
     setPengusulDomisili((nom.pengusulDomisili as 'PPS' | 'LPPS') || 'PPS');
     setPengusulAlamat(nom.pengusulAlamat || 'Pondok Pesantren Sidogiri, Kraton, Pasuruan');
+    setPengusulPhone(nom.pengusulPhone || currentUser?.phone || '');
 
     setIdPps(nom.idPps || nom.nipNik || '');
     setCandidateName(nom.candidateName);
@@ -714,18 +822,20 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
         idPersonalia: nom.santriMuridIdentitas?.[i]?.idPersonalia || '',
         nama: nom.santriMuridIdentitas?.[i]?.nama || '',
         domisiliAlamat: nom.santriMuridIdentitas?.[i]?.domisiliAlamat || '',
+        jenjangTingkat: nom.santriMuridIdentitas?.[i]?.jenjangTingkat || 'Aliyah',
         nilaiImda1: nom.santriMuridIdentitas?.[i]?.nilaiImda1 || '',
         nilaiImda2: nom.santriMuridIdentitas?.[i]?.nilaiImda2 || '',
         nilaiSemester1Aly: nom.santriMuridIdentitas?.[i]?.nilaiSemester1Aly || '',
         presensiKehadiran: nom.santriMuridIdentitas?.[i]?.presensiKehadiran || '',
         checklist: nom.santriMuridIdentitas?.[i]?.checklist || (i === 0 ? nom.evaluationChecklist || {} : {}),
+        alasanPenilaian: nom.santriMuridIdentitas?.[i]?.alasanPenilaian || '',
         lainLainNote: nom.santriMuridIdentitas?.[i]?.lainLainNote || (i === 0 ? nom.lainLainNote || '' : ''),
       }));
       setSantriMuridIdentitas(mergedSM);
     } else {
       setSantriMuridIdentitas([
-        { idPersonalia: '', nama: '', domisiliAlamat: '', nilaiImda1: '', nilaiImda2: '', nilaiSemester1Aly: '', presensiKehadiran: '', checklist: {}, lainLainNote: '' },
-        { idPersonalia: '', nama: '', domisiliAlamat: '', nilaiImda1: '', nilaiImda2: '', nilaiSemester1Aly: '', presensiKehadiran: '', checklist: {}, lainLainNote: '' },
+        { idPersonalia: '', nama: '', domisiliAlamat: '', jenjangTingkat: 'Aliyah', nilaiImda1: '', nilaiImda2: '', nilaiSemester1Aly: '', presensiKehadiran: '', checklist: {}, alasanPenilaian: '', lainLainNote: '' },
+        { idPersonalia: '', nama: '', domisiliAlamat: '', jenjangTingkat: 'Aliyah', nilaiImda1: '', nilaiImda2: '', nilaiSemester1Aly: '', presensiKehadiran: '', checklist: {}, alasanPenilaian: '', lainLainNote: '' },
       ]);
     }
 
@@ -806,6 +916,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
       pengusulJabatan,
       pengusulDomisili,
       pengusulAlamat,
+      pengusulPhone,
 
       // Simpan 5 Identitas Guru
       guruIdentitas: isGuruCategory ? guruIdentitas : undefined,
@@ -864,6 +975,18 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
       (nom.achievement && nom.achievement.toLowerCase().includes(term)) ||
       nom.nominatorName.toLowerCase().includes(term);
 
+    const isCategoryAllowedForUserRole =
+      isAdmin ||
+      allowedCategoryIds.includes(nom.categoryId) ||
+      (allowedCategoryIds.includes('cat-1') && (nom.categoryId === 'cat-1' || toSafeLower(categories.find((c) => c.id === nom.categoryId)?.title).includes('ranting'))) ||
+      (allowedCategoryIds.includes('cat-2') && (nom.categoryId === 'cat-2' || isGuruCategoryItem(nom.categoryId, categories.find((c) => c.id === nom.categoryId)?.title))) ||
+      (allowedCategoryIds.includes('cat-3') && (nom.categoryId === 'cat-3' || toSafeLower(categories.find((c) => c.id === nom.categoryId)?.title).includes('alumni'))) ||
+      (allowedCategoryIds.includes('cat-4') && (nom.categoryId === 'cat-4' || isPengurusCategoryItem(nom.categoryId, categories.find((c) => c.id === nom.categoryId)?.title))) ||
+      (allowedCategoryIds.includes('cat-5') && (nom.categoryId === 'cat-5' || toSafeLower(categories.find((c) => c.id === nom.categoryId)?.title).includes('santri'))) ||
+      (allowedCategoryIds.includes('cat-6') && (nom.categoryId === 'cat-6' || toSafeLower(categories.find((c) => c.id === nom.categoryId)?.title).includes('murid')));
+
+    if (!isCategoryAllowedForUserRole) return false;
+
     const matchesCategory =
       selectedCategory === 'ALL' ||
       nom.categoryId === selectedCategory ||
@@ -878,51 +1001,1033 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
-  // Handle Export Data to Excel (.xlsx)
+  // Helper formatters for Excel export (menghasilkan teks rapi, bernomor, dan TIDAK berbentuk kode)
+  const formatRantingPrestasiExport = (checklist?: Record<string, boolean>): string => {
+    if (!checklist) return '-';
+    const checked = Object.entries(checklist)
+      .filter(([k, v]) => v && k.startsWith('ranting_prestasi_'))
+      .map(([k]) => RANTING_PRESTASI_MAP[k] || k);
+    if (checked.length === 0) return '-';
+    return checked.map((c, i) => `${i + 1}. ${c}`).join('\n');
+  };
+
+  const formatRantingLoyalitasExport = (checklist?: Record<string, boolean>): string => {
+    if (!checklist) return '-';
+    const checked = Object.entries(checklist)
+      .filter(([k, v]) => v && k.startsWith('ranting_loyalitas_'))
+      .map(([k]) => RANTING_LOYALITAS_MAP[k] || k);
+    if (checked.length === 0) return '-';
+    return checked.map((c, i) => `${i + 1}. ${c}`).join('\n');
+  };
+
+  const formatRantingAllCriteriaExport = (checklist?: Record<string, boolean>): string => {
+    if (!checklist) return '-';
+    const lines: string[] = [];
+    // 1. Prestasi
+    Object.entries(checklist)
+      .filter(([k, v]) => v && k.startsWith('ranting_prestasi_'))
+      .forEach(([k]) => {
+        lines.push(`Prestasi: ${RANTING_PRESTASI_MAP[k] || k}`);
+      });
+    // 2. Loyalitas
+    Object.entries(checklist)
+      .filter(([k, v]) => v && k.startsWith('ranting_loyalitas_'))
+      .forEach(([k]) => {
+        lines.push(`Loyalitas: ${RANTING_LOYALITAS_MAP[k] || k}`);
+      });
+    // 3. Lainnya
+    Object.entries(checklist)
+      .filter(([k, v]) => v && !k.startsWith('ranting_prestasi_') && !k.startsWith('ranting_loyalitas_'))
+      .forEach(([k]) => {
+        lines.push(k === 'ranting_lain_kejujuran' ? 'Integritas: Kejujuran & Integritas Ranting' : k);
+      });
+    if (lines.length === 0) return '-';
+    return lines.map((c, i) => `${i + 1}. ${c}`).join('\n');
+  };
+
+  const formatPengurusCriteriaExport = (checklist?: Record<string, boolean>): string => {
+    if (!checklist) return '-';
+    const lines: string[] = [];
+    PENGURUS_CRITERIA_LIST.forEach((c) => {
+      if (checklist[c.id]) {
+        lines.push(`${c.title}: ${c.desc}`);
+      }
+    });
+    Object.entries(checklist).forEach(([k, v]) => {
+      if (v && !PENGURUS_CRITERIA_LIST.some((c) => c.id === k)) {
+        lines.push(PENGURUS_CRITERIA_MAP[k] || k);
+      }
+    });
+    if (lines.length === 0) return '-';
+    return lines.map((c, i) => `${i + 1}. ${c}`).join('\n');
+  };
+
+  const formatGuruCriteriaExport = (checklist?: Record<string, boolean>): string => {
+    if (!checklist) return '-';
+    const checkedItems: string[] = [];
+    // 1. Periksa kriteria resmi standar Guru (13 kriteria)
+    GURU_CRITERIA_LIST.forEach((c) => {
+      if (checklist[c.id]) {
+        checkedItems.push(c.label);
+      }
+    });
+    // 2. Periksa kriteria tambahan / dinamis jika ada centang selain 13 kriteria standar
+    Object.entries(checklist).forEach(([key, val]) => {
+      if (val && !GURU_CRITERIA_LIST.some((c) => c.id === key)) {
+        checkedItems.push(key);
+      }
+    });
+    if (checkedItems.length === 0) return '-';
+    return checkedItems.map((c, i) => `${i + 1}. ${c}`).join('\n');
+  };
+
+  const formatAlumniCriteriaExport = (
+    checklist?: Record<string, boolean>,
+    reasons?: Record<string, string>
+  ): string => {
+    if (!checklist) return '-';
+    const lines: string[] = [];
+    ALUMNI_CRITERIA_LIST.forEach((c) => {
+      if (checklist[c.id]) {
+        const r = reasons?.[c.id]?.trim();
+        lines.push(`${c.title}${r ? ` [Alasan: ${r}]` : ''}`);
+      }
+    });
+    Object.entries(checklist).forEach(([k, v]) => {
+      if (v && !ALUMNI_CRITERIA_LIST.some((c) => c.id === k)) {
+        const r = reasons?.[k]?.trim();
+        lines.push(`${k}${r ? ` [Alasan: ${r}]` : ''}`);
+      }
+    });
+    if (lines.length === 0) return '-';
+    return lines.map((c, i) => `${i + 1}. ${c}`).join('\n');
+  };
+
+  const formatSantriCriteriaExport = (checklist?: Record<string, boolean>): string => {
+    if (!checklist) return '-';
+    const lines: string[] = [];
+    SANTRI_CRITERIA_LIST.forEach((c) => {
+      if (checklist[c.id]) lines.push(c.label);
+    });
+    Object.entries(checklist).forEach(([k, v]) => {
+      if (v && !SANTRI_CRITERIA_LIST.some((c) => c.id === k)) lines.push(k);
+    });
+    if (lines.length === 0) return '-';
+    return lines.map((c, i) => `${i + 1}. ${c}`).join('\n');
+  };
+
+  const formatMuridCriteriaExport = (checklist?: Record<string, boolean>): string => {
+    if (!checklist) return '-';
+    const lines: string[] = [];
+    MURID_CRITERIA_LIST.forEach((c) => {
+      if (checklist[c.id]) lines.push(c.label);
+    });
+    Object.entries(checklist).forEach(([k, v]) => {
+      if (v && !MURID_CRITERIA_LIST.some((c) => c.id === k)) lines.push(k);
+    });
+    if (lines.length === 0) return '-';
+    return lines.map((c, i) => `${i + 1}. ${c}`).join('\n');
+  };
+
+  // Handle Export Data to Excel (.xlsx) dengan struktur rapi per kategori tanpa kode
   const handleExportExcel = async () => {
     try {
       setIsExporting(true);
       const workbook = new ExcelJS.Workbook();
-      workbook.creator = 'Sie Penganugerahan App';
+      workbook.creator = 'Sie Penganugerahan Milad Sidogiri';
       workbook.created = new Date();
 
-      const worksheet = workbook.addWorksheet('Daftar Peserta');
+      const dataToExport = filteredNominations.length > 0 ? filteredNominations : nominations;
 
-      // Define Columns
-      worksheet.columns = [
+      // Styling standard untuk header dan cells
+      const applySheetHeaderStyle = (row: ExcelJS.Row, bgArgb = 'FF0F172A') => {
+        row.height = 32;
+        row.font = { name: 'Calibri', size: 10.5, bold: true, color: { argb: 'FFFFFFFF' } };
+        row.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: bgArgb },
+        };
+        row.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+      };
+
+      const styleDataRow = (row: ExcelJS.Row, isEven: boolean) => {
+        row.height = 36;
+        row.alignment = { vertical: 'top', horizontal: 'left', wrapText: true };
+        row.font = { name: 'Calibri', size: 10 };
+        row.eachCell({ includeEmpty: true }, (cell) => {
+          cell.border = {
+            top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            right: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+          };
+          if (isEven) {
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: 'FFF8FAFC' },
+            };
+          }
+        });
+      };
+
+      // 1. SHEET KHIDMAH RANTING TERBAIK
+      // Format Standar Rapi: Barisan pertama adalah nama pengusul, barisan kedua kolom tabel, data urut ke bawah
+      const rantingData = dataToExport.filter(
+        (n) => n.categoryId === 'cat-1' || toSafeLower(categories.find((c) => c.id === n.categoryId)?.title).includes('ranting')
+      );
+      const rantingSheet = workbook.addWorksheet('Khidmah Ranting');
+      rantingSheet.getColumn(1).width = 8;   // NO
+      rantingSheet.getColumn(2).width = 20;  // ID PPS / PERSONALIA
+      rantingSheet.getColumn(3).width = 32;  // NAMA RANTING
+      rantingSheet.getColumn(4).width = 36;  // DOM / ALAMAT
+      rantingSheet.getColumn(5).width = 26;  // JABATAN
+      rantingSheet.getColumn(6).width = 18;  // KELAS / TINGKAT
+      rantingSheet.getColumn(7).width = 18;  // NO. WATSAP
+      rantingSheet.getColumn(8).width = 50;  // KRITERIA YANG DICENTANG
+      rantingSheet.getColumn(9).width = 32;  // ALASAN
+      rantingSheet.getColumn(10).width = 28; // LAIN-LAIN
+
+      if (rantingData.length === 0) {
+        const emptyRow = rantingSheet.addRow(['NAMA PENGUSUL: (Belum ada data pengusulan khidmah ranting tercatat)', '', '', '', '', '', '', '', '', '']);
+        rantingSheet.mergeCells(emptyRow.number, 1, emptyRow.number, 10);
+        emptyRow.height = 30;
+        emptyRow.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+        emptyRow.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+        for (let c = 1; c <= 10; c++) {
+          emptyRow.getCell(c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF065F46' } };
+        }
+
+        const hRow = rantingSheet.addRow([
+          'NO', 'ID PPS / PERSONALIA', 'NAMA RANTING', 'DOM / ALAMAT', 'JABATAN', 'KELAS / TINGKAT', 'NO. WATSAP', 'KRITERIA YANG DICENTANG', 'ALASAN', 'LAIN-LAIN'
+        ]);
+        hRow.height = 28;
+        hRow.font = { name: 'Calibri', size: 10.5, bold: true, color: { argb: 'FFFFFFFF' } };
+        hRow.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+        for (let c = 1; c <= 10; c++) {
+          hRow.getCell(c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF334155' } };
+        }
+      } else {
+        rantingData.forEach((nom, nomIdx) => {
+          if (nomIdx > 0) {
+            const sepRow = rantingSheet.addRow(['', '', '', '', '', '', '', '', '', '']);
+            sepRow.height = 14;
+          }
+
+          // BARISAN PERTAMA: NAMA PENGUSUL
+          const pengusulParts = [
+            `NAMA PENGUSUL: ${nom.pengusulNama || nom.nominatorName || '-'}`,
+            nom.pengusulJabatan ? `JABATAN: ${nom.pengusulJabatan}` : '',
+            nom.pengusulDomisili ? `DOMISILI: ${nom.pengusulDomisili}` : '',
+            nom.pengusulAlamat ? `ALAMAT: ${nom.pengusulAlamat}` : '',
+            nom.pengusulPhone ? `NO. HP / WA: ${nom.pengusulPhone}` : '',
+            `STATUS: ${nom.status || 'Penilaian'}`,
+          ].filter(Boolean);
+
+          const pengusulRow = rantingSheet.addRow([pengusulParts.join('   |   '), '', '', '', '', '', '', '', '', '']);
+          const pRowNum = pengusulRow.number;
+          rantingSheet.mergeCells(pRowNum, 1, pRowNum, 10);
+          pengusulRow.height = 30;
+          pengusulRow.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+          pengusulRow.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+          for (let c = 1; c <= 10; c++) {
+            const cell = pengusulRow.getCell(c);
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF065F46' } }; // Deep Emerald
+            cell.border = {
+              top: { style: 'medium', color: { argb: 'FF065F46' } },
+              left: { style: 'thin', color: { argb: 'FF065F46' } },
+              bottom: { style: 'thin', color: { argb: 'FF065F46' } },
+              right: { style: 'thin', color: { argb: 'FF065F46' } },
+            };
+          }
+
+          // BARISAN KEDUA: HEADER KOLOM
+          const colHeaderRow = rantingSheet.addRow([
+            'NO',
+            'ID PPS / PERSONALIA',
+            'NAMA RANTING',
+            'DOM / ALAMAT',
+            'JABATAN',
+            'KELAS / TINGKAT',
+            'NO. WATSAP',
+            'KRITERIA YANG DICENTANG',
+            'ALASAN',
+            'LAIN-LAIN',
+          ]);
+          colHeaderRow.height = 28;
+          colHeaderRow.font = { name: 'Calibri', size: 10.5, bold: true, color: { argb: 'FFFFFFFF' } };
+          colHeaderRow.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+          for (let c = 1; c <= 10; c++) {
+            const cell = colHeaderRow.getCell(c);
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF334155' } };
+            cell.border = {
+              top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+              left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+              bottom: { style: 'medium', color: { argb: 'FF0F172A' } },
+              right: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            };
+          }
+
+          // BARISAN KE BAWAH: DATA RANTING YANG DIUSULKAN
+          const rawLainLain = nom.lainLainNote && nom.lainLainNote.trim() ? nom.lainLainNote.trim() : (nom.alasanLain && nom.alasanLain !== nom.justification ? nom.alasanLain.trim() : '');
+          const domAlamatStr = nom.domisili ? `[${nom.candidateDomisiliType || 'PPS'}] ${nom.domisili} - ${nom.alamat || ''}` : (nom.alamat || '-');
+
+          const dataRow = rantingSheet.addRow([
+            String(nomIdx + 1).padStart(2, '0'),
+            nom.idPps || nom.nipNik || '-',
+            nom.candidateName || '-',
+            domAlamatStr,
+            nom.department || nom.position || '-',
+            [nom.kelas, nom.tingkat].filter(Boolean).join(' / ') || '-',
+            nom.phone || '-',
+            formatRantingAllCriteriaExport(nom.evaluationChecklist),
+            nom.justification || nom.alasanLain || '-',
+            rawLainLain ? rawLainLain : '-',
+          ]);
+
+          styleDataRow(dataRow, nomIdx % 2 === 1);
+          dataRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+          dataRow.getCell(2).alignment = { vertical: 'middle', horizontal: 'center' };
+          dataRow.getCell(3).font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF1E293B' } };
+          dataRow.getCell(7).alignment = { vertical: 'middle', horizontal: 'center' };
+        });
+      }
+
+      // 2. SHEET KHIDMAH (GURU)
+      // Format Rapi: Barisan pertama adalah nama pengusul, barisan kedua kolom tabel, identitas 01-05 urut ke bawah bukan kesamping
+      const guruData = dataToExport.filter(
+        (n) => n.categoryId === 'cat-2' || isGuruCategoryItem(n.categoryId, categories.find((c) => c.id === n.categoryId)?.title)
+      );
+      const guruSheet = workbook.addWorksheet('Khidmah Guru');
+
+      guruSheet.getColumn(1).width = 8;   // NO (01 s/d 05)
+      guruSheet.getColumn(2).width = 22;  // ID PERSONALIA
+      guruSheet.getColumn(3).width = 32;  // NAMA GURU
+      guruSheet.getColumn(4).width = 34;  // DOM / ALAMAT
+      guruSheet.getColumn(5).width = 26;  // JABATAN
+      guruSheet.getColumn(6).width = 56;  // KRITERIA YANG DICENTANG
+      guruSheet.getColumn(7).width = 32;  // LAIN-LAIN
+
+      if (guruData.length === 0) {
+        const emptyPengusulRow = guruSheet.addRow([
+          'NAMA PENGUSUL: (Belum ada data pengusulan khidmah guru tercatat)',
+          '', '', '', '', '', ''
+        ]);
+        guruSheet.mergeCells(emptyPengusulRow.number, 1, emptyPengusulRow.number, 7);
+        emptyPengusulRow.height = 30;
+        emptyPengusulRow.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+        emptyPengusulRow.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+        for (let c = 1; c <= 7; c++) {
+          emptyPengusulRow.getCell(c).fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FF1E3A8A' },
+          };
+        }
+
+        const colHeaderRow = guruSheet.addRow([
+          'NO',
+          'ID PERSONALIA',
+          'NAMA GURU',
+          'DOM / ALAMAT',
+          'JABATAN',
+          'KRITERIA YANG DICENTANG',
+          'LAIN-LAIN',
+        ]);
+        colHeaderRow.height = 28;
+        colHeaderRow.font = { name: 'Calibri', size: 10.5, bold: true, color: { argb: 'FFFFFFFF' } };
+        colHeaderRow.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+        for (let c = 1; c <= 7; c++) {
+          colHeaderRow.getCell(c).fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FF334155' },
+          };
+        }
+      } else {
+        guruData.forEach((nom, nomIdx) => {
+          if (nomIdx > 0) {
+            const sepRow = guruSheet.addRow(['', '', '', '', '', '', '']);
+            sepRow.height = 14;
+          }
+
+          // BARISAN PERTAMA: NAMA PENGUSUL
+          const pengusulParts = [
+            `NAMA PENGUSUL: ${nom.pengusulNama || nom.nominatorName || '-'}`,
+            nom.pengusulJabatan ? `JABATAN: ${nom.pengusulJabatan}` : '',
+            nom.pengusulDomisili ? `DOMISILI: ${nom.pengusulDomisili}` : '',
+            nom.pengusulAlamat ? `ALAMAT: ${nom.pengusulAlamat}` : '',
+            nom.pengusulPhone ? `NO. HP / WA: ${nom.pengusulPhone}` : '',
+            `STATUS: ${nom.status || 'Penilaian'}`,
+          ].filter(Boolean);
+
+          const pengusulRow = guruSheet.addRow([
+            pengusulParts.join('   |   '),
+            '', '', '', '', '', ''
+          ]);
+          const pRowNum = pengusulRow.number;
+          guruSheet.mergeCells(pRowNum, 1, pRowNum, 7);
+          pengusulRow.height = 30;
+          pengusulRow.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+          pengusulRow.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+          for (let c = 1; c <= 7; c++) {
+            const cell = pengusulRow.getCell(c);
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: 'FF1E3A8A' }, // Deep Navy Blue
+            };
+            cell.border = {
+              top: { style: 'medium', color: { argb: 'FF1E3A8A' } },
+              left: { style: 'thin', color: { argb: 'FF1E3A8A' } },
+              bottom: { style: 'thin', color: { argb: 'FF1E3A8A' } },
+              right: { style: 'thin', color: { argb: 'FF1E3A8A' } },
+            };
+          }
+
+          // BARISAN KEDUA: KOLOM NAMA YANG DIUSULKAN
+          const colHeaderRow = guruSheet.addRow([
+            'NO',
+            'ID PERSONALIA',
+            'NAMA GURU',
+            'DOM / ALAMAT',
+            'JABATAN',
+            'KRITERIA YANG DICENTANG',
+            'LAIN-LAIN',
+          ]);
+          colHeaderRow.height = 28;
+          colHeaderRow.font = { name: 'Calibri', size: 10.5, bold: true, color: { argb: 'FFFFFFFF' } };
+          colHeaderRow.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+          for (let c = 1; c <= 7; c++) {
+            const cell = colHeaderRow.getCell(c);
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: 'FF334155' },
+            };
+            cell.border = {
+              top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+              left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+              bottom: { style: 'medium', color: { argb: 'FF0F172A' } },
+              right: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            };
+          }
+
+          // BARISAN KE BAWAH: IDENTITAS 01 S/D 05 SECARA BERURUTAN KE BAWAH
+          const gList = nom.guruIdentitas || [];
+          for (let gIdx = 0; gIdx < 5; gIdx++) {
+            const numStr = String(gIdx + 1).padStart(2, '0');
+            const gItem = gList[gIdx] || (gIdx === 0 ? {
+              idPersonalia: nom.idPps || nom.nipNik || '',
+              nama: nom.candidateName || '',
+              domisiliAlamat: nom.alamat || nom.domisili || '',
+              jabatan: nom.department || nom.position || '',
+              checklist: nom.evaluationChecklist || {},
+              lainLainNote: nom.lainLainNote || '',
+            } : null);
+
+            // Seluruh kriteria yang dicentang di aplikasi tercatat rapi
+            const formattedKriteria = formatGuruCriteriaExport(
+              gItem?.checklist || (gIdx === 0 && !gItem ? nom.evaluationChecklist : undefined)
+            );
+
+            // Kolom Lain-lain (jika ada isinya di aplikasi maka masuk di excel)
+            const rawLainLain = (gItem?.lainLainNote && gItem.lainLainNote.trim())
+              ? gItem.lainLainNote.trim()
+              : (gIdx === 0 && nom.lainLainNote && nom.lainLainNote.trim())
+                ? nom.lainLainNote.trim()
+                : (gIdx === 0 && nom.justification && !nom.justification.includes('Diusulkan secara resmi') ? nom.justification.trim() : '');
+
+            const dataRow = guruSheet.addRow([
+              numStr,
+              gItem?.idPersonalia || '-',
+              gItem?.nama || '-',
+              gItem?.domisiliAlamat || '-',
+              gItem?.jabatan || '-',
+              formattedKriteria,
+              rawLainLain ? rawLainLain : '-',
+            ]);
+
+            styleDataRow(dataRow, gIdx % 2 === 1);
+            dataRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+            dataRow.getCell(2).alignment = { vertical: 'middle', horizontal: 'center' };
+            dataRow.getCell(3).font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF1E293B' } };
+          }
+        });
+      }
+
+      // 3. SHEET KHIDMAH (ALUMNI)
+      // Format Standar Rapi: Barisan pertama adalah nama pengusul, barisan kedua kolom tabel, data urut ke bawah
+      const alumniData = dataToExport.filter(
+        (n) => n.categoryId === 'cat-3' || toSafeLower(categories.find((c) => c.id === n.categoryId)?.title).includes('alumni')
+      );
+      const alumniSheet = workbook.addWorksheet('Khidmah Alumni');
+      alumniSheet.getColumn(1).width = 8;   // NO
+      alumniSheet.getColumn(2).width = 20;  // ID PPS / PERSONALIA
+      alumniSheet.getColumn(3).width = 30;  // NAMA CALON (ALUMNI)
+      alumniSheet.getColumn(4).width = 36;  // DOM / ALAMAT
+      alumniSheet.getColumn(5).width = 26;  // JABATAN
+      alumniSheet.getColumn(6).width = 18;  // NO. WHATSAPP
+      alumniSheet.getColumn(7).width = 54;  // KRITERIA & ALASAN RESMI PENILAIAN
+      alumniSheet.getColumn(8).width = 34;  // ALASAN LAIN / JUSTIFIKASI
+      alumniSheet.getColumn(9).width = 28;  // LAIN-LAIN
+
+      if (alumniData.length === 0) {
+        const emptyRow = alumniSheet.addRow(['NAMA PENGUSUL: (Belum ada data pengusulan khidmah alumni tercatat)', '', '', '', '', '', '', '', '']);
+        alumniSheet.mergeCells(emptyRow.number, 1, emptyRow.number, 9);
+        emptyRow.height = 30;
+        emptyRow.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+        emptyRow.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+        for (let c = 1; c <= 9; c++) {
+          emptyRow.getCell(c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF115E59' } };
+        }
+
+        const hRow = alumniSheet.addRow([
+          'NO', 'ID PPS / PERSONALIA', 'NAMA CALON (ALUMNI)', 'DOM / ALAMAT', 'JABATAN', 'NO. WHATSAPP', 'KRITERIA & ALASAN RESMI PENILAIAN', 'ALASAN LAIN / JUSTIFIKASI', 'LAIN-LAIN'
+        ]);
+        hRow.height = 28;
+        hRow.font = { name: 'Calibri', size: 10.5, bold: true, color: { argb: 'FFFFFFFF' } };
+        hRow.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+        for (let c = 1; c <= 9; c++) {
+          hRow.getCell(c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF334155' } };
+        }
+      } else {
+        alumniData.forEach((nom, nomIdx) => {
+          if (nomIdx > 0) {
+            const sepRow = alumniSheet.addRow(['', '', '', '', '', '', '', '', '']);
+            sepRow.height = 14;
+          }
+
+          // BARISAN PERTAMA: NAMA PENGUSUL
+          const pengusulParts = [
+            `NAMA PENGUSUL: ${nom.pengusulNama || nom.nominatorName || '-'}`,
+            nom.pengusulJabatan ? `JABATAN: ${nom.pengusulJabatan}` : '',
+            nom.pengusulDomisili ? `DOMISILI: ${nom.pengusulDomisili}` : '',
+            nom.pengusulAlamat ? `ALAMAT: ${nom.pengusulAlamat}` : '',
+            nom.pengusulPhone ? `NO. HP / WA: ${nom.pengusulPhone}` : '',
+            `STATUS: ${nom.status || 'Penilaian'}`,
+          ].filter(Boolean);
+
+          const pengusulRow = alumniSheet.addRow([pengusulParts.join('   |   '), '', '', '', '', '', '', '', '']);
+          const pRowNum = pengusulRow.number;
+          alumniSheet.mergeCells(pRowNum, 1, pRowNum, 9);
+          pengusulRow.height = 30;
+          pengusulRow.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+          pengusulRow.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+          for (let c = 1; c <= 9; c++) {
+            const cell = pengusulRow.getCell(c);
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF115E59' } }; // Deep Teal
+            cell.border = {
+              top: { style: 'medium', color: { argb: 'FF115E59' } },
+              left: { style: 'thin', color: { argb: 'FF115E59' } },
+              bottom: { style: 'thin', color: { argb: 'FF115E59' } },
+              right: { style: 'thin', color: { argb: 'FF115E59' } },
+            };
+          }
+
+          // BARISAN KEDUA: HEADER KOLOM
+          const colHeaderRow = alumniSheet.addRow([
+            'NO',
+            'ID PPS / PERSONALIA',
+            'NAMA CALON (ALUMNI)',
+            'DOM / ALAMAT',
+            'JABATAN',
+            'NO. WHATSAPP',
+            'KRITERIA & ALASAN RESMI PENILAIAN',
+            'ALASAN LAIN / JUSTIFIKASI',
+            'LAIN-LAIN',
+          ]);
+          colHeaderRow.height = 28;
+          colHeaderRow.font = { name: 'Calibri', size: 10.5, bold: true, color: { argb: 'FFFFFFFF' } };
+          colHeaderRow.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+          for (let c = 1; c <= 9; c++) {
+            const cell = colHeaderRow.getCell(c);
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF334155' } };
+            cell.border = {
+              top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+              left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+              bottom: { style: 'medium', color: { argb: 'FF0F172A' } },
+              right: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            };
+          }
+
+          // BARISAN KE BAWAH: DATA ALUMNI YANG DIUSULKAN
+          const rawLainLain = nom.lainLainNote && nom.lainLainNote.trim() ? nom.lainLainNote.trim() : '';
+
+          const dataRow = alumniSheet.addRow([
+            String(nomIdx + 1).padStart(2, '0'),
+            nom.idPps || nom.nipNik || '-',
+            nom.candidateName || '-',
+            nom.alamat || nom.domisili || '-',
+            nom.department || nom.position || '-',
+            nom.phone || '-',
+            formatAlumniCriteriaExport(nom.evaluationChecklist, nom.alumniCriteriaReasons),
+            nom.justification || nom.alasanLain || '-',
+            rawLainLain ? rawLainLain : '-',
+          ]);
+
+          styleDataRow(dataRow, nomIdx % 2 === 1);
+          dataRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+          dataRow.getCell(2).alignment = { vertical: 'middle', horizontal: 'center' };
+          dataRow.getCell(3).font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF1E293B' } };
+          dataRow.getCell(6).alignment = { vertical: 'middle', horizontal: 'center' };
+        });
+      }
+
+      // 4. SHEET KHIDMAH (PENGURUS)
+      // Format Standar Rapi: Barisan pertama adalah nama pengusul, barisan kedua kolom tabel, data urut ke bawah
+      const pengurusData = dataToExport.filter(
+        (n) => n.categoryId === 'cat-4' || isPengurusCategoryItem(n.categoryId, categories.find((c) => c.id === n.categoryId)?.title)
+      );
+      const pengurusSheet = workbook.addWorksheet('Khidmah Pengurus');
+      pengurusSheet.getColumn(1).width = 8;   // NO
+      pengurusSheet.getColumn(2).width = 20;  // ID PPS / PERSONALIA
+      pengurusSheet.getColumn(3).width = 32;  // NAMA PENGURUS
+      pengurusSheet.getColumn(4).width = 36;  // DOM / ALAMAT
+      pengurusSheet.getColumn(5).width = 26;  // JABATAN
+      pengurusSheet.getColumn(6).width = 18;  // NO. WHATSAPP
+      pengurusSheet.getColumn(7).width = 54;  // KRITERIA YANG DICENTANG
+      pengurusSheet.getColumn(8).width = 34;  // ALASAN / JUSTIFIKASI
+      pengurusSheet.getColumn(9).width = 28;  // LAIN-LAIN
+
+      if (pengurusData.length === 0) {
+        const emptyRow = pengurusSheet.addRow(['NAMA PENGUSUL: (Belum ada data pengusulan khidmah pengurus tercatat)', '', '', '', '', '', '', '', '']);
+        pengurusSheet.mergeCells(emptyRow.number, 1, emptyRow.number, 9);
+        emptyRow.height = 30;
+        emptyRow.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+        emptyRow.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+        for (let c = 1; c <= 9; c++) {
+          emptyRow.getCell(c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3730A3' } };
+        }
+
+        const hRow = pengurusSheet.addRow([
+          'NO', 'ID PPS / PERSONALIA', 'NAMA PENGURUS', 'DOM / ALAMAT', 'JABATAN', 'NO. WHATSAPP', 'KRITERIA YANG DICENTANG', 'ALASAN / JUSTIFIKASI', 'LAIN-LAIN'
+        ]);
+        hRow.height = 28;
+        hRow.font = { name: 'Calibri', size: 10.5, bold: true, color: { argb: 'FFFFFFFF' } };
+        hRow.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+        for (let c = 1; c <= 9; c++) {
+          hRow.getCell(c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF334155' } };
+        }
+      } else {
+        pengurusData.forEach((nom, nomIdx) => {
+          if (nomIdx > 0) {
+            const sepRow = pengurusSheet.addRow(['', '', '', '', '', '', '', '', '']);
+            sepRow.height = 14;
+          }
+
+          // BARISAN PERTAMA: NAMA PENGUSUL
+          const pengusulParts = [
+            `NAMA PENGUSUL: ${nom.pengusulNama || nom.nominatorName || '-'}`,
+            nom.pengusulJabatan ? `JABATAN: ${nom.pengusulJabatan}` : '',
+            nom.pengusulDomisili ? `DOMISILI: ${nom.pengusulDomisili}` : '',
+            nom.pengusulAlamat ? `ALAMAT: ${nom.pengusulAlamat}` : '',
+            nom.pengusulPhone ? `NO. HP / WA: ${nom.pengusulPhone}` : '',
+            `STATUS: ${nom.status || 'Penilaian'}`,
+          ].filter(Boolean);
+
+          const pengusulRow = pengurusSheet.addRow([pengusulParts.join('   |   '), '', '', '', '', '', '', '', '']);
+          const pRowNum = pengusulRow.number;
+          pengurusSheet.mergeCells(pRowNum, 1, pRowNum, 9);
+          pengusulRow.height = 30;
+          pengusulRow.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+          pengusulRow.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+          for (let c = 1; c <= 9; c++) {
+            const cell = pengusulRow.getCell(c);
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3730A3' } }; // Deep Indigo
+            cell.border = {
+              top: { style: 'medium', color: { argb: 'FF3730A3' } },
+              left: { style: 'thin', color: { argb: 'FF3730A3' } },
+              bottom: { style: 'thin', color: { argb: 'FF3730A3' } },
+              right: { style: 'thin', color: { argb: 'FF3730A3' } },
+            };
+          }
+
+          // BARISAN KEDUA: HEADER KOLOM
+          const colHeaderRow = pengurusSheet.addRow([
+            'NO',
+            'ID PPS / PERSONALIA',
+            'NAMA PENGURUS',
+            'DOM / ALAMAT',
+            'JABATAN',
+            'NO. WHATSAPP',
+            'KRITERIA YANG DICENTANG',
+            'ALASAN / JUSTIFIKASI',
+            'LAIN-LAIN',
+          ]);
+          colHeaderRow.height = 28;
+          colHeaderRow.font = { name: 'Calibri', size: 10.5, bold: true, color: { argb: 'FFFFFFFF' } };
+          colHeaderRow.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+          for (let c = 1; c <= 9; c++) {
+            const cell = colHeaderRow.getCell(c);
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF334155' } };
+            cell.border = {
+              top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+              left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+              bottom: { style: 'medium', color: { argb: 'FF0F172A' } },
+              right: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            };
+          }
+
+          // BARISAN KE BAWAH: DATA PENGURUS YANG DIUSULKAN
+          const rawLainLain = nom.lainLainNote && nom.lainLainNote.trim() ? nom.lainLainNote.trim() : '';
+          const domAlamatStr = nom.domisili ? `[${nom.domisili}] ${nom.alamat || '-'}` : (nom.alamat || '-');
+
+          const dataRow = pengurusSheet.addRow([
+            String(nomIdx + 1).padStart(2, '0'),
+            nom.idPps || nom.nipNik || '-',
+            nom.candidateName || '-',
+            domAlamatStr,
+            nom.position || nom.department || '-',
+            nom.phone || '-',
+            formatPengurusCriteriaExport(nom.evaluationChecklist),
+            nom.justification || nom.alasanLain || '-',
+            rawLainLain ? rawLainLain : '-',
+          ]);
+
+          styleDataRow(dataRow, nomIdx % 2 === 1);
+          dataRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+          dataRow.getCell(2).alignment = { vertical: 'middle', horizontal: 'center' };
+          dataRow.getCell(3).font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF1E293B' } };
+          dataRow.getCell(6).alignment = { vertical: 'middle', horizontal: 'center' };
+        });
+      }
+
+      // 5. SHEET SANTRI TERBAIK
+      // Format Standar Rapi: Barisan pertama adalah nama pengusul, barisan kedua kolom tabel, figur 01 dan 02 urut ke bawah bukan kesamping
+      const santriData = dataToExport.filter(
+        (n) => n.categoryId === 'cat-5' || toSafeLower(categories.find((c) => c.id === n.categoryId)?.title).includes('santri')
+      );
+      const santriSheet = workbook.addWorksheet('Santri Terbaik');
+      santriSheet.getColumn(1).width = 8;   // NO (01, 02)
+      santriSheet.getColumn(2).width = 20;  // ID PERSONALIA
+      santriSheet.getColumn(3).width = 30;  // NAMA SANTRI
+      santriSheet.getColumn(4).width = 32;  // DOM / ALAMAT
+      santriSheet.getColumn(5).width = 14;  // JENJANG
+      santriSheet.getColumn(6).width = 22;  // NILAI SEMESTER I 'ALY
+      santriSheet.getColumn(7).width = 16;  // NILAI IMDA I
+      santriSheet.getColumn(8).width = 16;  // NILAI IMDA II
+      santriSheet.getColumn(9).width = 18;  // PRESENSI HADIR
+      santriSheet.getColumn(10).width = 48; // KRITERIA YANG DICENTANG
+      santriSheet.getColumn(11).width = 36; // ALASAN PENILAIAN RESMI
+      santriSheet.getColumn(12).width = 28; // LAIN-LAIN
+
+      if (santriData.length === 0) {
+        const emptyRow = santriSheet.addRow(['NAMA PENGUSUL: (Belum ada data pengusulan santri terbaik tercatat)', '', '', '', '', '', '', '', '', '', '', '']);
+        santriSheet.mergeCells(emptyRow.number, 1, emptyRow.number, 12);
+        emptyRow.height = 30;
+        emptyRow.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+        emptyRow.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+        for (let c = 1; c <= 12; c++) {
+          emptyRow.getCell(c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFB45309' } };
+        }
+
+        const hRow = santriSheet.addRow([
+          'NO', 'ID PERSONALIA', 'NAMA SANTRI', 'DOM / ALAMAT', 'JENJANG', "NILAI SEMESTER I 'ALY", 'NILAI IMDA I', 'NILAI IMDA II', 'PRESENSI HADIR', 'KRITERIA YANG DICENTANG', 'ALASAN PENILAIAN RESMI', 'LAIN-LAIN'
+        ]);
+        hRow.height = 28;
+        hRow.font = { name: 'Calibri', size: 10.5, bold: true, color: { argb: 'FFFFFFFF' } };
+        hRow.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+        for (let c = 1; c <= 12; c++) {
+          hRow.getCell(c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF334155' } };
+        }
+      } else {
+        santriData.forEach((nom, nomIdx) => {
+          if (nomIdx > 0) {
+            const sepRow = santriSheet.addRow(['', '', '', '', '', '', '', '', '', '', '', '']);
+            sepRow.height = 14;
+          }
+
+          // BARISAN PERTAMA: NAMA PENGUSUL
+          const pengusulParts = [
+            `NAMA PENGUSUL: ${nom.pengusulNama || nom.nominatorName || '-'}`,
+            'KATEGORI: Penghargaan Santri Terbaik',
+            nom.pengusulJabatan ? `JABATAN: ${nom.pengusulJabatan}` : '',
+            nom.pengusulDomisili ? `DOMISILI: ${nom.pengusulDomisili}` : '',
+            nom.pengusulAlamat ? `ALAMAT: ${nom.pengusulAlamat}` : '',
+            nom.pengusulPhone ? `NO. HP / WA: ${nom.pengusulPhone}` : '',
+            `STATUS: ${nom.status || 'Penilaian'}`,
+          ].filter(Boolean);
+
+          const pengusulRow = santriSheet.addRow([pengusulParts.join('   |   '), '', '', '', '', '', '', '', '', '', '', '']);
+          const pRowNum = pengusulRow.number;
+          santriSheet.mergeCells(pRowNum, 1, pRowNum, 12);
+          pengusulRow.height = 30;
+          pengusulRow.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+          pengusulRow.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+          for (let c = 1; c <= 12; c++) {
+            const cell = pengusulRow.getCell(c);
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFB45309' } }; // Warm Amber
+            cell.border = {
+              top: { style: 'medium', color: { argb: 'FFB45309' } },
+              left: { style: 'thin', color: { argb: 'FFB45309' } },
+              bottom: { style: 'thin', color: { argb: 'FFB45309' } },
+              right: { style: 'thin', color: { argb: 'FFB45309' } },
+            };
+          }
+
+          // BARISAN KEDUA: HEADER KOLOM
+          const colHeaderRow = santriSheet.addRow([
+            'NO',
+            'ID PERSONALIA',
+            'NAMA SANTRI',
+            'DOM / ALAMAT',
+            'JENJANG',
+            "NILAI SEMESTER I 'ALY",
+            'NILAI IMDA I',
+            'NILAI IMDA II',
+            'PRESENSI HADIR',
+            'KRITERIA YANG DICENTANG',
+            'ALASAN PENILAIAN RESMI',
+            'LAIN-LAIN',
+          ]);
+          colHeaderRow.height = 28;
+          colHeaderRow.font = { name: 'Calibri', size: 10.5, bold: true, color: { argb: 'FFFFFFFF' } };
+          colHeaderRow.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+          for (let c = 1; c <= 12; c++) {
+            const cell = colHeaderRow.getCell(c);
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF334155' } };
+            cell.border = {
+              top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+              left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+              bottom: { style: 'medium', color: { argb: 'FF0F172A' } },
+              right: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            };
+          }
+
+          // BARISAN KE BAWAH: FIGUR 01 DAN FIGUR 02 URUT KE BAWAH
+          const sList = nom.santriMuridIdentitas || [];
+          for (let fIdx = 0; fIdx < 2; fIdx++) {
+            const numStr = String(fIdx + 1).padStart(2, '0');
+            const sItem = sList[fIdx] || (fIdx === 0 ? {
+              idPersonalia: nom.idPps || nom.nipNik || '',
+              nama: nom.candidateName || '',
+              domisiliAlamat: nom.alamat || nom.domisili || '',
+              jenjangTingkat: 'Aliyah',
+              nilaiSemester1Aly: '',
+              nilaiImda1: '',
+              nilaiImda2: '',
+              presensiKehadiran: '',
+              checklist: nom.evaluationChecklist || {},
+              alasanPenilaian: nom.justification || '',
+              lainLainNote: nom.lainLainNote || '',
+            } : null);
+
+            const isAly = (sItem?.jenjangTingkat || 'Aliyah') === 'Aliyah';
+            const kriteriaText = formatSantriCriteriaExport(sItem?.checklist || (fIdx === 0 ? nom.evaluationChecklist : undefined));
+
+            const rawLainLain = (sItem?.lainLainNote && sItem.lainLainNote.trim())
+              ? sItem.lainLainNote.trim()
+              : (fIdx === 0 && nom.lainLainNote && nom.lainLainNote.trim())
+                ? nom.lainLainNote.trim()
+                : '';
+
+            const dataRow = santriSheet.addRow([
+              numStr,
+              sItem?.idPersonalia || '-',
+              sItem?.nama || '-',
+              sItem?.domisiliAlamat || '-',
+              sItem?.jenjangTingkat || 'Aliyah',
+              isAly ? (sItem?.nilaiSemester1Aly || '-') : 'N/A (Bukan Aliyah)',
+              !isAly ? (sItem?.nilaiImda1 || '-') : "N/A (Khusus Non-'Aly)",
+              !isAly ? (sItem?.nilaiImda2 || '-') : "N/A (Khusus Non-'Aly)",
+              sItem?.presensiKehadiran || '-',
+              kriteriaText,
+              sItem?.alasanPenilaian || (fIdx === 0 ? nom.justification : '') || '-',
+              rawLainLain ? rawLainLain : '-',
+            ]);
+
+            styleDataRow(dataRow, fIdx % 2 === 1);
+            dataRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+            dataRow.getCell(2).alignment = { vertical: 'middle', horizontal: 'center' };
+            dataRow.getCell(3).font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF1E293B' } };
+            dataRow.getCell(5).alignment = { vertical: 'middle', horizontal: 'center' };
+            dataRow.getCell(6).alignment = { vertical: 'middle', horizontal: 'center' };
+            dataRow.getCell(7).alignment = { vertical: 'middle', horizontal: 'center' };
+            dataRow.getCell(8).alignment = { vertical: 'middle', horizontal: 'center' };
+            dataRow.getCell(9).alignment = { vertical: 'middle', horizontal: 'center' };
+          }
+        });
+      }
+
+      // 6. SHEET MURID TERBAIK
+      // Format Standar Rapi: Barisan pertama adalah nama pengusul, barisan kedua kolom tabel, figur 01 dan 02 urut ke bawah bukan kesamping
+      const muridData = dataToExport.filter(
+        (n) => n.categoryId === 'cat-6' || toSafeLower(categories.find((c) => c.id === n.categoryId)?.title).includes('murid')
+      );
+      const muridSheet = workbook.addWorksheet('Murid Terbaik');
+      muridSheet.getColumn(1).width = 8;   // NO (01, 02)
+      muridSheet.getColumn(2).width = 20;  // ID PERSONALIA
+      muridSheet.getColumn(3).width = 30;  // NAMA MURID
+      muridSheet.getColumn(4).width = 32;  // DOM / ALAMAT
+      muridSheet.getColumn(5).width = 14;  // JENJANG
+      muridSheet.getColumn(6).width = 22;  // NILAI SEMESTER I 'ALY
+      muridSheet.getColumn(7).width = 16;  // NILAI IMDA I
+      muridSheet.getColumn(8).width = 16;  // NILAI IMDA II
+      muridSheet.getColumn(9).width = 18;  // PRESENSI HADIR
+      muridSheet.getColumn(10).width = 48; // KRITERIA YANG DICENTANG
+      muridSheet.getColumn(11).width = 36; // ALASAN PENILAIAN RESMI
+      muridSheet.getColumn(12).width = 28; // LAIN-LAIN
+
+      if (muridData.length === 0) {
+        const emptyRow = muridSheet.addRow(['NAMA PENGUSUL: (Belum ada data pengusulan murid terbaik tercatat)', '', '', '', '', '', '', '', '', '', '', '']);
+        muridSheet.mergeCells(emptyRow.number, 1, emptyRow.number, 12);
+        emptyRow.height = 30;
+        emptyRow.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+        emptyRow.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+        for (let c = 1; c <= 12; c++) {
+          emptyRow.getCell(c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFBE123C' } };
+        }
+
+        const hRow = muridSheet.addRow([
+          'NO', 'ID PERSONALIA', 'NAMA MURID', 'DOM / ALAMAT', 'JENJANG', "NILAI SEMESTER I 'ALY", 'NILAI IMDA I', 'NILAI IMDA II', 'PRESENSI HADIR', 'KRITERIA YANG DICENTANG', 'ALASAN PENILAIAN RESMI', 'LAIN-LAIN'
+        ]);
+        hRow.height = 28;
+        hRow.font = { name: 'Calibri', size: 10.5, bold: true, color: { argb: 'FFFFFFFF' } };
+        hRow.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+        for (let c = 1; c <= 12; c++) {
+          hRow.getCell(c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF334155' } };
+        }
+      } else {
+        muridData.forEach((nom, nomIdx) => {
+          if (nomIdx > 0) {
+            const sepRow = muridSheet.addRow(['', '', '', '', '', '', '', '', '', '', '', '']);
+            sepRow.height = 14;
+          }
+
+          // BARISAN PERTAMA: NAMA PENGUSUL
+          const pengusulParts = [
+            `NAMA PENGUSUL: ${nom.pengusulNama || nom.nominatorName || '-'}`,
+            'KATEGORI: Penghargaan Murid Terbaik',
+            nom.pengusulJabatan ? `JABATAN: ${nom.pengusulJabatan}` : '',
+            nom.pengusulDomisili ? `DOMISILI: ${nom.pengusulDomisili}` : '',
+            nom.pengusulAlamat ? `ALAMAT: ${nom.pengusulAlamat}` : '',
+            nom.pengusulPhone ? `NO. HP / WA: ${nom.pengusulPhone}` : '',
+            `STATUS: ${nom.status || 'Penilaian'}`,
+          ].filter(Boolean);
+
+          const pengusulRow = muridSheet.addRow([pengusulParts.join('   |   '), '', '', '', '', '', '', '', '', '', '', '']);
+          const pRowNum = pengusulRow.number;
+          muridSheet.mergeCells(pRowNum, 1, pRowNum, 12);
+          pengusulRow.height = 30;
+          pengusulRow.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+          pengusulRow.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+          for (let c = 1; c <= 12; c++) {
+            const cell = pengusulRow.getCell(c);
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFBE123C' } }; // Deep Rose
+            cell.border = {
+              top: { style: 'medium', color: { argb: 'FFBE123C' } },
+              left: { style: 'thin', color: { argb: 'FFBE123C' } },
+              bottom: { style: 'thin', color: { argb: 'FFBE123C' } },
+              right: { style: 'thin', color: { argb: 'FFBE123C' } },
+            };
+          }
+
+          // BARISAN KEDUA: HEADER KOLOM
+          const colHeaderRow = muridSheet.addRow([
+            'NO',
+            'ID PERSONALIA',
+            'NAMA MURID',
+            'DOM / ALAMAT',
+            'JENJANG',
+            "NILAI SEMESTER I 'ALY",
+            'NILAI IMDA I',
+            'NILAI IMDA II',
+            'PRESENSI HADIR',
+            'KRITERIA YANG DICENTANG',
+            'ALASAN PENILAIAN RESMI',
+            'LAIN-LAIN',
+          ]);
+          colHeaderRow.height = 28;
+          colHeaderRow.font = { name: 'Calibri', size: 10.5, bold: true, color: { argb: 'FFFFFFFF' } };
+          colHeaderRow.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+          for (let c = 1; c <= 12; c++) {
+            const cell = colHeaderRow.getCell(c);
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF334155' } };
+            cell.border = {
+              top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+              left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+              bottom: { style: 'medium', color: { argb: 'FF0F172A' } },
+              right: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            };
+          }
+
+          // BARISAN KE BAWAH: FIGUR 01 DAN FIGUR 02 URUT KE BAWAH
+          const sList = nom.santriMuridIdentitas || [];
+          for (let fIdx = 0; fIdx < 2; fIdx++) {
+            const numStr = String(fIdx + 1).padStart(2, '0');
+            const sItem = sList[fIdx] || (fIdx === 0 ? {
+              idPersonalia: nom.idPps || nom.nipNik || '',
+              nama: nom.candidateName || '',
+              domisiliAlamat: nom.alamat || nom.domisili || '',
+              jenjangTingkat: 'Aliyah',
+              nilaiSemester1Aly: '',
+              nilaiImda1: '',
+              nilaiImda2: '',
+              presensiKehadiran: '',
+              checklist: nom.evaluationChecklist || {},
+              alasanPenilaian: nom.justification || '',
+              lainLainNote: nom.lainLainNote || '',
+            } : null);
+
+            const isAly = (sItem?.jenjangTingkat || 'Aliyah') === 'Aliyah';
+            const kriteriaText = formatMuridCriteriaExport(sItem?.checklist || (fIdx === 0 ? nom.evaluationChecklist : undefined));
+
+            const rawLainLain = (sItem?.lainLainNote && sItem.lainLainNote.trim())
+              ? sItem.lainLainNote.trim()
+              : (fIdx === 0 && nom.lainLainNote && nom.lainLainNote.trim())
+                ? nom.lainLainNote.trim()
+                : '';
+
+            const dataRow = muridSheet.addRow([
+              numStr,
+              sItem?.idPersonalia || '-',
+              sItem?.nama || '-',
+              sItem?.domisiliAlamat || '-',
+              sItem?.jenjangTingkat || 'Aliyah',
+              isAly ? (sItem?.nilaiSemester1Aly || '-') : 'N/A (Bukan Aliyah)',
+              !isAly ? (sItem?.nilaiImda1 || '-') : "N/A (Khusus Non-'Aly)",
+              !isAly ? (sItem?.nilaiImda2 || '-') : "N/A (Khusus Non-'Aly)",
+              sItem?.presensiKehadiran || '-',
+              kriteriaText,
+              sItem?.alasanPenilaian || (fIdx === 0 ? nom.justification : '') || '-',
+              rawLainLain ? rawLainLain : '-',
+            ]);
+
+            styleDataRow(dataRow, fIdx % 2 === 1);
+            dataRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+            dataRow.getCell(2).alignment = { vertical: 'middle', horizontal: 'center' };
+            dataRow.getCell(3).font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF1E293B' } };
+            dataRow.getCell(5).alignment = { vertical: 'middle', horizontal: 'center' };
+            dataRow.getCell(6).alignment = { vertical: 'middle', horizontal: 'center' };
+            dataRow.getCell(7).alignment = { vertical: 'middle', horizontal: 'center' };
+            dataRow.getCell(8).alignment = { vertical: 'middle', horizontal: 'center' };
+            dataRow.getCell(9).alignment = { vertical: 'middle', horizontal: 'center' };
+          }
+        });
+      }
+
+      // 7. SHEET MASTER LENGKAP (Semua Peserta)
+      const masterSheet = workbook.addWorksheet('Semua Peserta (Master)');
+      masterSheet.columns = [
         { header: 'NO', key: 'no', width: 6 },
-        { header: 'ID PPS', key: 'idPps', width: 14 },
-        { header: 'NAMA PESERTA', key: 'candidateName', width: 28 },
-        { header: 'NIP / NIK', key: 'nipNik', width: 18 },
-        { header: 'KATEGORI PENGANUGERAHAN', key: 'categoryTitle', width: 30 },
+        { header: 'ID PPS / PERSONALIA', key: 'idPps', width: 20 },
+        { header: 'NAMA PESERTA / FIGUR', key: 'candidateName', width: 30 },
+        { header: 'KATEGORI PENGANUGERAHAN', key: 'categoryTitle', width: 28 },
         { header: 'STATUS', key: 'status', width: 14 },
-        { header: 'SKOR / NILAI', key: 'score', width: 14 },
-        { header: 'JABATAN / POSISI', key: 'position', width: 22 },
-        { header: 'INSTANSI / DEPARTEMEN', key: 'department', width: 24 },
+        { header: 'SKOR', key: 'score', width: 10 },
+        { header: 'JABATAN / POSISI', key: 'position', width: 24 },
         { header: 'DOMISILI', key: 'domisili', width: 18 },
-        { header: 'KELAS', key: 'kelas', width: 12 },
-        { header: 'TINGKAT', key: 'tingkat', width: 12 },
-        { header: 'NO. HANDPHONE / WA', key: 'phone', width: 18 },
-        { header: 'ALAMAT LENGKAP', key: 'alamat', width: 32 },
-        { header: 'KARYA / PRESTASI UTAMA', key: 'achievement', width: 32 },
+        { header: 'KELAS / TINGKAT', key: 'kelasTingkat', width: 18 },
+        { header: 'NO. WHATSAPP', key: 'phone', width: 18 },
+        { header: 'ALAMAT LENGKAP', key: 'alamat', width: 34 },
+        { header: 'PRESTASI / NILAI IMDA', key: 'achievement', width: 32 },
         { header: 'ALASAN / JUSTIFIKASI', key: 'justification', width: 32 },
-        { header: 'PENGUSUL / PANITIA', key: 'nominatorName', width: 22 },
+        { header: 'DATA PENGUSUL', key: 'pengusulInfo', width: 30 },
         { header: 'TANGGAL INPUT', key: 'createdAt', width: 16 },
       ];
-
-      // Styling Header Row
-      const headerRow = worksheet.getRow(1);
-      headerRow.height = 28;
-      headerRow.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
-      headerRow.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FF0F172A' }, // Dark navy slate
-      };
-      headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
-
-      // Determine items to export (use filtered list if filters active, otherwise full list)
-      const dataToExport = filteredNominations.length > 0 ? filteredNominations : nominations;
+      applySheetHeaderStyle(masterSheet.getRow(1), 'FF0F172A'); // Slate Navy
 
       dataToExport.forEach((nom, index) => {
         const categoryObj = categories.find((c) => c.id === nom.categoryId);
@@ -932,7 +2037,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
         if (nom.santriMuridIdentitas && nom.santriMuridIdentitas.some((s) => s.nama || s.idPersonalia)) {
           const smDetails = nom.santriMuridIdentitas
             .filter((s) => s.nama || s.idPersonalia)
-            .map((s, i) => `Figur 0${i + 1}: ${s.nama} (${s.idPersonalia || '-'}) [Dom/Alamat: ${s.domisiliAlamat || '-'}, Imda I: ${s.nilaiImda1 || '-'}, Imda II: ${s.nilaiImda2 || '-'}, Sem 1 'Aly: ${s.nilaiSemester1Aly || '-'}, Presensi: ${s.presensiKehadiran || '-'}]`)
+            .map((s, i) => `Figur 0${i + 1}: ${s.nama} (${s.jenjangTingkat || 'Aliyah'} - ${s.idPersonalia || '-'}) [Presensi: ${s.presensiKehadiran || '-'}]`)
             .join(' | ');
           extraDetails = extraDetails ? `${extraDetails} | ${smDetails}` : smDetails;
         } else if (nom.guruIdentitas && nom.guruIdentitas.some((g) => g.nama || g.idPersonalia)) {
@@ -943,54 +2048,56 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
           extraDetails = extraDetails ? `${extraDetails} | ${gDetails}` : gDetails;
         }
 
-        let extraJustification = nom.justification || '';
-        if (nom.alumniCriteriaReasons && Object.keys(nom.alumniCriteriaReasons).length > 0) {
-          const alumniText = Object.entries(nom.alumniCriteriaReasons)
-            .map(([critId, reason]) => `${critId}: ${reason}`)
-            .join('; ');
-          extraJustification = extraJustification ? `${extraJustification} | Pembuktian: ${alumniText}` : `Pembuktian Alumni: ${alumniText}`;
-        }
+        const pengusulDetail = [
+          nom.pengusulNama || nom.nominatorName || '-',
+          nom.pengusulJabatan ? `(${nom.pengusulJabatan})` : '',
+          nom.pengusulPhone ? `WA: ${nom.pengusulPhone}` : '',
+        ]
+          .filter(Boolean)
+          .join(' ');
 
-        const row = worksheet.addRow({
+        const row = masterSheet.addRow({
           no: index + 1,
-          idPps: nom.idPps || '-',
+          idPps: nom.idPps || nom.nipNik || '-',
           candidateName: nom.candidateName || '-',
-          nipNik: nom.nipNik || '-',
           categoryTitle: catTitle,
           status: nom.status || '-',
           score: nom.score || 0,
-          position: nom.position || '-',
-          department: nom.department || '-',
+          position: nom.position || nom.department || '-',
           domisili: nom.domisili || '-',
-          kelas: nom.kelas || '-',
-          tingkat: nom.tingkat || '-',
+          kelasTingkat: [nom.kelas, nom.tingkat].filter(Boolean).join(' / ') || '-',
           phone: nom.phone || '-',
           alamat: nom.alamat || '-',
           achievement: extraDetails || '-',
-          justification: extraJustification || '-',
-          nominatorName: nom.nominatorName || '-',
+          justification: nom.justification || nom.alasanLain || '-',
+          pengusulInfo: pengusulDetail,
           createdAt: nom.createdAt || '-',
         });
-
-        row.height = 22;
-        row.alignment = { vertical: 'middle', horizontal: 'left' };
-
-        // Alignments for specific columns
+        styleDataRow(row, index % 2 === 1);
         row.getCell('no').alignment = { vertical: 'middle', horizontal: 'center' };
         row.getCell('idPps').alignment = { vertical: 'middle', horizontal: 'center' };
         row.getCell('status').alignment = { vertical: 'middle', horizontal: 'center' };
         row.getCell('score').alignment = { vertical: 'middle', horizontal: 'center' };
         row.getCell('createdAt').alignment = { vertical: 'middle', horizontal: 'center' };
-
-        // Alternating row background
-        if (index % 2 === 1) {
-          row.fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: 'FFF8FAFC' },
-          };
-        }
       });
+
+      // Atur tab aktif Excel sesuai filter kategori yang dipilih pengguna
+      let activeTabIndex = 0;
+      if (selectedCategory === 'cat-1' || selectedCategory.includes('ranting')) {
+        activeTabIndex = 0;
+      } else if (selectedCategory === 'cat-2' || selectedCategory.includes('guru')) {
+        activeTabIndex = 1;
+      } else if (selectedCategory === 'cat-3' || selectedCategory.includes('alumni')) {
+        activeTabIndex = 2;
+      } else if (selectedCategory === 'cat-4' || selectedCategory.includes('pengurus')) {
+        activeTabIndex = 3;
+      } else if (selectedCategory === 'cat-5' || selectedCategory.includes('santri')) {
+        activeTabIndex = 4;
+      } else if (selectedCategory === 'cat-6' || selectedCategory.includes('murid')) {
+        activeTabIndex = 5;
+      }
+
+      workbook.views = [{ x: 0, y: 0, width: 10000, height: 20000, firstSheet: 0, activeTab: activeTabIndex, visibility: 'visible' }];
 
       // Write Buffer and trigger browser download
       const buffer = await workbook.xlsx.writeBuffer();
@@ -1006,20 +2113,17 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
       window.URL.revokeObjectURL(url);
 
       // Trigger CSV export backup & Webhook sync
-      const csvHeaders = ['NO', 'ID PPS', 'NAMA PESERTA', 'NIP/NIK', 'KATEGORI', 'STATUS', 'SKOR', 'JABATAN', 'DEPARTEMEN', 'NO HP', 'PRESTASI', 'PENGUSUL'];
+      const csvHeaders = ['NO', 'ID PPS', 'NAMA PESERTA', 'KATEGORI', 'STATUS', 'SKOR', 'JABATAN', 'NO HP', 'PENGUSUL'];
       const csvRows = dataToExport.map((nom, idx) => [
         idx + 1,
         nom.idPps || '-',
         nom.candidateName,
-        nom.nipNik || '-',
         categories.find((c) => c.id === nom.categoryId)?.title || nom.categoryId,
         nom.status,
         nom.score,
-        nom.position || '-',
-        nom.department || '-',
+        nom.position || nom.department || '-',
         nom.phone || '-',
-        nom.achievement || '-',
-        nom.nominatorName,
+        nom.pengusulNama || nom.nominatorName || '-',
       ]);
       exportToCSV(`Data_Peserta_Nominasi_${dateStr}.csv`, csvHeaders, csvRows);
 
@@ -1045,62 +2149,62 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
         activeTab="nominasi"
       />
 
-      {/* Top Header Box in Milad Sidogiri Clean Style (Khusus Admin) */}
-      {isAdmin && (
-        <div className="bg-white border border-[rgba(36,33,28,0.12)] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Trophy className="w-5 h-5 text-[#8a7c4c]" />
-              <h1 className="text-base font-extrabold text-[#24211c]">
-                Daftar Peserta & Nominasi Penganugerahan
-              </h1>
-              <span className="flex items-center space-x-1 text-[10px] font-bold bg-[#f2eee3] text-[#675c37] border border-[#c3b68b]/40 px-2.5 py-0.5 rounded-full">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#8a7c4c] animate-pulse"></span>
-                <span>Firestore Realtime</span>
-              </span>
-            </div>
-            <p className="text-xs text-[#7c7b77] mt-1">
-              Manajemen data lengkap peserta, penambahan atribut identitas (NIP/NIK, Jabatan, Kontak, Karya), penilaian, hingga penetapan pemenang.
-            </p>
+      {/* Top Header Box in Milad Sidogiri Clean Style (Mendukung Admin & Seluruh 5 Role Akun Petugas) */}
+      <div className="bg-white border border-[rgba(36,33,28,0.12)] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Trophy className="w-5 h-5 text-[#8a7c4c]" />
+            <h1 className="text-base font-extrabold text-[#24211c]">
+              {isAdmin ? "Daftar Peserta & Nominasi Penganugerahan" : `Portal Pengusulan & Penilaian: ${userRoleOption.name}`}
+            </h1>
+            <span className="flex items-center space-x-1 text-[10px] font-bold bg-[#f2eee3] text-[#675c37] border border-[#c3b68b]/40 px-2.5 py-0.5 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#8a7c4c] animate-pulse"></span>
+              <span>{userRoleOption.badge}</span>
+            </span>
           </div>
-
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={handleExportExcel}
-              disabled={isExporting}
-              className="flex items-center justify-center space-x-1.5 bg-white hover:bg-[#f7f6f2] text-[#24211c] border border-[rgba(36,33,28,0.15)] font-bold px-3.5 py-2 rounded-xl shadow-2xs transition text-xs cursor-pointer disabled:opacity-50"
-              title="Ekspor seluruh data peserta ke file Excel (.xlsx)"
-            >
-              {isExporting ? (
-                <Loader2 className="w-4 h-4 animate-spin text-[#8a7c4c]" />
-              ) : (
-                <FileSpreadsheet className="w-4 h-4 text-[#8a7c4c]" />
-              )}
-              <span>{isExporting ? 'Mengekspor...' : 'Ekspor Excel'}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleOpenAdd}
-              className="flex items-center justify-center space-x-1.5 bg-[#8a7c4c] hover:bg-[#675c37] text-white font-bold px-3.5 py-2 rounded-xl shadow-xs transition text-xs cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Tambah Peserta Baru</span>
-            </button>
-          </div>
+          <p className="text-xs text-[#7c7b77] mt-1">
+            {isAdmin
+              ? "Manajemen data lengkap peserta, penambahan atribut identitas (NIP/NIK, Jabatan, Kontak, Karya), penilaian, hingga penetapan pemenang."
+              : `Hak akses penganugerahan khusus: ${userRoleOption.description}.`}
+          </p>
         </div>
-      )}
 
-      {/* Ketentuan dan Syarat Penilaian Nominasi (6 Kategori Resmi Penganugerahan) */}
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={handleExportExcel}
+            disabled={isExporting}
+            className="flex items-center justify-center space-x-1.5 bg-white hover:bg-[#f7f6f2] text-[#24211c] border border-[rgba(36,33,28,0.15)] font-bold px-3.5 py-2 rounded-xl shadow-2xs transition text-xs cursor-pointer disabled:opacity-50"
+            title="Ekspor seluruh data peserta ke file Excel (.xlsx)"
+          >
+            {isExporting ? (
+              <Loader2 className="w-4 h-4 animate-spin text-[#8a7c4c]" />
+            ) : (
+              <FileSpreadsheet className="w-4 h-4 text-[#8a7c4c]" />
+            )}
+            <span>{isExporting ? 'Mengekspor...' : 'Ekspor Excel'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleOpenAdd()}
+            className="flex items-center justify-center space-x-1.5 bg-[#8a7c4c] hover:bg-[#675c37] text-white font-bold px-3.5 py-2 rounded-xl shadow-xs transition text-xs cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>{isAdmin ? 'Tambah Peserta Baru' : 'Ajukan Usulan Baru'}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Ketentuan dan Syarat Penilaian Nominasi (Dinamis Sesuai Kategori yang Diizinkan) */}
       <CollapsibleSection
         sectionId="nomination_assessment_guidelines"
         title="Ketentuan dan Syarat Penilaian Nominasi"
-        subtitle="Standar kualifikasi, syarat kelayakan, serta kriteria dan bobot penilaian resmi untuk 6 kategori penganugerahan"
+        subtitle={isAdmin ? "Standar kualifikasi, syarat kelayakan, serta kriteria dan bobot penilaian resmi untuk 6 kategori penganugerahan" : `Standar kualifikasi dan syarat resmi untuk ${visibleAwardRubrics.length} kategori yang ditugaskan`}
         icon={<Scale className="w-4 h-4 text-[#8a7c4c]" />}
         badge={
           <span className="text-[10px] font-extrabold bg-[#f2eee3] text-[#675c37] border border-[#c3b68b]/40 px-2.5 py-0.5 rounded-full">
-            6 Kategori Penghargaan
+            {visibleAwardRubrics.length} Kategori Ditampilkan
           </span>
         }
       >
@@ -1178,7 +2282,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
 
               {/* Baris Tombol Tab Kategori Horizontal (01, 02, 03, ...) Sesuai Tangkapan Layar */}
               <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
-                {OFFICIAL_AWARD_RUBRICS.map((rubric) => {
+                {visibleAwardRubrics.map((rubric) => {
                   const isActive = rubric.id === activeRubricId;
                   const matched = categories.find(
                     (c) =>
@@ -1416,26 +2520,25 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
         })()}
       </CollapsibleSection>
 
-      {/* Main Participants List & Awarding Section (KHUSUS AKSES ADMIN - ELEGAN & PRESTISIUS) */}
-      {isAdmin && (
-        <CollapsibleSection
-          sectionId="nomination_list_section"
-          title="Daftar Peserta Nominasi & Penganugerahan"
-          subtitle="Kelola data pendaftaran calon penerima, verifikasi kelayakan, rekap skor penjurian, dan penetapan pemenang resmi Milad Sidogiri"
-          icon={<Trophy className="w-4 h-4 text-[#8a7c4c]" />}
-          defaultOpen={true}
-          badge={
-            <div className="flex items-center space-x-2">
-              <span className="text-[10px] font-extrabold bg-[#f2eee3] text-[#675c37] border border-[#c3b68b]/40 px-2.5 py-0.5 rounded-full flex items-center space-x-1 shadow-2xs">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#8a7c4c] animate-pulse"></span>
-                <span>Khusus Admin</span>
-              </span>
-              <span className="text-[10px] font-extrabold bg-white text-[#24211c] border border-[#dcd7cb] px-2.5 py-0.5 rounded-full shadow-2xs">
-                {filteredNominations.length} Peserta
-              </span>
-            </div>
-          }
-        >
+      {/* Main Participants List & Awarding Section (Mendukung Admin & Seluruh 5 Role Akun Petugas) */}
+      <CollapsibleSection
+        sectionId="nomination_list_section"
+        title={isAdmin ? "Daftar Peserta Nominasi & Penganugerahan" : "Daftar Usulan & Peserta Nominasi"}
+        subtitle={isAdmin ? "Kelola data pendaftaran calon penerima, verifikasi kelayakan, rekap skor penjurian, dan penetapan pemenang resmi Milad Sidogiri" : `Daftar usulan calon penerima anugerah untuk kewenangan: ${userRoleOption.description}`}
+        icon={<Trophy className="w-4 h-4 text-[#8a7c4c]" />}
+        defaultOpen={true}
+        badge={
+          <div className="flex items-center space-x-2">
+            <span className="text-[10px] font-extrabold bg-[#f2eee3] text-[#675c37] border border-[#c3b68b]/40 px-2.5 py-0.5 rounded-full flex items-center space-x-1 shadow-2xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#8a7c4c] animate-pulse"></span>
+              <span>{userRoleOption.badge}</span>
+            </span>
+            <span className="text-[10px] font-extrabold bg-white text-[#24211c] border border-[#dcd7cb] px-2.5 py-0.5 rounded-full shadow-2xs">
+              {filteredNominations.length} Peserta
+            </span>
+          </div>
+        }
+      >
           <div className="space-y-4">
             {/* 1. Executive Summary Cards (Metrik Ringkas Khusus Admin) */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -1497,7 +2600,9 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
               >
                 Semua Cabang ({nominations.length})
               </button>
-              {(categories.length === 6 ? categories : OFFICIAL_AWARD_RUBRICS).map((cat) => {
+              {(categories.length === 6 ? categories : OFFICIAL_AWARD_RUBRICS)
+                .filter((cat) => isAdmin || allowedCategoryIds.includes(cat.id))
+                .map((cat) => {
                 const count = nominations.filter((n) => {
                   const nomCatId = toSafeLower(n.categoryId);
                   const catTitleLower = toSafeLower(cat.title);
@@ -1919,9 +3024,9 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                           )}
                         </div>
 
-                        {/* Admin Action Buttons */}
+                        {/* Admin / Petugas Action Buttons */}
                         <div className="flex items-center space-x-1.5 ml-auto">
-                          {!isWinner && (
+                          {isAdmin && !isWinner && (
                             <button
                               type="button"
                               onClick={() => handleSetWinner(nom)}
@@ -1935,18 +3040,20 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                             type="button"
                             onClick={() => handleOpenEdit(nom)}
                             className="p-1.5 text-[#5c5b57] hover:text-[#24211c] bg-white hover:bg-[#f7f6f2] border border-[#dcd7cb] rounded-xl transition cursor-pointer shadow-2xs"
-                            title="Edit Data Peserta & Rubrik"
+                            title={isAdmin ? "Edit Data Peserta & Rubrik" : "Lihat / Edit Detail Usulan"}
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => onDeleteNomination(nom.id)}
-                            className="p-1.5 text-rose-600 hover:text-rose-700 bg-white hover:bg-rose-50 border border-rose-200 rounded-xl transition cursor-pointer shadow-2xs"
-                            title="Hapus Data Peserta"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          {isAdmin && (
+                            <button
+                              type="button"
+                              onClick={() => onDeleteNomination(nom.id)}
+                              className="p-1.5 text-rose-600 hover:text-rose-700 bg-white hover:bg-rose-50 border border-rose-200 rounded-xl transition cursor-pointer shadow-2xs"
+                              title="Hapus Data Peserta"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -2051,7 +3158,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                             </td>
                             <td className="px-4 py-3.5 text-right whitespace-nowrap">
                               <div className="flex items-center justify-end space-x-1.5">
-                                {!isWinner && (
+                                {isAdmin && !isWinner && (
                                   <button
                                     type="button"
                                     onClick={() => handleSetWinner(nom)}
@@ -2065,18 +3172,20 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                                   type="button"
                                   onClick={() => handleOpenEdit(nom)}
                                   className="p-1.5 text-[#5c5b57] hover:text-[#24211c] bg-[#faf8f4] hover:bg-[#f2eee3] border border-[#dcd7cb] rounded-lg transition cursor-pointer shadow-2xs"
-                                  title="Edit Data Peserta"
+                                  title={isAdmin ? "Edit Data Peserta" : "Lihat / Edit Detail Usulan"}
                                 >
                                   <Edit2 className="w-3.5 h-3.5" />
                                 </button>
-                                <button
-                                  type="button"
-                                  onClick={() => onDeleteNomination(nom.id)}
-                                  className="p-1.5 text-rose-600 hover:text-rose-700 bg-white hover:bg-rose-50 border border-rose-200 rounded-lg transition cursor-pointer shadow-2xs"
-                                  title="Hapus Peserta"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
+                                {isAdmin && (
+                                  <button
+                                    type="button"
+                                    onClick={() => onDeleteNomination(nom.id)}
+                                    className="p-1.5 text-rose-600 hover:text-rose-700 bg-white hover:bg-rose-50 border border-rose-200 rounded-lg transition cursor-pointer shadow-2xs"
+                                    title="Hapus Peserta"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
                               </div>
                             </td>
                           </tr>
@@ -2097,7 +3206,6 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
             )}
           </div>
         </CollapsibleSection>
-      )}
 
       {/* Modal Add / Edit Nomination (Form LENGKAP Data Peserta & Rubrik Dinamis Sesuai Kategori) */}
       {isModalOpen && (
@@ -2162,13 +3270,25 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                           <span className="text-[10px] font-mono font-black uppercase tracking-wider text-[#8a7c4c]">
                             Cabang Penganugerahan
                           </span>
-                          <span className="text-[9.5px] font-bold bg-[#f2eee3] text-[#675c37] border border-[#c3b68b]/40 px-2 py-0.2 rounded-md">
-                            Dipilih dari Halaman Cabang Penganugerahan
-                          </span>
                         </div>
-                        <h4 className="text-base sm:text-lg font-black text-[#24211c] tracking-tight">
-                          {activeFormCat?.title}
-                        </h4>
+                        <select
+                          value={categoryId}
+                          disabled={!isAdmin && !!editingNomination}
+                          onChange={(e) => {
+                            const newId = e.target.value;
+                            setCategoryId(newId);
+                            setActiveRubricId(newId);
+                          }}
+                          className="mt-1 block text-sm sm:text-base font-black text-[#24211c] bg-white border border-[#c3b68b]/70 rounded-xl px-3 py-1.5 focus:ring-2 focus:ring-[#8a7c4c]/20 focus:outline-none cursor-pointer shadow-2xs"
+                        >
+                          {(categories.length === 6 ? categories : OFFICIAL_AWARD_RUBRICS)
+                            .filter((cat) => isAdmin || allowedCategoryIds.includes(cat.id))
+                            .map((cat) => (
+                              <option key={cat.id} value={cat.id}>
+                                {cat.title}
+                              </option>
+                            ))}
+                        </select>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2 shrink-0">
@@ -2185,134 +3305,167 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
               })()}
 
               {/* Seksi 1: Identitas Pengusul (Otomatis Terisi Sesuai Login Akun) */}
-              <div className="bg-[#faf8f4] border border-[#e8e4da] rounded-2xl p-4 sm:p-5 space-y-3.5">
-                <div className="flex flex-wrap items-center justify-between border-b border-[#e8e4da] pb-2.5 gap-2">
-                  <div className="flex items-center space-x-2 text-[#8a7c4c]">
-                    <UserCheck className="w-4 h-4" />
-                    <h4 className="text-xs font-black uppercase tracking-wider">
-                      1. Identitas Pengusul
-                    </h4>
-                  </div>
-                  <div className="flex items-center space-x-1.5">
-                    <span className="text-[10px] font-bold bg-[#f2eee3] text-[#675c37] border border-[#c3b68b]/40 px-2 py-0.5 rounded-md flex items-center space-x-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#8a7c4c] inline-block animate-pulse"></span>
-                      <span>Otomatis Akun Login: <strong>{currentUser?.name || currentUser?.email || 'Aktif'}</strong></span>
-                    </span>
-                  </div>
-                </div>
+              {(() => {
+                const activeFormCat = (categories.length === 6 ? categories : OFFICIAL_AWARD_RUBRICS).find((c) => c.id === categoryId) || categories.find((c) => c.id === categoryId) || OFFICIAL_AWARD_RUBRICS[0];
+                const isRantingCategory = categoryId === 'cat-1' || toSafeLower(activeFormCat?.title).includes('ranting');
+                const isAlumniCategory = categoryId === 'cat-3' || toSafeLower(activeFormCat?.title).includes('alumni');
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  {/* A. Nama Pengusul (Otomatis Sesuai Login) */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <label className="block text-xs font-bold text-[#24211c]">
-                        A. Nama Pengusul <span className="text-rose-500">*</span>
-                      </label>
-                      <span className="text-[10px] text-[#8a7c4c] font-semibold italic">
-                        (Otomatis sesuai nama login)
-                      </span>
+                return (
+                  <div className="bg-[#faf8f4] border border-[#e8e4da] rounded-2xl p-4 sm:p-5 space-y-3.5">
+                    <div className="flex flex-wrap items-center justify-between border-b border-[#e8e4da] pb-2.5 gap-2">
+                      <div className="flex items-center space-x-2 text-[#8a7c4c]">
+                        <UserCheck className="w-4 h-4" />
+                        <h4 className="text-xs font-black uppercase tracking-wider text-[#24211c]">
+                          1. Identitas Pengusul {isRantingCategory ? '(Ranting: Nama, Jabatan, Domisili, Alamat)' : isAlumniCategory ? '(Alumni: Nama, Jabatan, Domisili, Alamat, No HP)' : ''}
+                        </h4>
+                      </div>
+                      <div className="flex items-center space-x-1.5">
+                        <span className="text-[10px] font-bold bg-[#f2eee3] text-[#675c37] border border-[#c3b68b]/40 px-2 py-0.5 rounded-md flex items-center space-x-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#8a7c4c] inline-block animate-pulse"></span>
+                          <span>Otomatis Akun Login: <strong>{currentUser?.name || currentUser?.email || 'Aktif'}</strong></span>
+                        </span>
+                      </div>
                     </div>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Nama lengkap pengusul..."
-                      value={pengusulNama}
-                      readOnly={!isAdmin && !!editingNomination}
-                      onChange={(e) => setPengusulNama(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm text-[#24211c] font-semibold focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs"
-                    />
-                  </div>
 
-                  {/* B. Jabatan Pengusul (Otomatis Sesuai Role Akun) */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <label className="block text-xs font-bold text-[#24211c]">
-                        B. Jabatan Pengusul
-                      </label>
-                      <span className="text-[10px] text-[#8a7c4c] font-semibold italic">
-                        (Otomatis sesuai jabatan akun)
-                      </span>
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="Contoh: Pengurus Cabang / Ketua Ranting / Asatidz"
-                      value={pengusulJabatan}
-                      readOnly={!isAdmin && !!editingNomination}
-                      onChange={(e) => setPengusulJabatan(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm text-[#24211c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-3 pt-1">
-                  {/* C. Domisili Pengusul (Pilihan PPS & LPPS) */}
-                  <div>
-                    <label className="block text-xs font-bold text-[#24211c] mb-1.5">
-                      C. Domisili Pengusul
-                    </label>
-                    <div className="flex items-center gap-3">
-                      <label className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl border text-xs font-bold transition cursor-pointer ${
-                        pengusulDomisili === 'PPS'
-                          ? 'bg-[#8a7c4c] text-white border-[#8a7c4c] shadow-2xs'
-                          : 'bg-white text-[#24211c] border-[#dcd7cb] hover:bg-[#f7f6f2]'
-                      }`}>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                      {/* A. Nama Pengusul (Otomatis Sesuai Login) */}
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label className="block text-xs font-bold text-[#24211c]">
+                            A. Nama Pengusul <span className="text-rose-500">*</span>
+                          </label>
+                          <span className="text-[10px] text-[#8a7c4c] font-semibold italic">
+                            (Otomatis sesuai nama login)
+                          </span>
+                        </div>
                         <input
-                          type="radio"
-                          name="pengusulDomisiliRadio"
-                          value="PPS"
-                          checked={pengusulDomisili === 'PPS'}
-                          disabled={!isAdmin && !!editingNomination}
-                          onChange={() => {
-                            setPengusulDomisili('PPS');
-                            if (!pengusulAlamat || pengusulAlamat.trim() === '' || pengusulAlamat.includes('Luar')) {
-                              setPengusulAlamat('Pondok Pesantren Sidogiri, Kraton, Pasuruan');
-                            }
-                          }}
-                          className="sr-only"
+                          type="text"
+                          required
+                          placeholder="Nama lengkap pengusul..."
+                          value={pengusulNama}
+                          readOnly={!isAdmin && !!editingNomination}
+                          onChange={(e) => setPengusulNama(e.target.value)}
+                          className="w-full px-3.5 py-2.5 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm text-[#24211c] font-semibold focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs"
                         />
-                        <span>PPS (Pondok Pesantren Sidogiri)</span>
-                      </label>
+                      </div>
 
-                      <label className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl border text-xs font-bold transition cursor-pointer ${
-                        pengusulDomisili === 'LPPS'
-                          ? 'bg-[#8a7c4c] text-white border-[#8a7c4c] shadow-2xs'
-                          : 'bg-white text-[#24211c] border-[#dcd7cb] hover:bg-[#f7f6f2]'
-                      }`}>
+                      {/* B. Jabatan Pengusul (Otomatis Sesuai Role Akun) */}
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label className="block text-xs font-bold text-[#24211c]">
+                            B. Jabatan Pengusul
+                          </label>
+                          <span className="text-[10px] text-[#8a7c4c] font-semibold italic">
+                            (Otomatis sesuai jabatan akun)
+                          </span>
+                        </div>
                         <input
-                          type="radio"
-                          name="pengusulDomisiliRadio"
-                          value="LPPS"
-                          checked={pengusulDomisili === 'LPPS'}
-                          disabled={!isAdmin && !!editingNomination}
-                          onChange={() => {
-                            setPengusulDomisili('LPPS');
-                            if (pengusulAlamat === 'Pondok Pesantren Sidogiri, Kraton, Pasuruan') {
-                              setPengusulAlamat('');
-                            }
-                          }}
-                          className="sr-only"
+                          type="text"
+                          placeholder="Contoh: Pengurus Cabang / Ketua Ranting / Asatidz"
+                          value={pengusulJabatan}
+                          readOnly={!isAdmin && !!editingNomination}
+                          onChange={(e) => setPengusulJabatan(e.target.value)}
+                          className="w-full px-3.5 py-2.5 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm text-[#24211c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs"
                         />
-                        <span>LPPS (Luar Pondok Pesantren Sidogiri)</span>
-                      </label>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 pt-1">
+                      {/* C. Domisili Pengusul (Pilihan PPS & LPPS) */}
+                      <div>
+                        <label className="block text-xs font-bold text-[#24211c] mb-1.5">
+                          C. Domisili Pengusul
+                        </label>
+                        <div className="flex items-center gap-3">
+                          <label className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl border text-xs font-bold transition cursor-pointer ${
+                            pengusulDomisili === 'PPS'
+                              ? 'bg-[#8a7c4c] text-white border-[#8a7c4c] shadow-2xs'
+                              : 'bg-white text-[#24211c] border-[#dcd7cb] hover:bg-[#f7f6f2]'
+                          }`}>
+                            <input
+                              type="radio"
+                              name="pengusulDomisiliRadio"
+                              value="PPS"
+                              checked={pengusulDomisili === 'PPS'}
+                              disabled={!isAdmin && !!editingNomination}
+                              onChange={() => {
+                                setPengusulDomisili('PPS');
+                                if (!pengusulAlamat || pengusulAlamat.trim() === '' || pengusulAlamat.includes('Luar')) {
+                                  setPengusulAlamat('Pondok Pesantren Sidogiri, Kraton, Pasuruan');
+                                }
+                              }}
+                              className="sr-only"
+                            />
+                            <span>PPS (Pondok Pesantren Sidogiri)</span>
+                          </label>
+
+                          <label className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl border text-xs font-bold transition cursor-pointer ${
+                            pengusulDomisili === 'LPPS'
+                              ? 'bg-[#8a7c4c] text-white border-[#8a7c4c] shadow-2xs'
+                              : 'bg-white text-[#24211c] border-[#dcd7cb] hover:bg-[#f7f6f2]'
+                          }`}>
+                            <input
+                              type="radio"
+                              name="pengusulDomisiliRadio"
+                              value="LPPS"
+                              checked={pengusulDomisili === 'LPPS'}
+                              disabled={!isAdmin && !!editingNomination}
+                              onChange={() => {
+                                setPengusulDomisili('LPPS');
+                                if (pengusulAlamat === 'Pondok Pesantren Sidogiri, Kraton, Pasuruan') {
+                                  setPengusulAlamat('');
+                                }
+                              }}
+                              className="sr-only"
+                            />
+                            <span>LPPS (Luar Pondok Pesantren Sidogiri)</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      <div className={`grid grid-cols-1 ${isRantingCategory ? 'sm:grid-cols-1' : 'sm:grid-cols-2'} gap-3.5`}>
+                        {/* D. Alamat Pengusul */}
+                        <div>
+                          <label className="block text-xs font-bold text-[#24211c] mb-1.5">
+                            D. Alamat Pengusul
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Alamat domisili lengkap pengusul..."
+                            value={pengusulAlamat}
+                            readOnly={!isAdmin && !!editingNomination}
+                            onChange={(e) => setPengusulAlamat(e.target.value)}
+                            className="w-full px-3.5 py-2.5 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm text-[#24211c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs"
+                          />
+                        </div>
+
+                        {/* E. No. HP / WhatsApp Pengusul (Wajib untuk Alumni, tidak diperlukan di form Ranting) */}
+                        {!isRantingCategory && (
+                          <div>
+                            <div className="flex items-center justify-between mb-1.5">
+                              <label className="block text-xs font-bold text-[#24211c]">
+                                E. No. HP / WhatsApp Pengusul {isAlumniCategory && <span className="text-rose-500">*</span>}
+                              </label>
+                              <span className="text-[10px] text-[#8a7c4c] font-semibold italic">
+                                (Otomatis sesuai akun login / aktif)
+                              </span>
+                            </div>
+                            <input
+                              type="text"
+                              required={isAlumniCategory}
+                              placeholder="Nomor WhatsApp pengusul (contoh: 08123456789)..."
+                              value={pengusulPhone}
+                              readOnly={!isAdmin && !!editingNomination}
+                              onChange={(e) => setPengusulPhone(e.target.value)}
+                              className="w-full px-3.5 py-2.5 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm text-[#24211c] font-mono focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs"
+                            />
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-
-                  {/* D. Alamat Pengusul */}
-                  <div>
-                    <label className="block text-xs font-bold text-[#24211c] mb-1.5">
-                      D. Alamat Pengusul
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Alamat domisili lengkap pengusul..."
-                      value={pengusulAlamat}
-                      readOnly={!isAdmin && !!editingNomination}
-                      onChange={(e) => setPengusulAlamat(e.target.value)}
-                      className="w-full px-3.5 py-2 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm text-[#24211c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs"
-                    />
-                  </div>
-                </div>
-              </div>
+                );
+              })()}
 
               {/* Seksi 2: Identitas Peserta yang Diusulkan (Kondisional: HANYA 5 Identitas Guru ATAU 1 Identitas Tunggal untuk Pengurus, Ranting, dll) */}
               {(() => {
@@ -2675,7 +3828,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                                 </div>
 
                                 {/* Syarat Nilai Imda I, II & Semester I untuk Tingkat 'Aly serta Presensi Kehadiran & Kriteria Resmi sebagai syarat identitas {numStr} */}
-                                <div className="mt-4 pt-3.5 border-t border-[#dcd7cb] bg-[#f7f5ef] -mx-4 -mb-4 sm:-mx-5 sm:-mb-5 p-4 sm:p-5 rounded-b-2xl space-y-3">
+                                <div className="mt-4 pt-3.5 border-t border-[#dcd7cb] bg-[#f7f5ef] -mx-4 -mb-4 sm:-mx-5 sm:-mb-5 p-4 sm:p-5 rounded-b-2xl space-y-3.5">
                                   <div className="flex flex-wrap items-center justify-between gap-2">
                                     <div className="flex items-center space-x-2 text-[#8a7c4c]">
                                       <ClipboardCheck className="w-4 h-4 shrink-0" />
@@ -2688,91 +3841,152 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                                     </span>
                                   </div>
 
-                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                                    {/* 1. Nilai Imda I */}
-                                    <div>
-                                      <div className="flex items-center justify-between mb-1.5">
-                                        <label className="block text-xs font-bold text-[#24211c]">
-                                          Nilai Imda I {idx === 0 && <span className="text-rose-500">*</span>}
-                                        </label>
-                                        <span className="text-[10px] text-[#7c7b77] italic font-medium">
-                                          Syarat Imda I
-                                        </span>
-                                      </div>
-                                      <input
-                                        type="text"
-                                        required={idx === 0}
-                                        placeholder="Contoh: 90 / 89.5"
-                                        value={item.nilaiImda1}
-                                        readOnly={!isAdmin && !!editingNomination}
-                                        onChange={(e) => updateSantriMuridIdentitas(idx, 'nilaiImda1', e.target.value)}
-                                        className="w-full h-11 px-3.5 py-2.5 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm font-semibold text-[#8a7c4c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs"
-                                      />
+                                  {/* Pilihan Jenjang Pendidikan: Aliyah vs Tsanawiyah / Ibtidaiyah / Idadiyah */}
+                                  <div className="bg-white p-3.5 rounded-xl border border-[#dcd7cb] shadow-2xs space-y-2">
+                                    <div className="flex flex-wrap items-center justify-between gap-1.5">
+                                      <label className="block text-xs font-bold text-[#24211c]">
+                                        Pilih Jenjang / Tingkat Pendidikan Identitas {numStr}:
+                                      </label>
+                                      <span className="text-[10px] font-bold text-[#8a7c4c] bg-[#faf8f4] px-2 py-0.5 rounded border border-[#e8e4da]">
+                                        Tingkat Aktif: {item.jenjangTingkat || 'Aliyah'}
+                                      </span>
                                     </div>
-
-                                    {/* 2. Nilai Imda II */}
-                                    <div>
-                                      <div className="flex items-center justify-between mb-1.5">
-                                        <label className="block text-xs font-bold text-[#24211c]">
-                                          Nilai Imda II {idx === 0 && <span className="text-rose-500">*</span>}
-                                        </label>
-                                        <span className="text-[10px] text-[#7c7b77] italic font-medium">
-                                          Syarat Imda II
-                                        </span>
-                                      </div>
-                                      <input
-                                        type="text"
-                                        required={idx === 0}
-                                        placeholder="Contoh: 92 / 91.5"
-                                        value={item.nilaiImda2}
-                                        readOnly={!isAdmin && !!editingNomination}
-                                        onChange={(e) => updateSantriMuridIdentitas(idx, 'nilaiImda2', e.target.value)}
-                                        className="w-full h-11 px-3.5 py-2.5 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm font-semibold text-[#8a7c4c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs"
-                                      />
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                      {(['Aliyah', 'Tsanawiyah', 'Ibtidaiyah', 'Idadiyah'] as const).map((jenjang) => {
+                                        const isSelected = (item.jenjangTingkat || 'Aliyah') === jenjang;
+                                        return (
+                                          <button
+                                            key={jenjang}
+                                            type="button"
+                                            disabled={!isAdmin && !!editingNomination}
+                                            onClick={() => updateSantriMuridIdentitas(idx, 'jenjangTingkat', jenjang)}
+                                            className={`px-3 py-2 rounded-xl border text-xs font-bold transition text-center cursor-pointer shadow-2xs ${
+                                              isSelected
+                                                ? 'bg-[#8a7c4c] text-white border-[#8a7c4c]'
+                                                : 'bg-[#faf8f4] text-[#24211c] border-[#dcd7cb] hover:bg-[#ede9df]'
+                                            }`}
+                                          >
+                                            {jenjang === 'Aliyah' ? "Aliyah (Tingkat 'Aly)" : jenjang}
+                                          </button>
+                                        );
+                                      })}
                                     </div>
-
-                                    {/* 3. Nilai Semester I untuk Tingkat 'Aly */}
-                                    <div>
-                                      <div className="flex items-center justify-between mb-1.5">
-                                        <label className="block text-xs font-bold text-[#24211c]">
-                                          Nilai Semester I (Tingkat 'Aly) {idx === 0 && <span className="text-rose-500">*</span>}
-                                        </label>
-                                        <span className="text-[10px] text-[#7c7b77] italic font-medium">
-                                          Tingkat 'Aly
-                                        </span>
-                                      </div>
-                                      <input
-                                        type="text"
-                                        required={idx === 0}
-                                        placeholder="Contoh: 95 / Mumtaz"
-                                        value={item.nilaiSemester1Aly}
-                                        readOnly={!isAdmin && !!editingNomination}
-                                        onChange={(e) => updateSantriMuridIdentitas(idx, 'nilaiSemester1Aly', e.target.value)}
-                                        className="w-full h-11 px-3.5 py-2.5 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm font-semibold text-[#8a7c4c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs"
-                                      />
-                                    </div>
-
-                                    {/* 4. Presensi Kehadiran */}
-                                    <div>
-                                      <div className="flex items-center justify-between mb-1.5">
-                                        <label className="block text-xs font-bold text-[#24211c]">
-                                          Presensi Kehadiran {idx === 0 && <span className="text-rose-500">*</span>}
-                                        </label>
-                                        <span className="text-[10px] text-[#7c7b77] italic font-medium">
-                                          Kehadiran / Presensi
-                                        </span>
-                                      </div>
-                                      <input
-                                        type="text"
-                                        required={idx === 0}
-                                        placeholder="Contoh: 100% / Nihil Absen"
-                                        value={item.presensiKehadiran}
-                                        readOnly={!isAdmin && !!editingNomination}
-                                        onChange={(e) => updateSantriMuridIdentitas(idx, 'presensiKehadiran', e.target.value)}
-                                        className="w-full h-11 px-3.5 py-2.5 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm font-semibold text-[#8a7c4c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs"
-                                      />
-                                    </div>
+                                    <p className="text-[10.5px] text-[#7c7b77] italic leading-relaxed pt-0.5">
+                                      * Ketentuan Resmi: Jika <strong>Aliyah</strong> maka menampilkan kolom <strong>Nilai Semester I</strong> dan <strong>Presensi Kehadiran</strong>. Jika <strong>Tsanawiyah, Ibtidaiyah, atau Idadiyah</strong> maka menampilkan kolom <strong>Nilai Imda I</strong>, <strong>Nilai Imda II</strong>, serta <strong>Presensi Kehadiran</strong>.
+                                    </p>
                                   </div>
+
+                                  {/* Kolom Nilai & Presensi Kondisional Sesuai Jenjang */}
+                                  {(item.jenjangTingkat || 'Aliyah') === 'Aliyah' ? (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                      {/* 1. Nilai Semester I untuk Tingkat 'Aly / Aliyah */}
+                                      <div>
+                                        <div className="flex items-center justify-between mb-1.5">
+                                          <label className="block text-xs font-bold text-[#24211c]">
+                                            Nilai Semester I (Tingkat 'Aly / Aliyah) {idx === 0 && <span className="text-rose-500">*</span>}
+                                          </label>
+                                          <span className="text-[10px] text-[#7c7b77] italic font-medium">
+                                            Syarat Aliyah
+                                          </span>
+                                        </div>
+                                        <input
+                                          type="text"
+                                          required={idx === 0}
+                                          placeholder="Contoh: 95 / 92.5 / Mumtaz"
+                                          value={item.nilaiSemester1Aly}
+                                          readOnly={!isAdmin && !!editingNomination}
+                                          onChange={(e) => updateSantriMuridIdentitas(idx, 'nilaiSemester1Aly', e.target.value)}
+                                          className="w-full h-11 px-3.5 py-2.5 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm font-semibold text-[#8a7c4c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs"
+                                        />
+                                      </div>
+
+                                      {/* 2. Presensi Kehadiran */}
+                                      <div>
+                                        <div className="flex items-center justify-between mb-1.5">
+                                          <label className="block text-xs font-bold text-[#24211c]">
+                                            Presensi Kehadiran {idx === 0 && <span className="text-rose-500">*</span>}
+                                          </label>
+                                          <span className="text-[10px] text-[#7c7b77] italic font-medium">
+                                            Kehadiran / Presensi
+                                          </span>
+                                        </div>
+                                        <input
+                                          type="text"
+                                          required={idx === 0}
+                                          placeholder="Contoh: 100% / Nihil Absen"
+                                          value={item.presensiKehadiran}
+                                          readOnly={!isAdmin && !!editingNomination}
+                                          onChange={(e) => updateSantriMuridIdentitas(idx, 'presensiKehadiran', e.target.value)}
+                                          className="w-full h-11 px-3.5 py-2.5 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm font-semibold text-[#8a7c4c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs"
+                                        />
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                                      {/* 1. Nilai Imda I */}
+                                      <div>
+                                        <div className="flex items-center justify-between mb-1.5">
+                                          <label className="block text-xs font-bold text-[#24211c]">
+                                            Nilai Imda I {idx === 0 && <span className="text-rose-500">*</span>}
+                                          </label>
+                                          <span className="text-[10px] text-[#7c7b77] italic font-medium">
+                                            Syarat Imda I
+                                          </span>
+                                        </div>
+                                        <input
+                                          type="text"
+                                          required={idx === 0}
+                                          placeholder="Contoh: 90 / 89.5"
+                                          value={item.nilaiImda1}
+                                          readOnly={!isAdmin && !!editingNomination}
+                                          onChange={(e) => updateSantriMuridIdentitas(idx, 'nilaiImda1', e.target.value)}
+                                          className="w-full h-11 px-3.5 py-2.5 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm font-semibold text-[#8a7c4c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs"
+                                        />
+                                      </div>
+
+                                      {/* 2. Nilai Imda II */}
+                                      <div>
+                                        <div className="flex items-center justify-between mb-1.5">
+                                          <label className="block text-xs font-bold text-[#24211c]">
+                                            Nilai Imda II {idx === 0 && <span className="text-rose-500">*</span>}
+                                          </label>
+                                          <span className="text-[10px] text-[#7c7b77] italic font-medium">
+                                            Syarat Imda II
+                                          </span>
+                                        </div>
+                                        <input
+                                          type="text"
+                                          required={idx === 0}
+                                          placeholder="Contoh: 92 / 91.5"
+                                          value={item.nilaiImda2}
+                                          readOnly={!isAdmin && !!editingNomination}
+                                          onChange={(e) => updateSantriMuridIdentitas(idx, 'nilaiImda2', e.target.value)}
+                                          className="w-full h-11 px-3.5 py-2.5 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm font-semibold text-[#8a7c4c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs"
+                                        />
+                                      </div>
+
+                                      {/* 3. Presensi Hadir */}
+                                      <div>
+                                        <div className="flex items-center justify-between mb-1.5">
+                                          <label className="block text-xs font-bold text-[#24211c]">
+                                            Presensi Hadir {idx === 0 && <span className="text-rose-500">*</span>}
+                                          </label>
+                                          <span className="text-[10px] text-[#7c7b77] italic font-medium">
+                                            Presensi Hadir
+                                          </span>
+                                        </div>
+                                        <input
+                                          type="text"
+                                          required={idx === 0}
+                                          placeholder="Contoh: 100% / Nihil Absen"
+                                          value={item.presensiKehadiran}
+                                          readOnly={!isAdmin && !!editingNomination}
+                                          onChange={(e) => updateSantriMuridIdentitas(idx, 'presensiKehadiran', e.target.value)}
+                                          className="w-full h-11 px-3.5 py-2.5 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm font-semibold text-[#8a7c4c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs"
+                                        />
+                                      </div>
+                                    </div>
+                                  )}
 
                                   {/* Kriteria & Alasan Penilaian Resmi Khusus Identitas {numStr} Sesuai Kategori Santri / Murid */}
                                   <div className="pt-3.5 border-t border-[#dcd7cb] space-y-3">
@@ -2808,7 +4022,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                                       </div>
                                     </div>
 
-                                    {/* Checklist Kriteria Resmi Sesuai Kategori */}
+                                    {/* 1. Checklist Kriteria Resmi Sesuai Kategori */}
                                     <div className="bg-white p-3.5 rounded-xl border border-[#dcd7cb] shadow-2xs space-y-2">
                                       <span className="font-extrabold text-[11px] text-[#24211c] block border-b border-[#f2eee3] pb-1.5">
                                         {criteriaTitleSection}
@@ -2830,11 +4044,32 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                                       </div>
                                     </div>
 
-                                    {/* 2. LAIN-LAIN (Catatan Tambahan untuk Identitas {numStr}) */}
+                                    {/* 2. ALASAN PENILAIAN RESMI (Uraian Resmi Sesuai Kategori) */}
+                                    <div className="bg-white p-3.5 rounded-xl border border-[#dcd7cb] shadow-2xs space-y-1.5">
+                                      <div className="flex items-center justify-between">
+                                        <label className="block font-extrabold text-[11px] text-[#24211c] flex items-center space-x-1.5">
+                                          <FileText className="w-3.5 h-3.5 text-[#8a7c4c]" />
+                                          <span>2. ALASAN PENILAIAN RESMI (Syarat Kategori {categoryTitleDisplay} untuk Identitas {numStr}):</span>
+                                        </label>
+                                        <span className="text-[10px] text-[#8a7c4c] font-semibold italic">
+                                          Alasan resmi penilaian
+                                        </span>
+                                      </div>
+                                      <textarea
+                                        rows={2}
+                                        placeholder={`Uraian alasan penilaian resmi kelayakan figur ${isCurrentSantri ? 'santri' : 'murid'} identitas ${numStr} sesuai syarat kategori...`}
+                                        value={item.alasanPenilaian || ''}
+                                        readOnly={!isAdmin && !!editingNomination}
+                                        onChange={(e) => updateSantriMuridIdentitas(idx, 'alasanPenilaian', e.target.value)}
+                                        className="w-full px-3 py-2 bg-slate-50 border border-[#dcd7cb] rounded-xl text-xs text-[#24211c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:bg-white focus:outline-none transition shadow-2xs resize-none"
+                                      />
+                                    </div>
+
+                                    {/* 3. LAIN-LAIN (Catatan Tambahan untuk Identitas {numStr}) */}
                                     <div className="bg-white p-3.5 rounded-xl border border-[#dcd7cb] shadow-2xs space-y-1.5">
                                       <div className="flex items-center justify-between">
                                         <label className="block font-extrabold text-[11px] text-[#24211c]">
-                                          2. LAIN-LAIN (Catatan Tambahan untuk Identitas {numStr}):
+                                          3. LAIN-LAIN (Catatan Tambahan untuk Identitas {numStr}):
                                         </label>
                                         <span className="text-[10px] text-[#8a7c4c] font-semibold italic">
                                           Kolom isian bebas (dapat diedit)
@@ -2860,14 +4095,307 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                   );
                 }
 
-                // Default untuk kategori selain Guru, Santri, dan Murid (Ranting, Alumni, Pengurus)
+                // Pengecekan Kategori Khusus Ranting & Alumni
+                const isRantingCat = categoryId === 'cat-1' || toSafeLower(activeCatObj?.title).includes('ranting');
+                const isAlumniCat = categoryId === 'cat-3' || toSafeLower(activeCatObj?.title).includes('alumni');
+
+                if (isRantingCat) {
+                  return (
+                    <div className="bg-[#faf8f4] border border-[#e8e4da] rounded-2xl p-4 sm:p-5 space-y-4">
+                      <div className="flex flex-wrap items-center justify-between border-b border-[#e8e4da] pb-2.5 gap-2">
+                        <div className="flex items-center space-x-2 text-[#8a7c4c]">
+                          <IdCard className="w-4 h-4" />
+                          <h4 className="text-xs font-black uppercase tracking-wider text-[#24211c]">
+                            2. Identitas Ranting yang Diusulkan
+                          </h4>
+                        </div>
+                        <span className="text-[10px] font-bold bg-[#ede9df] text-[#675c37] border border-[#c3b68b]/40 px-2.5 py-0.5 rounded-full">
+                          Format Khusus: Nama Ranting &amp; Alamat Lengkap
+                        </span>
+                      </div>
+
+                      <div className="space-y-3.5">
+                        {/* B.1. Nama Ranting yang Diusulkan */}
+                        <div>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <label className="block text-xs font-bold text-[#24211c]">
+                              Nama Ranting yang Diusulkan <span className="text-rose-500">*</span>
+                            </label>
+                            <span className="text-[10px] text-[#8a7c4c] font-semibold italic">
+                              (Nama cabang / ranting MMU/IASS)
+                            </span>
+                          </div>
+                          <input
+                            type="text"
+                            required
+                            placeholder="Contoh: Ranting MMU Sidogiri Kraton / Ranting MMU Sukorejo"
+                            value={candidateName}
+                            readOnly={!isAdmin && !!editingNomination}
+                            onChange={(e) => setCandidateName(e.target.value)}
+                            className="w-full px-3.5 py-2.5 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm text-[#24211c] font-bold focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs"
+                          />
+                        </div>
+
+                        {/* B.2. Alamat Lengkap Ranting */}
+                        <div>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <label className="block text-xs font-bold text-[#24211c]">
+                              Alamat Lengkap Ranting <span className="text-rose-500">*</span>
+                            </label>
+                            <span className="text-[10px] text-[#7c7b77] italic font-medium">
+                              (Desa/Kelurahan, Kecamatan, Kota/Kabupaten)
+                            </span>
+                          </div>
+                          <textarea
+                            rows={2}
+                            required
+                            placeholder="Alamat lengkap lokasi atau sekretariat ranting yang diusulkan..."
+                            value={alamat}
+                            readOnly={!isAdmin && !!editingNomination}
+                            onChange={(e) => setAlamat(e.target.value)}
+                            className="w-full px-3.5 py-2.5 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm text-[#24211c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs resize-none"
+                          />
+                        </div>
+
+                        {/* Data Tambahan Ranting / Pengurus Ranting untuk Ekspor Excel */}
+                        <div className="pt-3 border-t border-[#e8e4da] bg-white p-3.5 rounded-xl border shadow-2xs">
+                          <span className="text-[11px] font-black text-[#675c37] block mb-2.5">
+                            + Data Tambahan Peserta / Pengurus Ranting (Pelengkap Arsip &amp; Ekspor Excel):
+                          </span>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                            <div>
+                              <label className="block text-[11px] font-semibold text-[#24211c] mb-1">
+                                ID PPS / Personalia (Opsional)
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="Contoh: PPS-2026-001"
+                                value={idPps}
+                                readOnly={!isAdmin && !!editingNomination}
+                                onChange={(e) => setIdPps(e.target.value)}
+                                className="w-full px-3 py-2 bg-slate-50 border border-[#dcd7cb] rounded-xl text-xs text-[#8a7c4c] font-mono font-bold focus:ring-2 focus:ring-[#8a7c4c]/20 focus:bg-white focus:outline-none transition"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-semibold text-[#24211c] mb-1">
+                                Kelas (Opsional)
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="Contoh: Kelas 3 / Ranting A"
+                                value={kelas}
+                                readOnly={!isAdmin && !!editingNomination}
+                                onChange={(e) => setKelas(e.target.value)}
+                                className="w-full px-3 py-2 bg-slate-50 border border-[#dcd7cb] rounded-xl text-xs text-[#24211c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:bg-white focus:outline-none transition"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-semibold text-[#24211c] mb-1">
+                                Tingkat (Opsional)
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="Contoh: MMU Tsanawiyah / Aliyah"
+                                value={tingkat}
+                                readOnly={!isAdmin && !!editingNomination}
+                                onChange={(e) => setTingkat(e.target.value)}
+                                className="w-full px-3 py-2 bg-slate-50 border border-[#dcd7cb] rounded-xl text-xs text-[#24211c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:bg-white focus:outline-none transition"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-semibold text-[#24211c] mb-1">
+                                Jabatan (2 Tahun Terakhir)
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="Contoh: Ketua Ranting MMU"
+                                value={department}
+                                readOnly={!isAdmin && !!editingNomination}
+                                onChange={(e) => setDepartment(e.target.value)}
+                                className="w-full px-3 py-2 bg-slate-50 border border-[#dcd7cb] rounded-xl text-xs text-[#24211c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:bg-white focus:outline-none transition"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2.5">
+                            <div>
+                              <label className="block text-[11px] font-semibold text-[#24211c] mb-1">
+                                No. WhatsApp / Kontak Ranting
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="Contoh: 081234567890"
+                                value={phone}
+                                readOnly={!isAdmin && !!editingNomination}
+                                onChange={(e) => setPhone(e.target.value)}
+                                className="w-full px-3 py-2 bg-slate-50 border border-[#dcd7cb] rounded-xl text-xs text-[#8a7c4c] font-mono font-bold focus:ring-2 focus:ring-[#8a7c4c]/20 focus:bg-white focus:outline-none transition"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-semibold text-[#24211c] mb-1">
+                                Domisili Ranting (PPS / LPPS)
+                              </label>
+                              <div className="flex items-center gap-3 pt-0.5">
+                                <label className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold cursor-pointer ${
+                                  candidateDomisiliType === 'PPS' ? 'bg-[#8a7c4c] text-white border-[#8a7c4c]' : 'bg-white text-[#24211c] border-[#dcd7cb]'
+                                }`}>
+                                  <input
+                                    type="radio"
+                                    name="rantingDomRadio"
+                                    value="PPS"
+                                    checked={candidateDomisiliType === 'PPS'}
+                                    onChange={() => setCandidateDomisiliType('PPS')}
+                                    className="sr-only"
+                                  />
+                                  <span>PPS</span>
+                                </label>
+                                <label className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold cursor-pointer ${
+                                  candidateDomisiliType === 'LPPS' ? 'bg-[#8a7c4c] text-white border-[#8a7c4c]' : 'bg-white text-[#24211c] border-[#dcd7cb]'
+                                }`}>
+                                  <input
+                                    type="radio"
+                                    name="rantingDomRadio"
+                                    value="LPPS"
+                                    checked={candidateDomisiliType === 'LPPS'}
+                                    onChange={() => setCandidateDomisiliType('LPPS')}
+                                    className="sr-only"
+                                  />
+                                  <span>LPPS</span>
+                                </label>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
+                if (isAlumniCat) {
+                  return (
+                    <div className="bg-[#faf8f4] border border-[#e8e4da] rounded-2xl p-4 sm:p-5 space-y-4">
+                      <div className="flex flex-wrap items-center justify-between border-b border-[#e8e4da] pb-2.5 gap-2">
+                        <div className="flex items-center space-x-2 text-[#8a7c4c]">
+                          <IdCard className="w-4 h-4" />
+                          <h4 className="text-xs font-black uppercase tracking-wider text-[#24211c]">
+                            2. Identitas Calon / Peserta yang Diusulkan (Alumni)
+                          </h4>
+                        </div>
+                        <span className="text-[10px] font-bold bg-[#ede9df] text-[#675c37] border border-[#c3b68b]/40 px-2.5 py-0.5 rounded-full">
+                          Format Khusus: Nama, Jabatan, &amp; Alamat Rumah
+                        </span>
+                      </div>
+
+                      <div className="space-y-3.5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                          {/* B.1. Nama Calon / Peserta yang Diusulkan */}
+                          <div>
+                            <div className="flex items-center justify-between mb-1.5">
+                              <label className="block text-xs font-bold text-[#24211c]">
+                                Nama Calon / Peserta yang Diusulkan <span className="text-rose-500">*</span>
+                              </label>
+                              <span className="text-[10px] text-[#8a7c4c] font-semibold italic">
+                                (Nama lengkap alumni)
+                              </span>
+                            </div>
+                            <input
+                              type="text"
+                              required
+                              placeholder="Nama lengkap alumni yang diusulkan..."
+                              value={candidateName}
+                              readOnly={!isAdmin && !!editingNomination}
+                              onChange={(e) => setCandidateName(e.target.value)}
+                              className="w-full px-3.5 py-2.5 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm text-[#24211c] font-bold focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs"
+                            />
+                          </div>
+
+                          {/* B.2. Jabatan Calon */}
+                          <div>
+                            <div className="flex items-center justify-between mb-1.5">
+                              <label className="block text-xs font-bold text-[#24211c]">
+                                Jabatan Calon / Posisi
+                              </label>
+                              <span className="text-[10px] text-[#7c7b77] italic font-medium">
+                                (Profesi / khidmah di masyarakat)
+                              </span>
+                            </div>
+                            <input
+                              type="text"
+                              placeholder="Contoh: Pengurus IASS Cabang / Asatidz / Pengasuh Ponpes"
+                              value={department || position}
+                              readOnly={!isAdmin && !!editingNomination}
+                              onChange={(e) => {
+                                setDepartment(e.target.value);
+                                setPosition(e.target.value);
+                              }}
+                              className="w-full px-3.5 py-2.5 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm text-[#24211c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs"
+                            />
+                          </div>
+                        </div>
+
+                        {/* B.3. Alamat Rumah Lengkap */}
+                        <div>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <label className="block text-xs font-bold text-[#24211c]">
+                              Alamat Rumah Calon <span className="text-rose-500">*</span>
+                            </label>
+                            <span className="text-[10px] text-[#7c7b77] italic font-medium">
+                              (Alamat tempat tinggal lengkap alumni yang diusulkan)
+                            </span>
+                          </div>
+                          <textarea
+                            rows={2}
+                            required
+                            placeholder="Alamat rumah lengkap calon alumni (Desa, Kecamatan, Kota/Kabupaten)..."
+                            value={alamat}
+                            readOnly={!isAdmin && !!editingNomination}
+                            onChange={(e) => setAlamat(e.target.value)}
+                            className="w-full px-3.5 py-2.5 bg-white border border-[#dcd7cb] rounded-xl text-xs sm:text-sm text-[#24211c] focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition shadow-2xs resize-none"
+                          />
+                        </div>
+
+                        {/* Data Tambahan Alumni */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+                          <div>
+                            <label className="block text-[11px] font-semibold text-[#24211c] mb-1">
+                              No. WhatsApp / HP Calon (Opsional)
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="Contoh: 081234567890"
+                              value={phone}
+                              readOnly={!isAdmin && !!editingNomination}
+                              onChange={(e) => setPhone(e.target.value)}
+                              className="w-full px-3 py-2 bg-white border border-[#dcd7cb] rounded-xl text-xs text-[#8a7c4c] font-mono font-bold focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold text-[#24211c] mb-1">
+                              ID Personalia / PPS (Opsional)
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="Contoh: ALUMNI-2026-001"
+                              value={idPps}
+                              readOnly={!isAdmin && !!editingNomination}
+                              onChange={(e) => setIdPps(e.target.value)}
+                              className="w-full px-3 py-2 bg-white border border-[#dcd7cb] rounded-xl text-xs text-[#8a7c4c] font-mono font-bold focus:ring-2 focus:ring-[#8a7c4c]/20 focus:border-[#8a7c4c] focus:outline-none transition"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
+                // Default untuk kategori Pengurus & Lainnya (1 Identitas Tunggal)
                 return (
                   <div className="bg-[#faf8f4] border border-[#e8e4da] rounded-2xl p-4 sm:p-5 space-y-3.5">
                     <div className="flex items-center justify-between border-b border-[#e8e4da] pb-2.5">
                       <div className="flex items-center space-x-2 text-[#8a7c4c]">
                         <IdCard className="w-4 h-4" />
                         <h4 className="text-xs font-black uppercase tracking-wider">
-                          2. Identitas Calon / Peserta yang Diusulkan (1 Identitas Tunggal)
+                          2. Identitas Calon / Peserta yang Diusulkan
                         </h4>
                       </div>
                       <span className="text-[10.5px] font-bold text-[#7c7b77]">
@@ -2894,12 +4422,12 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                       {/* B. Nama yang Diusulkan */}
                       <div>
                         <label className="block text-xs font-bold text-[#24211c] mb-1.5">
-                          B. Nama Ranting / Nama Peserta <span className="text-rose-500">*</span>
+                          B. Nama yang Diusulkan <span className="text-rose-500">*</span>
                         </label>
                         <input
                           type="text"
                           required
-                          placeholder="Nama lengkap ranting atau figur calon yang diusulkan"
+                          placeholder="Nama lengkap calon yang diusulkan"
                           value={candidateName}
                           readOnly={!isAdmin && !!editingNomination}
                           onChange={(e) => setCandidateName(e.target.value)}
@@ -2912,7 +4440,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                       {/* C. Domisili yang Diusulkan (Pilihan PPS & LPPS) */}
                       <div>
                         <label className="block text-xs font-bold text-[#24211c] mb-1.5">
-                          C. Domisili Calon / Ranting
+                          C. Domisili Calon
                         </label>
                         <div className="flex flex-wrap items-center gap-3">
                           <div className="flex items-center gap-2">
@@ -2972,7 +4500,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                           </label>
                           <input
                             type="text"
-                            placeholder="Contoh: Kelas 3 Aliyah / MMU"
+                            placeholder="Contoh: Kelas 3 / Pengurus"
                             value={kelas}
                             readOnly={!isAdmin && !!editingNomination}
                             onChange={(e) => setKelas(e.target.value)}
@@ -2986,7 +4514,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                           </label>
                           <input
                             type="text"
-                            placeholder="Contoh: Ulya / Tsanawiyah / Asatidz / Pengurus"
+                            placeholder="Contoh: Pengurus PPS / Bagian"
                             value={tingkat}
                             readOnly={!isAdmin && !!editingNomination}
                             onChange={(e) => setTingkat(e.target.value)}
@@ -3003,7 +4531,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                           </label>
                           <input
                             type="text"
-                            placeholder="Contoh: Ketua Ranting MMU / Asatidz Senior / Koordinator Sie"
+                            placeholder="Contoh: Koordinator Sie / Kepala Kamar / Anggota Bagian"
                             value={department}
                             readOnly={!isAdmin && !!editingNomination}
                             onChange={(e) => setDepartment(e.target.value)}
@@ -3033,7 +4561,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                         </label>
                         <textarea
                           rows={2}
-                          placeholder="Alamat lengkap calon / ranting yang diusulkan..."
+                          placeholder="Alamat lengkap calon yang diusulkan..."
                           value={alamat}
                           readOnly={!isAdmin && !!editingNomination}
                           onChange={(e) => setAlamat(e.target.value)}

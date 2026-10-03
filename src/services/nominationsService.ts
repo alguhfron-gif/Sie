@@ -77,9 +77,10 @@ export function subscribeNominations(
  * Add a new candidate/nomination to Firestore.
  */
 export async function addNominationToFirestore(
-  newNom: Omit<Nomination, 'id' | 'createdAt'>
+  newNom: Omit<Nomination, 'id' | 'createdAt'>,
+  customId?: string
 ): Promise<Nomination> {
-  const docId = `nom-${Date.now()}`;
+  const docId = customId || `nom-${Date.now()}`;
   const createdAt = new Date().toISOString().split('T')[0];
   
   const created: Nomination = {

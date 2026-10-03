@@ -52,12 +52,15 @@ export interface SantriMuridIdentityItem {
   idPersonalia: string;
   nama: string;
   domisiliAlamat: string;
+  jenjangTingkat?: 'Aliyah' | 'Tsanawiyah' | 'Ibtidaiyah' | 'Idadiyah' | string;
   nilaiImda1: string;
   nilaiImda2: string;
   nilaiSemester1Aly: string;
   presensiKehadiran: string;
   checklist?: Record<string, boolean>;
+  alasanPenilaian?: string;
   lainLainNote?: string;
+  kriteriaReasons?: Record<string, string>;
 }
 
 export interface Nomination {
@@ -86,6 +89,7 @@ export interface Nomination {
   pengusulJabatan?: string;
   pengusulDomisili?: 'PPS' | 'LPPS' | string;
   pengusulAlamat?: string;
+  pengusulPhone?: string;
 
   // 2. Identitas Peserta / Ranting yang Diusulkan
   candidateDomisiliType?: 'PPS' | 'LPPS' | string;
@@ -134,22 +138,36 @@ export interface RundownItem {
   notes?: string;
 }
 
+export type AccountRoleType =
+  | 'panitia'
+  | 'madrasah'
+  | 'alumni'
+  | 'pengurus_instansi'
+  | 'pengurus_daerah';
+
 export interface UserSession {
   id: string;
+  idPersonalia?: string;
   name: string;
   role: string;
   category?: 'admin' | 'petugas';
+  accountType?: AccountRoleType;
   authType?: 'committee' | 'firebase';
   email?: string;
   loginTime: string;
+  domisili?: 'PPS' | 'LPPS' | string;
+  alamat?: string;
+  phone?: string;
 }
 
 export interface CommitteeAccount {
   id: string;
+  idPersonalia?: string; // ID Personalia resmi panitia (contoh: PERS-001)
   name: string;
-  role: string;
+  role: string; // Jabatan resmi
   category: 'admin' | 'petugas';
-  defaultPin: string;
+  accountType?: AccountRoleType; // 5 Pilihan: panitia | madrasah | alumni | pengurus_instansi | pengurus_daerah
+  defaultPin: string; // Password / PIN lebih dari 6 angka
   badge: string;
   avatarBg?: string;
   createdAt?: string;

@@ -15,6 +15,7 @@ import { UserSession, CommitteeAccount } from '../types';
 import { INITIAL_ACCOUNTS } from '../data/initialData';
 import { MiladLogo } from './MiladLogo';
 import { LogoManagerModal } from './LogoManagerModal';
+import { getRoleOptionById } from '../utils/accountRoles';
 
 interface LoginViewProps {
   onLoginSuccess: (user: UserSession) => void;
@@ -47,30 +48,34 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
       return;
     }
 
-    // 1. Verifikasi apakah akun terdaftar dan password/PIN sesuai
+    // 1. Verifikasi apakah akun terdaftar dan password/PIN sesuai (mendukung Nama, ID Personalia, atau ID Sistem)
     const foundMember = memberList.find(
       (m) =>
         m.name.toLowerCase().trim() === trimmedUser.toLowerCase() ||
+        (m.idPersonalia && m.idPersonalia.toLowerCase().trim() === trimmedUser.toLowerCase()) ||
         m.id.toLowerCase().trim() === trimmedUser.toLowerCase()
     );
 
     const registeredPin = foundMember
-      ? (foundMember.defaultPin || (foundMember.category === 'admin' ? '12345678' : '1234')).trim()
+      ? (foundMember.defaultPin || '12345678').trim()
       : null;
 
     // Jika akun tidak ditemukan atau password/PIN tidak cocok: Tampilkan pesan aman yang diminta user
     if (!foundMember || trimmedPass !== registeredPin) {
-      setErrorMsg('Username dan password Anda salah, mohon diperhatikan lagi cara tulisnya.');
+      setErrorMsg('Username / ID Personalia dan password Anda salah, mohon diperhatikan lagi cara tulisnya.');
       return;
     }
 
-    // 2. Login berhasil sesuai role resmi yang ditentukan Administrator
-    const resolvedCategory: 'admin' | 'petugas' = foundMember.category;
+    // 2. Login berhasil sesuai role resmi yang ditentukan (1. Panitia, 2. Madrasah, 3. Alumni, 4. Pengurus Instansi, 5. Pengurus Daerah)
+    const resolvedRoleOption = getRoleOptionById(foundMember.accountType || (foundMember.category === 'admin' ? 'panitia' : 'madrasah'));
+    const resolvedCategory: 'admin' | 'petugas' = resolvedRoleOption.category;
     const session: UserSession = {
       id: foundMember.id,
+      idPersonalia: foundMember.idPersonalia,
       name: foundMember.name,
-      role: `${foundMember.role} (${resolvedCategory === 'admin' ? 'ADMIN' : 'PETUGAS'})`,
+      role: `${foundMember.role} (${resolvedRoleOption.name.toUpperCase()})`,
       category: resolvedCategory,
+      accountType: resolvedRoleOption.id,
       authType: 'committee',
       email: `${foundMember.name.toLowerCase().replace(/[^a-z0-9]/g, '')}@penganugerahan.id`,
       loginTime: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
@@ -134,7 +139,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
             <form onSubmit={handleLoginSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-[#24211c] mb-1.5">
-                  Nama Akun / Username Terdaftar
+                  Nama Akun atau ID Personalia Terdaftar
                 </label>
                 <div className="relative">
                   <User className="w-4 h-4 text-[#7c7b77] absolute left-3.5 top-3" />
@@ -142,7 +147,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
                     type="text"
                     required
                     autoFocus
-                    placeholder="Ketik nama akun yang telah didaftarkan Admin"
+                    placeholder="Ketik Nama Akun atau ID Personalia (contoh: PERS-001)"
                     value={username}
                     onChange={(e) => {
                       setUsername(e.target.value);
@@ -155,7 +160,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
 
               <div>
                 <label className="block text-xs font-bold text-[#24211c] mb-1.5">
-                  Kata Sandi / PIN Akses
+                  Kata Sandi / Password Akses (Wajib &gt; 6 Angka)
                 </label>
                 <div className="relative">
                   <Lock className="w-4 h-4 text-[#7c7b77] absolute left-3.5 top-3" />
@@ -163,7 +168,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
                     type={showPassword ? 'text' : 'password'}
                     maxLength={32}
                     required
-                    placeholder="Masukkan kata sandi / PIN"
+                    placeholder="Masukkan Password / PIN (lebih dari 6 angka)"
                     value={password}
                     onChange={(e) => {
                       setPassword(e.target.value);
