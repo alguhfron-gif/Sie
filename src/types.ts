@@ -1,14 +1,27 @@
 export type TransactionType = 'pemasukan' | 'pengeluaran';
 
 export type TransactionCategory =
-  | 'Sponsor & Donasi'
-  | 'Kas Organisasi'
-  | 'Trofi & Plakat'
-  | 'Cetak Sertifikat'
-  | 'Konsumsi'
-  | 'Dekorasi & Panggung'
-  | 'Dokumentasi & Media'
-  | 'Lain-lain';
+  | 'SEKSI PENGANUGERAHAN'
+  | 'PENGANUGERAHAN (25.200)'
+  | 'HADIAH LOMBA (25.300)'
+  | 'JUARAWAN MMU DAN DAERAH (25.400)'
+  | 'LAIN-LAIN (25.500)'
+  | string;
+
+export interface RapbItem {
+  id: string;
+  posCode: string; // POS
+  programName: string; // URAIAN
+  qtm?: number; // QTM (Kuantitas / Jumlah 1)
+  qtmKet?: string; // KET (Satuan QTM, misal: Pcs, Lembar, Orang)
+  vol?: number; // VOL (Volume / Faktor Kali 2)
+  volKet?: string; // KET (Satuan VOL, misal: Kali, Hari, Kegiatan)
+  unitPrice?: number; // SATUAN (Harga Satuan / Tarif Rp)
+  allocatedBudget: number; // JUMLAH (Total Pagu RAPB Rp = QTM * VOL * SATUAN)
+  category: TransactionCategory;
+  description?: string;
+  keywords: string[];
+}
 
 export interface Transaction {
   id: string;
@@ -20,6 +33,13 @@ export interface Transaction {
   notes?: string;
   receiptNumber?: string;
   proofUrl?: string;
+  // RAPB & Pengeluaran Kas Detail
+  programName?: string;
+  posCode?: string;
+  qty?: number;
+  unit?: string;
+  unitPrice?: number;
+  recipient?: string; // Penerima / Rekanan / Toko
 }
 
 export type NominationStatus = 'Draf' | 'Penilaian' | 'Disetujui' | 'Pemenang';
@@ -90,6 +110,9 @@ export interface Nomination {
   pengusulDomisili?: 'PPS' | 'LPPS' | string;
   pengusulAlamat?: string;
   pengusulPhone?: string;
+  pengusulIdPersonalia?: string;
+  pengusulUsername?: string;
+  pengusulAccountId?: string;
 
   // 2. Identitas Peserta / Ranting yang Diusulkan
   candidateDomisiliType?: 'PPS' | 'LPPS' | string;
@@ -107,6 +130,10 @@ export interface Nomination {
   integritasNote?: string;
   transparansiLaporanNote?: string;
   lainLainNote?: string;
+
+  // 4. Kunci Pengiriman Usulan (Terkunci permanen & tidak bisa diedit)
+  isLocked?: boolean;
+  lockedAt?: string;
 }
 
 export type TaskStatus = 'Terencana' | 'Berjalan' | 'Selesai';
@@ -148,6 +175,7 @@ export type AccountRoleType =
 export interface UserSession {
   id: string;
   idPersonalia?: string;
+  username?: string;
   name: string;
   role: string;
   category?: 'admin' | 'petugas';
@@ -163,6 +191,7 @@ export interface UserSession {
 export interface CommitteeAccount {
   id: string;
   idPersonalia?: string; // ID Personalia resmi panitia (contoh: PERS-001)
+  username?: string; // Username akun untuk login mandiri
   name: string;
   role: string; // Jabatan resmi
   category: 'admin' | 'petugas';
@@ -194,5 +223,5 @@ export interface RegulationRule {
   lastUpdated: string;
 }
 
-export type ActiveTab = 'dashboard' | 'nominasi' | 'keuangan' | 'koordinasi' | 'sertifikat' | 'surat' | 'akun';
+export type ActiveTab = 'dashboard' | 'nominasi' | 'keuangan' | 'koordinasi' | 'sertifikat' | 'laporan' | 'akun';
 

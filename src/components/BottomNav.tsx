@@ -1,5 +1,5 @@
 import React from 'react';
-import { Award, DollarSign, Users, FileCheck, LayoutDashboard, UserPlus, FileText } from 'lucide-react';
+import { Award, DollarSign, Users, FileCheck, LayoutDashboard, UserPlus, BarChart3 } from 'lucide-react';
 import { ActiveTab, UserSession } from '../types';
 
 interface BottomNavProps {
@@ -15,15 +15,15 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, c
   const allNavItems: { id: ActiveTab; label: string; icon: React.ReactNode }[] = [
     { id: 'dashboard', label: 'Dasbor', icon: <LayoutDashboard className="w-4 h-4" /> },
     { id: 'nominasi', label: 'Nominasi', icon: <Award className="w-4 h-4" /> },
+    { id: 'laporan', label: 'Laporan', icon: <BarChart3 className="w-4 h-4" /> },
     { id: 'sertifikat', label: 'Sertifikat', icon: <FileCheck className="w-4 h-4" /> },
-    { id: 'surat', label: 'Surat & SK', icon: <FileText className="w-4 h-4" /> },
     { id: 'keuangan', label: 'Keuangan', icon: <DollarSign className="w-4 h-4" /> },
     { id: 'koordinasi', label: 'Panitia', icon: <Users className="w-4 h-4" /> },
     { id: 'akun', label: 'Akun', icon: <UserPlus className="w-4 h-4" /> },
   ];
 
   const navItems = isPetugas
-    ? allNavItems.filter((item) => item.id === 'dashboard' || item.id === 'nominasi' || item.id === 'surat')
+    ? allNavItems.filter((item) => item.id === 'nominasi')
     : allNavItems;
 
   return (

@@ -206,6 +206,12 @@ export function sanitizeTransaction(raw: any, index: number = 0): Transaction {
     notes: raw.notes ? String(raw.notes) : undefined,
     receiptNumber: raw.receiptNumber ? String(raw.receiptNumber) : undefined,
     proofUrl: raw.proofUrl ? String(raw.proofUrl) : undefined,
+    programName: raw.programName ? String(raw.programName) : undefined,
+    posCode: raw.posCode ? String(raw.posCode) : undefined,
+    qty: typeof raw.qty === 'number' && !isNaN(raw.qty) ? raw.qty : (raw.qty ? Number(raw.qty) || undefined : undefined),
+    unit: raw.unit ? String(raw.unit) : undefined,
+    unitPrice: typeof raw.unitPrice === 'number' && !isNaN(raw.unitPrice) ? raw.unitPrice : (raw.unitPrice ? Number(raw.unitPrice) || undefined : undefined),
+    recipient: raw.recipient ? String(raw.recipient) : undefined,
   };
 }
 

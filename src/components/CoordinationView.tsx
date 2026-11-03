@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Users, CheckCircle2, Clock, Plus, PackageCheck, AlertCircle, Edit2, Trash2, ShieldCheck, UserCheck, FileText, Code, Box, Image, ChevronRight, FileSpreadsheet } from 'lucide-react';
 import { CommitteeTask, InventoryItem, RundownItem, TaskStatus, UserSession } from '../types';
-import { sendWebhookPayload, exportToCSV } from '../services/webhookService';
+import { exportToCSV } from '../services/webhookService';
 import { ContentHeader } from './ContentHeader';
 import { CollapsibleSection } from './CollapsibleSection';
 
@@ -182,7 +182,6 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
     };
 
     onAddTask(newTask);
-    sendWebhookPayload('committee_task', newTask);
 
     setTaskTitle('');
     setIsTaskModalOpen(false);
@@ -201,7 +200,6 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
     };
 
     onAddInventory(newInv);
-    sendWebhookPayload('committee_task', { type: 'INVENTORY_ITEM', ...newInv });
 
     setItemName('');
     setIsInvModalOpen(false);
@@ -227,14 +225,6 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
     ]);
 
     exportToCSV('Data_Panitia_dan_Logistik_Sie_Penganugerahan.csv', headers, [...taskRows, ...invRows]);
-
-    await sendWebhookPayload('bulk_export', {
-      module: 'Panitia',
-      tasksCount: tasks.length,
-      inventoryCount: inventory.length,
-      tasks,
-      inventory,
-    });
   };
 
   return (
@@ -261,11 +251,11 @@ export const CoordinationView: React.FC<CoordinationViewProps> = ({
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={handleExportCommittee}
-            title="Ekspor Data Panitia, Tugas, dan Logistik ke CSV & Google Sheets"
+            title="Ekspor Data Panitia, Tugas, dan Logistik ke CSV"
             className="flex items-center space-x-1.5 bg-white hover:bg-[#f7f6f2] text-[#24211c] border border-[rgba(36,33,28,0.15)] font-bold px-3.5 py-2 rounded-xl text-xs transition shadow-2xs cursor-pointer"
           >
             <FileSpreadsheet className="w-4 h-4 text-[#8a7c4c]" />
-            <span>Ekspor Sheets / CSV</span>
+            <span>Ekspor ke CSV</span>
           </button>
 
           {/* SubTab Toggle */}

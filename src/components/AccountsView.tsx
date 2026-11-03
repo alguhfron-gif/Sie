@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import {
   Users,
+  User,
   UserPlus,
   Shield,
   Wrench,
@@ -8,6 +9,8 @@ import {
   KeyRound,
   Trash2,
   Edit,
+  Eye,
+  EyeOff,
   CheckCircle2,
   AlertCircle,
   X,
@@ -29,6 +32,11 @@ import {
   Database,
   RefreshCw,
   IdCard,
+  Share2,
+  ExternalLink,
+  FileUp,
+  FileText,
+  CheckCheck,
 } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import { CommitteeAccount, UserSession, AccountRoleType } from '../types';
@@ -39,6 +47,23 @@ import {
   AccountRoleOption,
   getRoleOptionById,
 } from '../utils/accountRoles';
+
+export const STANDALONE_APP_URL = 'https://ais-pre-2t5jjthayj7e4yawbgduqv-162480341949.asia-southeast1.run.app';
+
+export interface ParsedExcelAccount {
+  idPersonalia: string;
+  name: string;
+  role: string;
+  roleOption: AccountRoleOption;
+  accountType: AccountRoleType;
+  category: 'admin' | 'petugas';
+  username: string;
+  defaultPin: string;
+  avatarBg: string;
+  isExisting: boolean;
+  isValid: boolean;
+  errors: string[];
+}
 
 interface AccountsViewProps {
   accounts: CommitteeAccount[];
@@ -67,6 +92,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
   const [activeTab, setActiveTab] = useState<'all' | 'admin' | 'petugas' | AccountRoleType>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [presenceMap, setPresenceMap] = useState<Record<string, UserPresence>>({});
+  const [copiedLink, setCopiedLink] = useState(false);
 
   // Real-time user presence subscription
   React.useEffect(() => {
@@ -85,10 +111,11 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingAcc, setEditingAcc] = useState<CommitteeAccount | null>(null);
 
-  // Form State Single (ID Personalia, Nama, Jabatan, Pilihan Role Resmi, Password > 6 Angka)
+  // Form State Single (ID Personalia, Nama, Pilihan Role Resmi, Username, Password > 6 Angka)
   const [formData, setFormData] = useState({
     idPersonalia: '',
     name: '',
+    username: '',
     role: '',
     accountType: 'madrasah' as AccountRoleType,
     category: 'petugas' as 'admin' | 'petugas',
@@ -98,21 +125,31 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSinglePassword, setShowSinglePassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  
+  // State Konfirmasi Hapus Akun (In-App Dialog, Tanpa window.confirm yang terblokir)
+  const [accountToDelete, setAccountToDelete] = useState<CommitteeAccount | null>(null);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+
   const [addedAccountToast, setAddedAccountToast] = useState<{
     idPersonalia?: string;
     name: string;
+    username?: string;
     role: string;
     accountType?: AccountRoleType;
     category: 'admin' | 'petugas';
     defaultPin: string;
   } | null>(null);
 
-  // Bulk Import State (Menampung 150+ Akun Sekaligus Tanpa Batasan)
+  // Bulk Import State (Mode Unggah File Excel & Generator Otomatis)
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
-  const [bulkTab, setBulkTab] = useState<'paste' | 'generator'>('paste');
-  const [bulkRawText, setBulkRawText] = useState('');
+  const [bulkTab, setBulkTab] = useState<'excel' | 'generator'>('excel');
+  const [excelFile, setExcelFile] = useState<File | null>(null);
+  const [parsedExcelAccounts, setParsedExcelAccounts] = useState<ParsedExcelAccount[]>([]);
+  const [isParsingExcel, setIsParsingExcel] = useState(false);
+  const [excelParseError, setExcelParseError] = useState<string | null>(null);
   const [bulkDefaultRole, setBulkDefaultRole] = useState('PETUGAS PENILAIAN LAPANGAN');
   const [bulkDefaultAccountType, setBulkDefaultAccountType] = useState<AccountRoleType>('madrasah');
   const [bulkDefaultCategory, setBulkDefaultCategory] = useState<'admin' | 'petugas'>('petugas');
@@ -166,87 +203,236 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
     (a) => presenceMap[a.id]?.isOnline || presenceMap[a.name.toLowerCase().trim()]?.isOnline
   ).length;
 
-  // Parsed bulk accounts from text paste (Format: ID Personalia, Nama, Jabatan, Password > 6 Angka)
-  const parsedBulkAccounts = useMemo(() => {
-    if (!bulkRawText.trim()) return [];
-    const lines = bulkRawText
-      .split('\n')
-      .map((l) => l.trim())
-      .filter((l) => l.length > 0);
+  // Download Format Template Excel untuk Penambahan Akun
+  const handleDownloadExcelTemplate = async () => {
+    try {
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = 'Sie Penganugerahan Milad Sidogiri';
+      workbook.created = new Date();
 
-    const defaultRoleOpt = getRoleOptionById(bulkDefaultAccountType);
+      const sheet = workbook.addWorksheet('Template Tambah Akun', {
+        views: [{ showGridLines: true }],
+      });
 
-    return lines
-      .map((line, idx) => {
-        const parts = line.split(/[,;\t]/).map((p) => p.trim()).filter(Boolean);
-        let idPersonalia = '';
+      sheet.addRow(['TEMPLATE DATA PENAMBAHAN AKUN PANITIA & PETUGAS']);
+      sheet.addRow(['SIE PENGANUGERAHAN - MILAD PONDOK PESANTREN SIDOGIRI']);
+      sheet.addRow([
+        'Petunjuk: Isi data akun mulai dari baris ke-5. 5 Kolom yang Dibutuhkan: (ID PERSONALIA, NAMA LENGKAP, PILIHAN ROLE, USERNAME, PASSWORD). Password wajib LEBIH DARI 6 ANGKA (minimal 7 atau 8 digit).'
+      ]);
+      sheet.addRow([]);
+
+      sheet.getRow(1).font = { name: 'Arial', size: 13, bold: true, color: { argb: 'FF1C1917' } };
+      sheet.getRow(2).font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF8A7C4C' } };
+      sheet.getRow(3).font = { name: 'Arial', size: 9, italic: true, color: { argb: 'FF57534E' } };
+
+      const headers = [
+        'NO',
+        'ID PERSONALIA',
+        'NAMA LENGKAP',
+        'PILIHAN ROLE (1 s.d 5)',
+        'USERNAME',
+        'PASSWORD (> 6 ANGKA)',
+      ];
+
+      const headerRow = sheet.addRow(headers);
+      headerRow.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+      headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+      headerRow.eachCell((cell) => {
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FF8A7C4C' },
+        };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFDCD7CB' } },
+          bottom: { style: 'medium', color: { argb: 'FF675C37' } },
+          left: { style: 'thin', color: { argb: 'FFDCD7CB' } },
+          right: { style: 'thin', color: { argb: 'FFDCD7CB' } },
+        };
+      });
+
+      sheet.columns = [
+        { key: 'no', width: 6 },
+        { key: 'idPers', width: 18 },
+        { key: 'nama', width: 34 },
+        { key: 'role', width: 34 },
+        { key: 'username', width: 22 },
+        { key: 'pass', width: 24 },
+      ];
+
+      // 5 Sample Pre-filled Rows demonstrating all 5 choices
+      const sampleRows = [
+        [1, 'PERS-008', 'Ust. M. Khoiruddin', '1. Panitia (admin)', 'khoiruddin.admin', '12345678'],
+        [2, 'PERS-009', 'Ust. Zainul Hasan', '2. madrasah (petugas)', 'zainul.madrasah', '12345678'],
+        [3, 'PERS-010', 'Ust. Achmad Shodiq', '3. alumni (petugas)', 'shodiq.alumni', '12345678'],
+        [4, 'PERS-011', 'Ust. Qomaruddin', '4. pengurus instansi (petugas)', 'qomar.instansi', '12345678'],
+        [5, 'PERS-012', 'Ust. Baidhowi', '5. pengurus daerah (petugas)', 'baidhowi.daerah', '12345678'],
+      ];
+
+      sampleRows.forEach((r) => {
+        const row = sheet.addRow(r);
+        row.font = { name: 'Arial', size: 9 };
+        row.alignment = { vertical: 'middle' };
+        row.eachCell((c) => {
+          c.border = {
+            top: { style: 'thin', color: { argb: 'FFE7E5E4' } },
+            bottom: { style: 'thin', color: { argb: 'FFE7E5E4' } },
+            left: { style: 'thin', color: { argb: 'FFE7E5E4' } },
+            right: { style: 'thin', color: { argb: 'FFE7E5E4' } },
+          };
+        });
+      });
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Template_Tambah_Akun_Penganugerahan.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error('Error downloading template:', e);
+      alert('Gagal mengunduh template Excel.');
+    }
+  };
+
+  // Parser File Excel yang Diupload Pengguna
+  const handleExcelUpload = async (file: File) => {
+    setExcelFile(file);
+    setIsParsingExcel(true);
+    setExcelParseError(null);
+
+    try {
+      const buffer = await file.arrayBuffer();
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(buffer);
+      const worksheet = workbook.worksheets[0];
+
+      if (!worksheet) {
+        throw new Error('File Excel tidak memiliki lembar kerja (worksheet).');
+      }
+
+      const rows: ParsedExcelAccount[] = [];
+
+      // Find header row or default start from row 5 or 2
+      let startRow = 2;
+      for (let r = 1; r <= Math.min(10, worksheet.rowCount); r++) {
+        const row = worksheet.getRow(r);
+        const text = row.values ? row.values.toString().toLowerCase() : '';
+        if (text.includes('id personalia') || text.includes('nama lengkap') || text.includes('pilihan role')) {
+          startRow = r + 1;
+          break;
+        }
+      }
+
+      for (let r = startRow; r <= worksheet.rowCount; r++) {
+        const row = worksheet.getRow(r);
+        if (!row || !row.values) continue;
+
+        const getCellStr = (colIdx: number) => {
+          const val = row.getCell(colIdx).value;
+          if (val === null || val === undefined) return '';
+          if (typeof val === 'object' && 'text' in val) return String((val as any).text).trim();
+          return String(val).trim();
+        };
+
+        let idPers = '';
         let name = '';
-        let role = bulkDefaultRole;
-        let accountType: AccountRoleType = bulkDefaultAccountType;
-        let category: 'admin' | 'petugas' = defaultRoleOpt.category;
-        let badge = defaultRoleOpt.badge;
-        let pin = bulkCustomPin || '12345678';
+        let roleStr = '';
+        let username = '';
+        let password = '';
 
-        if (parts.length >= 4) {
-          // Format 4 kolom: ID Personalia, Nama, Jabatan, Password
-          idPersonalia = parts[0];
-          name = parts[1];
-          role = parts[2];
-          pin = parts[3];
-        } else if (parts.length === 3) {
-          // Format 3 kolom: Nama, Jabatan, Password
-          name = parts[0];
-          role = parts[1];
-          pin = parts[2];
-        } else if (parts.length === 2) {
-          // Format 2 kolom: Nama, Jabatan
-          name = parts[0];
-          role = parts[1];
-        } else if (parts.length === 1) {
-          // Format 1 kolom: Nama
-          name = parts[0];
+        const colCount = row.cellCount;
+        if (colCount >= 6) {
+          idPers = getCellStr(2);
+          name = getCellStr(3);
+          roleStr = getCellStr(4);
+          username = getCellStr(5);
+          password = getCellStr(6);
+        } else if (colCount === 5) {
+          idPers = getCellStr(1);
+          name = getCellStr(2);
+          roleStr = getCellStr(3);
+          username = getCellStr(4);
+          password = getCellStr(5);
+        } else {
+          idPers = getCellStr(1) || getCellStr(2);
+          name = getCellStr(2) || getCellStr(3);
+          roleStr = getCellStr(3) || getCellStr(4);
+          username = getCellStr(4) || getCellStr(5);
+          password = getCellStr(5) || getCellStr(6);
         }
 
-        if (!idPersonalia) {
-          idPersonalia = `PERS-${String(accounts.length + 1 + idx).padStart(3, '0')}`;
+        if (!name || name.toLowerCase().includes('nama lengkap') || name.toLowerCase().includes('contoh')) {
+          continue;
         }
 
-        // Pastikan password / PIN > 6 angka
-        if (bulkPinMode === 'random') {
-          pin = String(Math.floor(10000000 + Math.random() * 90000000)); // 8 angka
-        } else if (pin.length <= 6) {
-          pin = '12345678'; // fallback to valid 8-digit password
+        const roleOption = getRoleOptionById(roleStr || bulkDefaultAccountType);
+        if (!idPers) {
+          idPers = `PERS-${String(accounts.length + 1 + rows.length).padStart(3, '0')}`;
+        }
+        if (!username) {
+          username = name.toLowerCase().replace(/[^a-z0-9]/g, '.');
+        }
+        if (!password) {
+          password = '12345678';
+        }
+
+        const errors: string[] = [];
+        if (password.length <= 6) {
+          errors.push(`Password minimal > 6 karakter (saat ini ${password.length} digit)`);
         }
 
         const isExisting = accounts.some(
           (a) =>
             a.name.toUpperCase().trim() === name.toUpperCase().trim() ||
-            (a.idPersonalia && a.idPersonalia.toUpperCase().trim() === idPersonalia.toUpperCase().trim())
+            (a.idPersonalia && a.idPersonalia.toUpperCase().trim() === idPers.toUpperCase().trim()) ||
+            (a.username && a.username.toLowerCase().trim() === username.toLowerCase().trim())
         );
 
-        return {
-          idPersonalia: idPersonalia.toUpperCase(),
+        if (isExisting) {
+          errors.push('Akun / ID / Username sudah terdaftar di sistem');
+        }
+
+        rows.push({
+          idPersonalia: idPers.toUpperCase(),
           name: name.toUpperCase(),
-          role: role.toUpperCase(),
-          accountType,
-          category,
-          badge,
-          defaultPin: pin,
+          role: roleOption.label.toUpperCase(),
+          roleOption,
+          accountType: roleOption.id,
+          category: roleOption.category,
+          username: username.toLowerCase().replace(/\s+/g, '.'),
+          defaultPin: password,
           avatarBg:
-            accountType === 'panitia'
+            roleOption.id === 'panitia'
               ? 'bg-emerald-600 text-white font-bold'
-              : accountType === 'madrasah'
+              : roleOption.id === 'madrasah'
               ? 'bg-sky-500 text-white font-bold'
-              : accountType === 'alumni'
+              : roleOption.id === 'alumni'
               ? 'bg-teal-600 text-white font-bold'
-              : accountType === 'pengurus_instansi'
+              : roleOption.id === 'pengurus_instansi'
               ? 'bg-purple-600 text-white font-bold'
               : 'bg-amber-600 text-white font-bold',
           isExisting,
-        };
-      })
-      .filter((item) => item.name.length > 0);
-  }, [bulkRawText, bulkDefaultRole, bulkDefaultAccountType, bulkPinMode, bulkCustomPin, accounts]);
+          isValid: errors.length === 0,
+          errors,
+        });
+      }
+
+      setParsedExcelAccounts(rows);
+      if (rows.length === 0) {
+        setExcelParseError('Tidak ditemukan baris akun valid dalam file Excel. Mohon periksa kembali kolom atau gunakan template resmi.');
+      }
+    } catch (err: any) {
+      console.error('Excel parse error:', err);
+      setExcelParseError('Gagal membaca file Excel. Pastikan format file adalah .xlsx atau .xls.');
+    } finally {
+      setIsParsingExcel(false);
+    }
+  };
 
   // Generated bulk accounts (Otomatis generate ID Personalia, Nama, Jabatan, dan Password > 6 Angka)
   const generatedBulkAccounts = useMemo(() => {
@@ -259,6 +445,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
       const numStr = num < 10 ? `0${num}` : `${num}`;
       const idPersonalia = `PERS-${String(num).padStart(3, '0')}`;
       const name = `${genPrefix.trim()} ${numStr}`.toUpperCase();
+      const username = `${genPrefix.trim().toLowerCase().replace(/[^a-z0-9]/g, '_')}_${numStr}`;
       const pin =
         bulkPinMode === 'random'
           ? String(Math.floor(10000000 + Math.random() * 90000000)) // 8 angka (> 6 angka)
@@ -272,6 +459,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
       items.push({
         idPersonalia,
         name,
+        username,
         role: bulkDefaultRole.toUpperCase(),
         accountType: bulkDefaultAccountType,
         category: defaultRoleOpt.category,
@@ -295,29 +483,60 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
 
   // Handle saving bulk accounts to Firestore
   const handleSaveBulk = async () => {
-    const targetList = bulkTab === 'paste' ? parsedBulkAccounts : generatedBulkAccounts;
-    const validList = targetList.filter((item) => !item.isExisting);
+    let accountsToSave: Array<Omit<CommitteeAccount, 'id'>> = [];
 
-    if (validList.length === 0) {
-      alert('Tidak ada akun baru yang dapat ditambahkan (semua nama akun pada daftar sudah terdaftar di sistem).');
-      return;
+    if (bulkTab === 'excel') {
+      const validExcel = parsedExcelAccounts.filter((a) => a.isValid && !a.isExisting);
+      if (validExcel.length === 0) {
+        alert('Tidak ada akun valid yang dapat disimpan dari file Excel.');
+        return;
+      }
+      accountsToSave = validExcel.map((item) => ({
+        idPersonalia: item.idPersonalia,
+        name: item.name,
+        username: item.username,
+        role: item.role,
+        accountType: item.accountType,
+        category: item.category,
+        badge: item.roleOption.badge,
+        defaultPin: item.defaultPin,
+        avatarBg: item.avatarBg,
+      }));
+    } else {
+      const validGen = generatedBulkAccounts.filter((item) => !item.isExisting);
+      if (validGen.length === 0) {
+        alert('Tidak ada akun baru yang dapat digenerate (semua sudah ada di sistem).');
+        return;
+      }
+      accountsToSave = validGen.map((item) => ({
+        idPersonalia: item.idPersonalia,
+        name: item.name,
+        username: item.username,
+        role: item.role,
+        accountType: item.accountType,
+        category: item.category,
+        badge: item.badge,
+        defaultPin: item.defaultPin,
+        avatarBg: item.avatarBg,
+      }));
     }
 
     setIsBulkSubmitting(true);
-    setBulkProgress({ current: 0, total: validList.length });
+    setBulkProgress({ current: 0, total: accountsToSave.length });
 
     try {
       if (onAddBatchAccounts) {
-        await onAddBatchAccounts(validList);
+        await onAddBatchAccounts(accountsToSave);
       } else {
-        for (let i = 0; i < validList.length; i++) {
-          await onAddAccount(validList[i]);
-          setBulkProgress({ current: i + 1, total: validList.length });
+        for (let i = 0; i < accountsToSave.length; i++) {
+          await onAddAccount(accountsToSave[i]);
+          setBulkProgress({ current: i + 1, total: accountsToSave.length });
         }
       }
-      setSuccessMsg(`Alhamdulillah! Berhasil menambahkan ${validList.length} akun panitia baru ke database Cloud!`);
+      setSuccessMsg(`Alhamdulillah! Berhasil menambahkan ${accountsToSave.length} akun panitia baru ke database Cloud!`);
       setIsBulkModalOpen(false);
-      setBulkRawText('');
+      setParsedExcelAccounts([]);
+      setExcelFile(null);
     } catch (err) {
       console.error('Failed bulk add accounts:', err);
       alert('Gagal menyimpan sebagian akun. Pastikan koneksi internet stabil.');
@@ -325,6 +544,12 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
       setIsBulkSubmitting(false);
       setBulkProgress(null);
     }
+  };
+
+  const handleCopyAppLink = () => {
+    navigator.clipboard.writeText(STANDALONE_APP_URL);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 3000);
   };
 
   // Export full accounts list to Excel (.xlsx)
@@ -468,6 +693,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
     setFormData({
       idPersonalia: `PERS-${String(accounts.length + 1).padStart(3, '0')}`,
       name: '',
+      username: '',
       role: 'PETUGAS MADRASAH & PENILAIAN',
       accountType: 'madrasah',
       category: 'petugas',
@@ -476,6 +702,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
       avatarBg: 'bg-sky-500 text-white font-bold',
     });
     setErrorMsg(null);
+    setShowSinglePassword(false);
     setIsAddModalOpen(true);
   };
 
@@ -485,6 +712,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
     setFormData({
       idPersonalia: acc.idPersonalia || acc.id,
       name: acc.name,
+      username: acc.username || '',
       role: acc.role,
       accountType: resolved.id,
       category: acc.category,
@@ -493,11 +721,41 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
       avatarBg: acc.avatarBg || (acc.category === 'admin' ? 'bg-[#00a65a] text-white font-bold' : 'bg-sky-500 text-white font-bold'),
     });
     setErrorMsg(null);
+    setShowSinglePassword(false);
     setIsAddModalOpen(true);
+  };
+
+  // Helper pengaturan huruf kapital, kecil, atau title case (Sesuai Permintaan User)
+  const toTitleCase = (str: string) =>
+    str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase());
+
+  const handleSetFieldCase = (
+    field: 'name' | 'role' | 'username' | 'idPersonalia',
+    casing: 'upper' | 'lower' | 'title'
+  ) => {
+    setFormData((prev) => {
+      const val = prev[field];
+      let formatted = val;
+      if (casing === 'upper') formatted = val.toUpperCase();
+      else if (casing === 'lower') formatted = val.toLowerCase();
+      else if (casing === 'title') formatted = toTitleCase(val);
+      return { ...prev, [field]: formatted };
+    });
+  };
+
+  const handleSetAllCase = (casing: 'upper' | 'lower' | 'title') => {
+    setFormData((prev) => ({
+      ...prev,
+      name: casing === 'upper' ? prev.name.toUpperCase() : casing === 'lower' ? prev.name.toLowerCase() : toTitleCase(prev.name),
+      role: casing === 'upper' ? prev.role.toUpperCase() : casing === 'lower' ? prev.role.toLowerCase() : toTitleCase(prev.role),
+      username: casing === 'upper' ? prev.username.toUpperCase() : casing === 'lower' ? prev.username.toLowerCase() : prev.username,
+      idPersonalia: casing === 'upper' ? prev.idPersonalia.toUpperCase() : casing === 'lower' ? prev.idPersonalia.toLowerCase() : prev.idPersonalia,
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Menghormati huruf kapital atau kecil yang dimasukkan/diatur oleh user
     const trimmedName = formData.name.trim();
     const trimmedRole = formData.role.trim();
     const trimmedPin = formData.defaultPin.trim();
@@ -505,7 +763,12 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
       formData.idPersonalia.trim() ||
       editingAcc?.idPersonalia ||
       `PERS-${String(accounts.length + 1).padStart(3, '0')}`
-    ).toUpperCase();
+    );
+    const trimmedUsername = (
+      formData.username.trim() ||
+      editingAcc?.username ||
+      trimmedName.toLowerCase().replace(/[^a-zA-Z0-9]/g, '.')
+    );
 
     if (!trimmedName) {
       setErrorMsg('Nama lengkap panitia / petugas wajib diisi.');
@@ -538,8 +801,9 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
         const updatedAccData: CommitteeAccount = {
           ...editingAcc,
           idPersonalia: trimmedIdPersonalia,
-          name: trimmedName.toUpperCase(),
-          role: trimmedRole.toUpperCase(),
+          name: trimmedName,
+          username: trimmedUsername,
+          role: trimmedRole,
           accountType: resolvedRole.id,
           category: resolvedRole.category,
           badge: resolvedRole.badge,
@@ -557,8 +821,9 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
       } else {
         const newAccData = {
           idPersonalia: trimmedIdPersonalia,
-          name: trimmedName.toUpperCase(),
-          role: trimmedRole.toUpperCase(),
+          name: trimmedName,
+          username: trimmedUsername,
+          role: trimmedRole,
           accountType: resolvedRole.id,
           category: resolvedRole.category,
           badge: resolvedRole.badge,
@@ -576,6 +841,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
         setAddedAccountToast({
           idPersonalia: trimmedIdPersonalia,
           name: newAccData.name,
+          username: trimmedUsername,
           role: newAccData.role,
           accountType: resolvedRole.id,
           category: newAccData.category,
@@ -592,15 +858,19 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
     }
   };
 
-  const handleDelete = async (id: string, name: string) => {
-    if (confirm(`Apakah Anda yakin ingin menghapus akun ${name}?`)) {
-      try {
-        await onDeleteAccount(id);
-        setSuccessMsg(`Akun ${name} berhasil dihapus.`);
-      } catch (err) {
-        console.error(err);
-        alert('Gagal menghapus akun.');
-      }
+  // Handler Hapus Akun In-App (Aktif & Berfungsi Penuh Tanpa window.confirm)
+  const handleConfirmDelete = async () => {
+    if (!accountToDelete) return;
+    setIsDeletingAccount(true);
+    try {
+      await onDeleteAccount(accountToDelete.id);
+      setSuccessMsg(`Akun "${accountToDelete.name}" (${accountToDelete.idPersonalia || accountToDelete.id}) berhasil dihapus.`);
+      setAccountToDelete(null);
+    } catch (err) {
+      console.error('Gagal menghapus akun:', err);
+      setErrorMsg('Gagal menghapus akun. Silakan coba beberapa saat lagi.');
+    } finally {
+      setIsDeletingAccount(false);
     }
   };
 
@@ -648,13 +918,16 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
             <button
               onClick={() => {
                 setIsBulkModalOpen(true);
-                setBulkRawText('');
+                setBulkTab('excel');
+                setExcelFile(null);
+                setParsedExcelAccounts([]);
+                setExcelParseError(null);
               }}
               className="px-3.5 py-2 bg-[#1e3a29] hover:bg-[#2d5a3f] text-white font-bold rounded-xl shadow-xs transition flex items-center justify-center space-x-1.5 text-xs cursor-pointer shrink-0"
-              title="Tambah hingga puluhan / 150 akun sekaligus"
+              title="Unggah berkas Excel (.xlsx) data akun"
             >
-              <Layers className="w-4 h-4 text-emerald-300" />
-              <span>📥 Tambah Massal (150+ Akun)</span>
+              <FileSpreadsheet className="w-4 h-4 text-emerald-300" />
+              <span>📥 Unggah via Excel (.xlsx)</span>
             </button>
 
             <button
@@ -701,6 +974,46 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
             </span>
           </div>
         </div>
+      </div>
+
+      {/* Standalone Direct App Link Banner for Distribution (Permintaan Pengguna #3) */}
+      <div className="bg-[#faf8f4] border border-[#dcd7cb] rounded-3xl p-4 sm:p-5 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <div className="flex items-center space-x-2">
+            <span className="p-1.5 rounded-lg bg-[#8a7c4c]/10 text-[#8a7c4c]">
+              <Share2 className="w-4 h-4" />
+            </span>
+            <h3 className="text-xs font-black uppercase tracking-wider text-[#24211c]">
+              Tautan Aplikasi Untuk Dibagikan ke Panitia &amp; Madrasah
+            </h3>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+              Langsung ke Aplikasi &amp; Wajib Login
+            </span>
+          </div>
+          <p className="text-[11px] text-[#7c7b77] leading-relaxed">
+            Tautan publik ini dapat langsung dibuka di browser tanpa melalui AI Studio. Pengguna yang membuka tautan ini langsung diarahkan ke form Login untuk memasukkan Username / ID Personalia dan Password masing-masing.
+          </p>
+          <div className="font-mono text-xs text-[#675c37] font-bold bg-white px-3 py-1.5 rounded-xl border border-[#dcd7cb] break-all inline-block select-all">
+            https://ais-pre-2t5jjthayj7e4yawbgduqv-162480341949.asia-southeast1.run.app
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            const url = 'https://ais-pre-2t5jjthayj7e4yawbgduqv-162480341949.asia-southeast1.run.app';
+            navigator.clipboard.writeText(url);
+            setCopiedLink(true);
+            setTimeout(() => setCopiedLink(false), 3000);
+          }}
+          className={`shrink-0 flex items-center justify-center space-x-2 px-5 py-2.5 rounded-xl font-extrabold text-xs transition cursor-pointer shadow-xs ${
+            copiedLink
+              ? 'bg-emerald-700 text-white'
+              : 'bg-[#8a7c4c] hover:bg-[#675c37] text-white'
+          }`}
+        >
+          {copiedLink ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+          <span>{copiedLink ? 'Tautan Berhasil Disalin!' : 'Salin Tautan Aplikasi'}</span>
+        </button>
       </div>
 
       {/* Floating Toast Popup Notification for Newly Added Account */}
@@ -1033,15 +1346,14 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                   <Edit className="w-4 h-4" />
                 </button>
 
-                {isAdmin && (
-                  <button
-                    onClick={() => handleDelete(acc.id, acc.name)}
-                    className="p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl transition cursor-pointer"
-                    title="Hapus Akun"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => setAccountToDelete(acc)}
+                  className="p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl transition cursor-pointer flex items-center justify-center shadow-2xs"
+                  title="Hapus Akun Ini"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
             </div>
           );
@@ -1185,19 +1497,83 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                 </div>
               </div>
 
+              {/* Pengatur Huruf Kapital & Kecil (Sesuai Permintaan User) */}
+              <div className="bg-[#fcfbf9] border border-[#c3b68b]/40 rounded-2xl p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-1.5 text-slate-800">
+                    <Sparkles className="w-3.5 h-3.5 text-[#8a7c4c]" />
+                    <span className="font-extrabold text-[11px] uppercase tracking-wider text-[#8a7c4c]">
+                      Pengatur Huruf Teks (Kapital / Kecil):
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-slate-500 font-medium">
+                    Atur sekaligus atau per kolom
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => handleSetAllCase('title')}
+                    className="px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-lg text-[10px] font-bold transition flex items-center space-x-1 cursor-pointer shadow-2xs"
+                    title="Ubah huruf awal setiap kata menjadi kapital (Ahmad Dahlan)"
+                  >
+                    <span>Aa</span>
+                    <span>Kapital Awal Kata</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSetAllCase('upper')}
+                    className="px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-lg text-[10px] font-bold transition flex items-center space-x-1 cursor-pointer shadow-2xs"
+                    title="Ubah semua huruf menjadi KAPITAL BESAR (AHMAD DAHLAN)"
+                  >
+                    <span>AA</span>
+                    <span>HURUF BESAR SEMUA</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSetAllCase('lower')}
+                    className="px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-lg text-[10px] font-bold transition flex items-center space-x-1 cursor-pointer shadow-2xs"
+                    title="Ubah semua huruf menjadi huruf kecil (ahmad dahlan)"
+                  >
+                    <span>aa</span>
+                    <span>huruf kecil semua</span>
+                  </button>
+                </div>
+              </div>
+
               {/* ID Personalia */}
               <div>
-                <label className="block font-extrabold text-slate-700 mb-1">
-                  ID Personalia: <span className="text-slate-400 font-normal">(Identitas resmi & bisa digunakan untuk login)</span>
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-extrabold text-slate-700">
+                    ID Personalia: <span className="text-slate-400 font-normal">(Login / Identitas)</span>
+                  </label>
+                  <div className="flex items-center space-x-1">
+                    <button
+                      type="button"
+                      onClick={() => handleSetFieldCase('idPersonalia', 'upper')}
+                      className="px-1.5 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[9.5px] font-bold cursor-pointer"
+                      title="Ubah ID jadi HURUF BESAR"
+                    >
+                      AA Besar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSetFieldCase('idPersonalia', 'lower')}
+                      className="px-1.5 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[9.5px] font-bold cursor-pointer"
+                      title="Ubah ID jadi huruf kecil"
+                    >
+                      aa kecil
+                    </button>
+                  </div>
+                </div>
                 <div className="relative">
                   <IdCard className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
                   <input
                     type="text"
-                    placeholder="Contoh: PERS-001"
+                    placeholder="Contoh: PERS-001 atau pers-001"
                     value={formData.idPersonalia}
-                    onChange={(e) => setFormData({ ...formData, idPersonalia: e.target.value.toUpperCase() })}
-                    className="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono font-bold uppercase focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    onChange={(e) => setFormData({ ...formData, idPersonalia: e.target.value })}
+                    className="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500"
                     required
                   />
                 </div>
@@ -1205,12 +1581,40 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
 
               {/* Nama Lengkap */}
               <div>
-                <label className="block font-extrabold text-slate-700 mb-1">
-                  Nama Lengkap Panitia:
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-extrabold text-slate-700">
+                    Nama Lengkap Panitia:
+                  </label>
+                  <div className="flex items-center space-x-1">
+                    <button
+                      type="button"
+                      onClick={() => handleSetFieldCase('name', 'title')}
+                      className="px-1.5 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[9.5px] font-bold cursor-pointer"
+                      title="Ubah nama jadi Huruf Awal Kapital (Contoh: Ahmad Safii)"
+                    >
+                      Aa Judul
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSetFieldCase('name', 'upper')}
+                      className="px-1.5 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[9.5px] font-bold cursor-pointer"
+                      title="Ubah nama jadi HURUF BESAR SEMUA (Contoh: AHMAD SAFII)"
+                    >
+                      AA BESAR
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSetFieldCase('name', 'lower')}
+                      className="px-1.5 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[9.5px] font-bold cursor-pointer"
+                      title="Ubah nama jadi huruf kecil (Contoh: ahmad safii)"
+                    >
+                      aa kecil
+                    </button>
+                  </div>
+                </div>
                 <input
                   type="text"
-                  placeholder="Contoh: AHMAD SAFII"
+                  placeholder="Contoh: Ahmad Safii atau AHMAD SAFII"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -1218,17 +1622,85 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                 />
               </div>
 
+              {/* Username Akun */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-extrabold text-slate-700">
+                    Username Akun Login: <span className="text-slate-400 font-normal">(Masuk ke sistem)</span>
+                  </label>
+                  <div className="flex items-center space-x-1">
+                    <button
+                      type="button"
+                      onClick={() => handleSetFieldCase('username', 'lower')}
+                      className="px-1.5 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[9.5px] font-bold cursor-pointer"
+                      title="Ubah username jadi huruf kecil"
+                    >
+                      aa kecil
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSetFieldCase('username', 'upper')}
+                      className="px-1.5 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[9.5px] font-bold cursor-pointer"
+                      title="Ubah username jadi HURUF BESAR"
+                    >
+                      AA BESAR
+                    </button>
+                  </div>
+                </div>
+                <div className="relative">
+                  <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                  <input
+                    type="text"
+                    placeholder="Contoh: ahmad.dahlan atau AHMAD.DAHLAN"
+                    value={formData.username}
+                    onChange={(e) => setFormData({ ...formData, username: e.target.value.replace(/\s+/g, '.') })}
+                    className="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+                <p className="text-[10px] text-slate-500 mt-1">
+                  Bebas gunakan huruf kapital atau kecil. Jika dikosongkan, username otomatis dibuat dari nama lengkap.
+                </p>
+              </div>
+
               {/* Jabatan Resmi */}
               <div>
-                <label className="block font-extrabold text-slate-700 mb-1">
-                  Jabatan Resmi:
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-extrabold text-slate-700">
+                    Jabatan Resmi:
+                  </label>
+                  <div className="flex items-center space-x-1">
+                    <button
+                      type="button"
+                      onClick={() => handleSetFieldCase('role', 'title')}
+                      className="px-1.5 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[9.5px] font-bold cursor-pointer"
+                      title="Ubah jabatan jadi Kapital Awal Kata"
+                    >
+                      Aa Judul
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSetFieldCase('role', 'upper')}
+                      className="px-1.5 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[9.5px] font-bold cursor-pointer"
+                      title="Ubah jabatan jadi HURUF BESAR SEMUA"
+                    >
+                      AA BESAR
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSetFieldCase('role', 'lower')}
+                      className="px-1.5 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[9.5px] font-bold cursor-pointer"
+                      title="Ubah jabatan jadi huruf kecil"
+                    >
+                      aa kecil
+                    </button>
+                  </div>
+                </div>
                 <input
                   type="text"
                   placeholder={
                     formData.category === 'admin'
-                      ? 'Contoh: KETUA SIE PENGANUGERAHAN'
-                      : 'Contoh: PETUGAS PENILAIAN LAPANGAN'
+                      ? 'Contoh: Ketua Sie Penganugerahan / KETUA SIE PENGANUGERAHAN'
+                      : 'Contoh: Petugas Penilaian Lapangan / PETUGAS PENILAIAN LAPANGAN'
                   }
                   value={formData.role}
                   onChange={(e) => setFormData({ ...formData, role: e.target.value })}
@@ -1241,7 +1713,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="font-extrabold text-slate-700">
-                    Password / PIN Masuk: <span className="text-rose-600 font-bold">*Wajib &gt; 6 Angka</span>
+                    Password / PIN Masuk: <span className="text-rose-600 font-bold">*Wajib &gt; 6 Karakter/Angka</span>
                   </label>
                   <span
                     className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
@@ -1258,21 +1730,29 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                 <div className="relative">
                   <KeyRound className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
                   <input
-                    type="text"
-                    maxLength={24}
-                    placeholder="Minimal 7 atau 8 angka (Contoh: 12345678)"
+                    type={showSinglePassword ? 'text' : 'password'}
+                    maxLength={32}
+                    placeholder="Minimal 7 atau 8 karakter (Contoh: 12345678)"
                     value={formData.defaultPin}
                     onChange={(e) => setFormData({ ...formData, defaultPin: e.target.value })}
-                    className={`w-full pl-10 pr-3.5 py-2.5 bg-slate-50 border rounded-xl text-slate-900 font-mono font-bold focus:outline-none focus:ring-2 ${
+                    className={`w-full pl-10 pr-10 py-2.5 bg-slate-50 border rounded-xl text-slate-900 font-mono font-bold focus:outline-none focus:ring-2 ${
                       formData.defaultPin.trim().length > 6
                         ? 'border-emerald-300 focus:ring-emerald-500'
                         : 'border-rose-300 focus:ring-rose-500'
                     }`}
                     required
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowSinglePassword(!showSinglePassword)}
+                    className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-700 p-0.5 cursor-pointer"
+                    title={showSinglePassword ? 'Sembunyikan password' : 'Lihat password'}
+                  >
+                    {showSinglePassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
                 <p className="text-[10px] text-slate-500 mt-1">
-                  Ketentuan: Password akun wajib memiliki panjang <strong>lebih dari 6 angka</strong> (minimal 7 atau 8 digit angka).
+                  Ketentuan: Password akun wajib memiliki panjang <strong>lebih dari 6 karakter / angka</strong> (minimal 7 atau 8 digit angka).
                 </p>
               </div>
 
@@ -1366,19 +1846,19 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
               </button>
             </div>
 
-            {/* Mode Tabs */}
+            {/* Mode Tabs (Excel Upload & Generator) */}
             <div className="flex border-b border-slate-200 shrink-0 mt-3">
               <button
                 type="button"
-                onClick={() => setBulkTab('paste')}
+                onClick={() => setBulkTab('excel')}
                 className={`flex-1 py-2.5 px-4 font-bold text-xs flex items-center justify-center space-x-2 border-b-2 transition cursor-pointer ${
-                  bulkTab === 'paste'
+                  bulkTab === 'excel'
                     ? 'border-emerald-600 text-emerald-700 bg-emerald-50/50'
                     : 'border-transparent text-slate-500 hover:text-slate-800'
                 }`}
               >
-                <Copy className="w-4 h-4" />
-                <span>📋 Tempel Daftar Nama (Copy-Paste)</span>
+                <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                <span>📊 Unggah Berkas Excel (.xlsx / .xls)</span>
               </button>
               <button
                 type="button"
@@ -1389,39 +1869,163 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                     : 'border-transparent text-slate-500 hover:text-slate-800'
                 }`}
               >
-                <Zap className="w-4 h-4" />
-                <span>⚡ Generator Penomoran Akun Otomatis</span>
+                <Zap className="w-4 h-4 text-amber-500" />
+                <span>⚡ Generator Penomoran Otomatis</span>
               </button>
             </div>
 
             {/* Body */}
             <div className="overflow-y-auto py-4 space-y-4 text-xs pr-1">
-              {/* Tab 1: Paste Text */}
-              {bulkTab === 'paste' && (
-                <div className="space-y-3">
-                  <div className="bg-amber-50/80 border border-amber-200/80 p-3 rounded-2xl text-amber-900 text-[11px] leading-relaxed">
-                    <strong>Format Data Akun:</strong> Terdiri dari <strong>(ID Personalia, Nama, Jabatan, Password)</strong>. Tempelkan daftar panitia di bawah ini (1 akun per baris). Password wajib <strong>lebih dari 6 angka</strong> (minimal 7 atau 8 digit angka).
-                    <div className="mt-1.5 font-mono text-[10px] text-amber-800 bg-amber-100/70 p-2 rounded-xl">
-                      Format fleksibel yang didukung: <br />
-                      • Lengkap 4 kolom: <code className="bg-white px-1 py-0.5 rounded font-bold">PERS-01, Ust. M. Ridwan, Penilai Ranting, 12345678</code><br />
-                      • 3 kolom (Nama, Jabatan, Password): <code className="bg-white px-1 py-0.5 rounded font-bold">Ust. Hasan Basri, Penilai Tahap I, 12345678</code><br />
-                      • 2 kolom (Nama, Jabatan): <code className="bg-white px-1 py-0.5 rounded font-bold">Ust. Ali Wafa, Petugas Lapangan</code><br />
-                      • Cukup Nama saja: <code className="bg-white px-1 py-0.5 rounded font-bold">Ust. Kholilurrahman</code> (ID Personalia & Password &gt; 6 angka otomatis dibuat)
+              {/* Tab 1: Excel Upload */}
+              {bulkTab === 'excel' && (
+                <div className="space-y-3.5">
+                  <div className="bg-[#faf8f4] border border-[#dcd7cb] p-3.5 sm:p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-2xs">
+                    <div className="space-y-1">
+                      <div className="flex items-center space-x-2">
+                        <span className="font-extrabold text-[#24211c]">Format 5 Kolom Penambahan Login yang Dibutuhkan:</span>
+                        <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                          Resmi
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-[#7c7b77] leading-relaxed">
+                        Kolom: <strong>1. ID Personalia</strong> • <strong>2. Nama Lengkap</strong> • <strong>3. Pilihan Role (Panitia / Madrasah / Alumni / Pengurus Instansi / Pengurus Daerah)</strong> • <strong>4. Username</strong> • <strong>5. Password (&gt; 6 Angka)</strong>
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleDownloadExcelTemplate}
+                      className="shrink-0 flex items-center justify-center space-x-1.5 px-3.5 py-2 bg-white hover:bg-[#f2eee3] text-[#8a7c4c] border border-[#8a7c4c]/40 font-bold rounded-xl shadow-2xs transition text-xs cursor-pointer"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span>Unduh Template (.xlsx)</span>
+                    </button>
+                  </div>
+
+                  {/* Drag and Drop / File Input Box */}
+                  <div className="border-2 border-dashed border-[#dcd7cb] hover:border-[#8a7c4c] rounded-2xl p-5 text-center bg-[#fcfbf9] hover:bg-white transition cursor-pointer relative">
+                    <input
+                      type="file"
+                      accept=".xlsx, .xls"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleExcelUpload(file);
+                      }}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                    <div className="flex flex-col items-center justify-center space-y-2 pointer-events-none">
+                      <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-200">
+                        {isParsingExcel ? (
+                          <RefreshCw className="w-6 h-6 animate-spin text-emerald-600" />
+                        ) : (
+                          <Upload className="w-6 h-6" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-bold text-xs text-slate-800">
+                          {excelFile ? excelFile.name : 'Pilih atau Seret Berkas Excel (.xlsx / .xls) ke Sini'}
+                        </p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          {excelFile
+                            ? `Ukuran file: ${(excelFile.size / 1024).toFixed(1)} KB • Klik untuk mengganti berkas`
+                            : 'Mendukung ratusan baris akun panitia & petugas sekaligus'}
+                        </p>
+                      </div>
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block font-black text-slate-700 mb-1">
-                      Daftar Nama Panitia (Satu nama per baris):
-                    </label>
-                    <textarea
-                      rows={6}
-                      value={bulkRawText}
-                      onChange={(e) => setBulkRawText(e.target.value)}
-                      placeholder={`PERS-01, Ust. Ahmad Dahlan, Penilai Ranting, 12345678\nPERS-02, Ust. M. Syukron, Petugas Lapangan, 12345678\nPERS-03, Ust. Abdul Wahab, Koordinator, 12345678\n... (bisa hingga 150+ baris akun)`}
-                      className="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl font-mono text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                    />
-                  </div>
+                  {excelParseError && (
+                    <div className="bg-rose-50 border border-rose-200 text-rose-800 p-3 rounded-xl text-xs flex items-center space-x-2">
+                      <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                      <span>{excelParseError}</span>
+                    </div>
+                  )}
+
+                  {/* Parsed Excel Preview Table */}
+                  {parsedExcelAccounts.length > 0 && (
+                    <div className="space-y-2 pt-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <span className="font-extrabold text-slate-800">
+                            Hasil Pembacaan Berkas Excel ({parsedExcelAccounts.length} Akun)
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800">
+                            {parsedExcelAccounts.filter((a) => a.isValid && !a.isExisting).length} Siap Diimpor
+                          </span>
+                          {parsedExcelAccounts.filter((a) => a.isExisting).length > 0 && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-800">
+                              {parsedExcelAccounts.filter((a) => a.isExisting).length} Sudah Terdaftar
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="max-h-60 overflow-y-auto border border-slate-200 rounded-2xl divide-y divide-slate-100 bg-white">
+                        <table className="w-full text-left border-collapse text-[11px]">
+                          <thead className="bg-slate-50 sticky top-0 border-b border-slate-200 text-slate-600 font-bold">
+                            <tr>
+                              <th className="py-2 px-2.5 text-center w-8">No</th>
+                              <th className="py-2 px-2.5">ID Personalia</th>
+                              <th className="py-2 px-2.5">Nama Lengkap</th>
+                              <th className="py-2 px-2.5">Pilihan Role</th>
+                              <th className="py-2 px-2.5">Username</th>
+                              <th className="py-2 px-2.5">Password</th>
+                              <th className="py-2 px-2.5 text-right">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 font-mono">
+                            {parsedExcelAccounts.map((item, idx) => (
+                              <tr
+                                key={idx}
+                                className={
+                                  item.isExisting
+                                    ? 'bg-amber-50/50 text-slate-500'
+                                    : !item.isValid
+                                    ? 'bg-rose-50/50'
+                                    : 'hover:bg-slate-50'
+                                }
+                              >
+                                <td className="py-2 px-2.5 text-center text-slate-400 font-sans">{idx + 1}</td>
+                                <td className="py-2 px-2.5 font-bold text-slate-800">{item.idPersonalia}</td>
+                                <td className="py-2 px-2.5 font-bold font-sans text-slate-900">{item.name}</td>
+                                <td className="py-2 px-2.5 font-sans">
+                                  <span
+                                    className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                                      item.category === 'admin'
+                                        ? 'bg-emerald-100 text-emerald-800'
+                                        : 'bg-sky-100 text-sky-800'
+                                    }`}
+                                  >
+                                    {item.roleOption.label}
+                                  </span>
+                                </td>
+                                <td className="py-2 px-2.5 text-slate-700">{item.username}</td>
+                                <td className="py-2 px-2.5 text-slate-700">{item.defaultPin}</td>
+                                <td className="py-2 px-2.5 text-right font-sans">
+                                  {item.isExisting ? (
+                                    <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded">
+                                      Sudah Ada
+                                    </span>
+                                  ) : !item.isValid ? (
+                                    <span
+                                      className="text-[10px] font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded"
+                                      title={item.errors.join(', ')}
+                                    >
+                                      Error ({item.errors[0]})
+                                    </span>
+                                  ) : (
+                                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded flex items-center justify-end">
+                                      <Check className="w-3 h-3 mr-0.5" />
+                                      Siap
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1462,161 +2066,145 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                       </span>
                     </div>
                   </div>
-                </div>
-              )}
 
-              {/* Default Settings For Batch */}
-              <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-3">
-                <span className="font-black text-slate-700 block uppercase tracking-wider text-[10px]">
-                  ⚙️ Pengaturan Default untuk Akun yang Dibuat:
-                </span>
+                  {/* Default Settings For Generator */}
+                  <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-3">
+                    <span className="font-black text-slate-700 block uppercase tracking-wider text-[10px]">
+                      ⚙️ Pengaturan Default Generator:
+                    </span>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div>
-                    <label className="block font-bold text-slate-600 mb-1 text-[11px]">
-                      Default Jabatan / Peran:
-                    </label>
-                    <input
-                      type="text"
-                      value={bulkDefaultRole}
-                      onChange={(e) => setBulkDefaultRole(e.target.value)}
-                      className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-bold text-slate-600 mb-1 text-[11px]">
-                      Pilihan Role & Akses:
-                    </label>
-                    <select
-                      value={bulkDefaultAccountType}
-                      onChange={(e) => {
-                        const val = e.target.value as AccountRoleType;
-                        setBulkDefaultAccountType(val);
-                        const opt = getRoleOptionById(val);
-                        setBulkDefaultCategory(opt.category);
-                      }}
-                      className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                    >
-                      {ACCOUNT_ROLE_OPTIONS.map((opt) => (
-                        <option key={opt.id} value={opt.id}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block font-bold text-slate-600 mb-1 text-[11px]">
-                      Pola PIN Masuk:
-                    </label>
-                    <div className="flex items-center space-x-1">
-                      <select
-                        value={bulkPinMode}
-                        onChange={(e) => setBulkPinMode(e.target.value as 'same' | 'random')}
-                        className="px-2 py-1.5 bg-white border border-slate-200 rounded-xl text-[11px] font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                      >
-                        <option value="same">PIN Sama</option>
-                        <option value="random">PIN Acak (Unik)</option>
-                      </select>
-                      {bulkPinMode === 'same' && (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block font-bold text-slate-600 mb-1 text-[11px]">
+                          Default Jabatan:
+                        </label>
                         <input
                           type="text"
-                          maxLength={16}
-                          value={bulkCustomPin}
-                          onChange={(e) => setBulkCustomPin(e.target.value)}
-                          placeholder="1234"
-                          className="w-20 px-2 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-mono font-bold text-center focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                          value={bulkDefaultRole}
+                          onChange={(e) => setBulkDefaultRole(e.target.value)}
+                          className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                         />
-                      )}
+                      </div>
+
+                      <div>
+                        <label className="block font-bold text-slate-600 mb-1 text-[11px]">
+                          Pilihan Role & Akses:
+                        </label>
+                        <select
+                          value={bulkDefaultAccountType}
+                          onChange={(e) => {
+                            const val = e.target.value as AccountRoleType;
+                            setBulkDefaultAccountType(val);
+                            const opt = getRoleOptionById(val);
+                            setBulkDefaultCategory(opt.category);
+                          }}
+                          className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                        >
+                          {ACCOUNT_ROLE_OPTIONS.map((opt) => (
+                            <option key={opt.id} value={opt.id}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block font-bold text-slate-600 mb-1 text-[11px]">
+                          Pola Password:
+                        </label>
+                        <div className="flex items-center space-x-1">
+                          <select
+                            value={bulkPinMode}
+                            onChange={(e) => setBulkPinMode(e.target.value as 'same' | 'random')}
+                            className="px-2 py-1.5 bg-white border border-slate-200 rounded-xl text-[11px] font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                          >
+                            <option value="same">Password Sama</option>
+                            <option value="random">Acak (&gt; 6 digit)</option>
+                          </select>
+                          {bulkPinMode === 'same' && (
+                            <input
+                              type="text"
+                              maxLength={16}
+                              value={bulkCustomPin}
+                              onChange={(e) => setBulkCustomPin(e.target.value)}
+                              placeholder="12345678"
+                              className="w-24 px-2 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-mono font-bold text-center focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                            />
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
 
-              {/* Live Preview List */}
-              {(() => {
-                const targetList = bulkTab === 'paste' ? parsedBulkAccounts : generatedBulkAccounts;
-                const newCount = targetList.filter((t) => !t.isExisting).length;
-                const existingCount = targetList.filter((t) => t.isExisting).length;
-
-                return (
+                  {/* Generator Preview List */}
                   <div className="space-y-2 border-t border-slate-200 pt-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
                         <span className="font-extrabold text-slate-800">
-                          Pratinjau Akun ({targetList.length} Terdeteksi)
+                          Pratinjau Akun ({generatedBulkAccounts.length} Terdeteksi)
                         </span>
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800">
-                          {newCount} Akun Baru Siap Dibuat
+                          {generatedBulkAccounts.filter((t) => !t.isExisting).length} Akun Baru Siap Dibuat
                         </span>
-                        {existingCount > 0 && (
+                        {generatedBulkAccounts.filter((t) => t.isExisting).length > 0 && (
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-800">
-                            {existingCount} Sudah Terdaftar (Dilewati)
+                            {generatedBulkAccounts.filter((t) => t.isExisting).length} Sudah Terdaftar
                           </span>
                         )}
                       </div>
                     </div>
 
-                    {targetList.length === 0 ? (
-                      <div className="p-6 text-center text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                        {bulkTab === 'paste'
-                          ? 'Belum ada nama yang dimasukkan. Ketik atau tempelkan daftar nama di atas.'
-                          : 'Tentukan jumlah akun yang ingin digenerate.'}
-                      </div>
-                    ) : (
-                      <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-2xl divide-y divide-slate-100 bg-slate-50/50">
-                        {targetList.slice(0, 15).map((item, idx) => (
-                          <div
-                            key={idx}
-                            className={`p-2.5 flex items-center justify-between text-xs ${
-                              item.isExisting ? 'bg-amber-50/60 opacity-60' : 'bg-white'
-                            }`}
-                          >
-                            <div className="flex items-center space-x-2 truncate">
-                              <span className="font-mono text-slate-400 text-[10px] w-5 text-right shrink-0">
-                                {idx + 1}.
-                              </span>
-                              <span className="font-mono text-[10px] font-black bg-emerald-50 text-emerald-800 px-1.5 py-0.5 rounded border border-emerald-200 shrink-0">
-                                {item.idPersonalia}
-                              </span>
-                              <span className="font-bold text-slate-900 truncate">{item.name}</span>
-                              <span className="text-[10px] text-slate-500 truncate">• {item.role}</span>
-                            </div>
-                            <div className="flex items-center space-x-2 shrink-0">
-                              <span className="font-mono text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-700 font-bold border border-slate-200">
-                                Password: {item.defaultPin}
-                              </span>
-                              {item.isExisting ? (
-                                <span className="text-[10px] text-amber-700 font-bold bg-amber-100 px-1.5 py-0.5 rounded">
-                                  Sudah Ada
-                                </span>
-                              ) : (
-                                <span className="text-[10px] text-emerald-700 font-bold bg-emerald-100 px-1.5 py-0.5 rounded flex items-center">
-                                  <Check className="w-3 h-3 mr-0.5" />
-                                  Siap Dibuat
-                                </span>
-                              )}
-                            </div>
+                    <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-2xl divide-y divide-slate-100 bg-slate-50/50">
+                      {generatedBulkAccounts.slice(0, 15).map((item, idx) => (
+                        <div
+                          key={idx}
+                          className={`p-2.5 flex items-center justify-between text-xs ${
+                            item.isExisting ? 'bg-amber-50/60 opacity-60' : 'bg-white'
+                          }`}
+                        >
+                          <div className="flex items-center space-x-2 truncate">
+                            <span className="font-mono text-slate-400 text-[10px] w-5 text-right shrink-0">
+                              {idx + 1}.
+                            </span>
+                            <span className="font-mono text-[10px] font-black bg-emerald-50 text-emerald-800 px-1.5 py-0.5 rounded border border-emerald-200 shrink-0">
+                              {item.idPersonalia}
+                            </span>
+                            <span className="font-bold text-slate-900 truncate">{item.name}</span>
+                            <span className="text-[10px] text-slate-500 truncate">• {item.role}</span>
                           </div>
-                        ))}
-                        {targetList.length > 15 && (
-                          <div className="p-2 text-center text-[10px] font-bold text-slate-500 bg-slate-100">
-                            ... dan {targetList.length - 15} akun lainnya siap diproses sekaligus.
+                          <div className="flex items-center space-x-2 shrink-0">
+                            <span className="font-mono text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-700 font-bold border border-slate-200">
+                              Password: {item.defaultPin}
+                            </span>
+                            {item.isExisting ? (
+                              <span className="text-[10px] text-amber-700 font-bold bg-amber-100 px-1.5 py-0.5 rounded">
+                                Sudah Ada
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-emerald-700 font-bold bg-emerald-100 px-1.5 py-0.5 rounded flex items-center">
+                                <Check className="w-3 h-3 mr-0.5" />
+                                Siap Dibuat
+                              </span>
+                            )}
                           </div>
-                        )}
-                      </div>
-                    )}
+                        </div>
+                      ))}
+                      {generatedBulkAccounts.length > 15 && (
+                        <div className="p-2 text-center text-[10px] font-bold text-slate-500 bg-slate-100">
+                          ... dan {generatedBulkAccounts.length - 15} akun lainnya siap diproses sekaligus.
+                        </div>
+                      )}
+                    </div>
                   </div>
-                );
-              })()}
+                </div>
+              )}
             </div>
 
             {/* Footer Buttons & Progress */}
             <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0 bg-white">
               <div className="text-[11px] text-slate-500 flex items-center space-x-1.5">
                 <Database className="w-4 h-4 text-emerald-600" />
-                <span>Koneksi Realtime Cloud Firestore • Siap 150+ Multi-User</span>
+                <span>Koneksi Realtime Cloud Firestore • Siap Multi-User</span>
               </div>
 
               <div className="flex items-center space-x-2 w-full sm:w-auto justify-end">
@@ -1633,7 +2221,9 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                   onClick={handleSaveBulk}
                   disabled={
                     isBulkSubmitting ||
-                    (bulkTab === 'paste' ? parsedBulkAccounts : generatedBulkAccounts).filter((t) => !t.isExisting).length === 0
+                    (bulkTab === 'excel'
+                      ? parsedExcelAccounts.filter((t) => t.isValid && !t.isExisting).length === 0
+                      : generatedBulkAccounts.filter((t) => !t.isExisting).length === 0)
                   }
                   className="px-5 py-2 bg-[#1e3a29] hover:bg-[#2d5a3f] text-white font-black rounded-xl shadow-md transition flex items-center space-x-2 cursor-pointer disabled:opacity-40"
                 >
@@ -1648,14 +2238,85 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
                     <>
                       <CheckCircle2 className="w-4 h-4 text-emerald-300" />
                       <span>
-                        Simpan Semua ke Cloud (
-                        {(bulkTab === 'paste' ? parsedBulkAccounts : generatedBulkAccounts).filter((t) => !t.isExisting).length}{' '}
-                        Akun)
+                        {bulkTab === 'excel'
+                          ? `Impor ${parsedExcelAccounts.filter((t) => t.isValid && !t.isExisting).length} Akun ke Sistem`
+                          : `Simpan ${generatedBulkAccounts.filter((t) => !t.isExisting).length} Akun Baru`}
                       </span>
                     </>
                   )}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Konfirmasi Hapus Akun (In-App Dialog, Aktif & Berfungsi Penuh) */}
+      {accountToDelete && (
+        <div className="fixed inset-0 z-50 bg-[#24211c]/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-[rgba(36,33,28,0.15)] space-y-4 animate-scale-up">
+            <div className="flex items-center space-x-3 text-rose-600">
+              <div className="w-12 h-12 rounded-2xl bg-rose-100 flex items-center justify-center shrink-0">
+                <Trash2 className="w-6 h-6 text-rose-600" />
+              </div>
+              <div>
+                <h3 className="text-base sm:text-lg font-black text-[#24211c]">
+                  Konfirmasi Hapus Akun
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Tindakan ini permanen dan menghapus akun dari sistem
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-[#fcfbf9] border border-[rgba(36,33,28,0.1)] rounded-2xl p-4 space-y-2 text-xs">
+              <div className="flex justify-between items-center py-1 border-b border-slate-200/60">
+                <span className="text-slate-500 font-semibold">Nama:</span>
+                <span className="font-bold text-[#24211c]">{accountToDelete.name}</span>
+              </div>
+              <div className="flex justify-between items-center py-1 border-b border-slate-200/60">
+                <span className="text-slate-500 font-semibold">ID Personalia:</span>
+                <span className="font-mono font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                  {accountToDelete.idPersonalia || accountToDelete.id}
+                </span>
+              </div>
+              <div className="flex justify-between items-center py-1 border-b border-slate-200/60">
+                <span className="text-slate-500 font-semibold">Username:</span>
+                <span className="font-mono font-bold text-slate-800">
+                  {accountToDelete.username || '-'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center py-1">
+                <span className="text-slate-500 font-semibold">Jabatan / Role:</span>
+                <span className="font-bold text-slate-800">{accountToDelete.role}</span>
+              </div>
+            </div>
+
+            <div className="bg-rose-50 border border-rose-200 text-rose-800 p-3 rounded-2xl text-xs flex items-start space-x-2">
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-600 mt-0.5" />
+              <p className="leading-relaxed">
+                Apakah Anda yakin ingin menghapus akun ini? Data akun yang dihapus tidak dapat dipulihkan kembali.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end space-x-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setAccountToDelete(null)}
+                disabled={isDeletingAccount}
+                className="px-4 py-2.5 rounded-xl border border-[rgba(36,33,28,0.2)] text-slate-700 text-xs font-bold hover:bg-slate-100 transition cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                disabled={isDeletingAccount}
+                className="flex items-center space-x-1.5 px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold shadow-sm transition cursor-pointer disabled:opacity-50"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>{isDeletingAccount ? 'Menghapus...' : 'Ya, Hapus Akun'}</span>
+              </button>
             </div>
           </div>
         </div>

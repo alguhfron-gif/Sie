@@ -14,7 +14,7 @@ const tabLabels: Record<ActiveTab, string> = {
   keuangan: 'Laporan Keuangan',
   koordinasi: 'Panitia & Tugas',
   sertifikat: 'Cetak Sertifikat',
-  surat: 'Surat & SK',
+  laporan: 'Laporan Pengisian',
   akun: 'Kelola Akun',
 };
 

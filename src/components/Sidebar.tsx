@@ -5,7 +5,7 @@ import {
   Users, 
   FileCheck, 
   LayoutDashboard, 
-  FileText, 
+  BarChart3, 
   UserPlus, 
   ChevronLeft, 
   ChevronRight,
@@ -13,7 +13,8 @@ import {
   X,
   Cloud,
   CheckCircle2,
-  Sparkles
+  Sparkles,
+  RefreshCw
 } from 'lucide-react';
 import { ActiveTab, UserSession } from '../types';
 import { MiladLogo } from './MiladLogo';
@@ -23,11 +24,11 @@ interface SidebarProps {
   setActiveTab: (tab: ActiveTab) => void;
   currentUser?: UserSession | null;
   onLogout?: () => void;
+  onRefreshData?: () => void;
   collapsed?: boolean;
   setCollapsed?: React.Dispatch<React.SetStateAction<boolean>>;
   mobileOpen?: boolean;
   onCloseMobile?: () => void;
-  onOpenWebhookModal?: () => void;
 }
 
 interface NavGroup {
@@ -47,11 +48,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setActiveTab,
   currentUser,
   onLogout,
+  onRefreshData,
   collapsed: externalCollapsed,
   setCollapsed: externalSetCollapsed,
   mobileOpen = false,
   onCloseMobile,
-  onOpenWebhookModal,
 }) => {
   const [internalCollapsed, setInternalCollapsed] = useState(false);
 
@@ -91,18 +92,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
       groupName: 'OPERASIONAL',
       items: [
         { 
+          id: 'laporan', 
+          label: 'Laporan Pengisian', 
+          icon: <BarChart3 className="w-5 h-5" />, 
+          badge: 'Admin',
+          badgeColor: 'bg-emerald-700 text-white',
+          desc: 'Audit & Monitoring Akun' 
+        },
+        { 
           id: 'sertifikat', 
           label: 'Cetak Sertifikat', 
           icon: <FileCheck className="w-5 h-5" />, 
           badge: 'Piagam',
           badgeColor: 'bg-[#675c37] text-white',
           desc: 'Generator E-Sertifikat' 
-        },
-        { 
-          id: 'surat', 
-          label: 'Surat & SK', 
-          icon: <FileText className="w-5 h-5" />, 
-          desc: 'Arsip Ketentuan & SK' 
         },
         { 
           id: 'keuangan', 
@@ -133,11 +136,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
   ];
 
-  // Filter items if user is Petugas (limited view access)
+  // Filter items if user is Petugas (strictly limited to Ketentuan Nominasi only, Dasbor Utama disembunyikan)
   const filteredNavGroups = navGroups.map(group => ({
     ...group,
     items: isPetugas 
-      ? group.items.filter(item => item.id === 'dashboard' || item.id === 'nominasi' || item.id === 'surat')
+      ? group.items.filter(item => item.id === 'nominasi')
       : group.items
   })).filter(group => group.items.length > 0);
 
@@ -145,10 +148,44 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <>
       {/* DESKTOP STICKY SIDEBAR (Clean Sidogiri Minimal & Transparan) */}
       <aside
-        className={`hidden md:flex flex-col bg-white/50 backdrop-blur-md text-[#24211c] transition-all duration-300 ease-in-out shrink-0 sticky top-14 sm:top-16 h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)] z-30 select-none ${
+        className={`hidden md:flex flex-col bg-white/70 backdrop-blur-md text-[#24211c] transition-all duration-300 ease-in-out shrink-0 sticky top-0 h-screen z-30 select-none border-r border-[rgba(36,33,28,0.1)] ${
           collapsed ? 'w-20 p-2.5' : 'w-64 p-3'
         }`}
       >
+        {/* Signature Milad Sidogiri Top Decorative Bar */}
+        <div aria-hidden="true" className="grid grid-cols-[26%_1fr_8%] h-1.5 w-full shrink-0 mb-3 rounded-full overflow-hidden">
+          <span className="bg-[#8a7c4c]"></span>
+          <span className="bg-[#e5e2da]"></span>
+          <span className="bg-[#7c7b77]"></span>
+        </div>
+
+        {/* Brand Header */}
+        {!collapsed ? (
+          <div 
+            onClick={() => setActiveTab('dashboard')} 
+            className="flex items-center space-x-2.5 p-2 mb-3 bg-white/80 rounded-xl border border-[rgba(36,33,28,0.08)] shadow-2xs cursor-pointer hover:bg-white transition"
+          >
+            <MiladLogo size="sm" className="w-8 h-8 shrink-0" />
+            <div className="min-w-0 flex-1">
+              <h2 className="font-extrabold text-xs tracking-tight text-[#24211c] leading-tight truncate">
+                SIE PENGANUGERAHAN
+              </h2>
+              <div className="flex items-center space-x-1 mt-0.5">
+                <span className="text-[9px] text-[#675c37] font-bold">MILAD SIDOGIRI</span>
+                <span className="text-[9px] text-[#8a7c4c] font-medium">• 1448 H</span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div 
+            onClick={() => setActiveTab('dashboard')} 
+            className="flex justify-center mb-3 cursor-pointer"
+            title="Sie Penganugerahan - Milad Sidogiri"
+          >
+            <MiladLogo size="sm" className="w-8 h-8 shrink-0" />
+          </div>
+        )}
+
         {/* Top User Profile Header Card (Expanded) */}
         {!collapsed && currentUser && (
           <div className="flex items-center space-x-3 p-2.5 mb-3 bg-white/60 hover:bg-white/80 rounded-xl transition">
@@ -278,20 +315,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Sidebar Footer */}
         <div className="mt-auto pt-2 space-y-2">
-          {onOpenWebhookModal && !collapsed && (
-            <button
-              type="button"
-              onClick={onOpenWebhookModal}
-              className="w-full py-1.5 px-2 bg-white/60 hover:bg-white/90 text-[#24211c] text-[11px] font-medium rounded-xl transition flex items-center justify-between cursor-pointer"
-            >
-              <span className="flex items-center space-x-1.5">
-                <Cloud className="w-3.5 h-3.5 text-[#8a7c4c]" />
-                <span>Google Sheets Sync</span>
-              </span>
-              <span className="w-2 h-2 rounded-full bg-[#8a7c4c]" />
-            </button>
-          )}
-
           {!collapsed ? (
             <div className="p-2.5 bg-white/60 rounded-xl space-y-2">
               <div className="flex items-center justify-between text-[10px] text-[#675c37]">
@@ -303,6 +326,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   AKTIF
                 </span>
               </div>
+
+              {onRefreshData && (
+                <button
+                  type="button"
+                  onClick={onRefreshData}
+                  className="w-full py-1.5 px-2 bg-black/5 hover:bg-black/10 text-[#24211c] font-semibold text-xs rounded-lg transition flex items-center justify-center space-x-1.5 cursor-pointer active:scale-95"
+                >
+                  <RefreshCw className="w-3.5 h-3.5 text-[#8a7c4c]" />
+                  <span>Segarkan Data</span>
+                </button>
+              )}
 
               {onLogout && (
                 <button
@@ -316,16 +350,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
               )}
             </div>
           ) : (
-            onLogout && (
-              <button
-                type="button"
-                onClick={onLogout}
-                title="Keluar Akun (Logout)"
-                className="w-full p-2.5 bg-black/5 hover:bg-black/10 text-[#675c37] hover:text-[#24211c] rounded-xl flex items-center justify-center cursor-pointer transition active:scale-95"
-              >
-                <LogOut className="w-4 h-4 text-[#8a7c4c]" />
-              </button>
-            )
+            <div className="space-y-1.5">
+              {onRefreshData && (
+                <button
+                  type="button"
+                  onClick={onRefreshData}
+                  title="Segarkan Data"
+                  className="w-full p-2.5 bg-black/5 hover:bg-black/10 text-[#675c37] hover:text-[#24211c] rounded-xl flex items-center justify-center cursor-pointer transition active:scale-95"
+                >
+                  <RefreshCw className="w-4 h-4 text-[#8a7c4c]" />
+                </button>
+              )}
+              {onLogout && (
+                <button
+                  type="button"
+                  onClick={onLogout}
+                  title="Keluar Akun (Logout)"
+                  className="w-full p-2.5 bg-black/5 hover:bg-black/10 text-[#675c37] hover:text-[#24211c] rounded-xl flex items-center justify-center cursor-pointer transition active:scale-95"
+                >
+                  <LogOut className="w-4 h-4 text-[#8a7c4c]" />
+                </button>
+              )}
+            </div>
           )}
 
           {!collapsed && (

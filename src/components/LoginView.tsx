@@ -48,11 +48,12 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
       return;
     }
 
-    // 1. Verifikasi apakah akun terdaftar dan password/PIN sesuai (mendukung Nama, ID Personalia, atau ID Sistem)
+    // 1. Verifikasi apakah akun terdaftar dan password/PIN sesuai (mendukung Username, ID Personalia, Nama, atau ID Sistem)
     const foundMember = memberList.find(
       (m) =>
-        m.name.toLowerCase().trim() === trimmedUser.toLowerCase() ||
+        (m.username && m.username.toLowerCase().trim() === trimmedUser.toLowerCase()) ||
         (m.idPersonalia && m.idPersonalia.toLowerCase().trim() === trimmedUser.toLowerCase()) ||
+        m.name.toLowerCase().trim() === trimmedUser.toLowerCase() ||
         m.id.toLowerCase().trim() === trimmedUser.toLowerCase()
     );
 
@@ -72,6 +73,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
     const session: UserSession = {
       id: foundMember.id,
       idPersonalia: foundMember.idPersonalia,
+      username: foundMember.username,
       name: foundMember.name,
       role: `${foundMember.role} (${resolvedRoleOption.name.toUpperCase()})`,
       category: resolvedCategory,
@@ -139,7 +141,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
             <form onSubmit={handleLoginSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-[#24211c] mb-1.5">
-                  Nama Akun atau ID Personalia Terdaftar
+                  Username / ID Personalia Terdaftar
                 </label>
                 <div className="relative">
                   <User className="w-4 h-4 text-[#7c7b77] absolute left-3.5 top-3" />
@@ -147,7 +149,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
                     type="text"
                     required
                     autoFocus
-                    placeholder="Ketik Nama Akun atau ID Personalia (contoh: PERS-001)"
+                    placeholder="Masukkan Username atau ID Personalia (contoh: PERS-001 / birril.walid)"
                     value={username}
                     onChange={(e) => {
                       setUsername(e.target.value);

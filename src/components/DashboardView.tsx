@@ -13,7 +13,6 @@ interface DashboardViewProps {
   tasks: CommitteeTask[];
   onOpenAddNomination: () => void;
   onOpenAddTransaction: () => void;
-  onOpenWebhookModal?: () => void;
   currentUser?: UserSession | null;
 }
 
@@ -25,7 +24,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   tasks,
   onOpenAddNomination,
   onOpenAddTransaction,
-  onOpenWebhookModal,
   currentUser,
 }) => {
   const isAdmin = currentUser?.category === 'admin' || (currentUser?.role && currentUser.role.toUpperCase().includes('ADMIN'));
@@ -128,13 +126,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </button>
             )}
 
-            <button
-              onClick={() => setActiveTab('sertifikat')}
-              className="flex items-center space-x-1.5 bg-[#24211c] hover:bg-[#38342c] active:scale-[0.98] text-white font-bold px-3.5 py-2 rounded-xl transition text-xs shadow-xs cursor-pointer"
-            >
-              <FileCheck className="w-4 h-4 text-[#c3b68b]" />
-              <span>Cetak Sertifikat</span>
-            </button>
+            {!isPetugas && (
+              <button
+                onClick={() => setActiveTab('sertifikat')}
+                className="flex items-center space-x-1.5 bg-[#24211c] hover:bg-[#38342c] active:scale-[0.98] text-white font-bold px-3.5 py-2 rounded-xl transition text-xs shadow-xs cursor-pointer"
+              >
+                <FileCheck className="w-4 h-4 text-[#c3b68b]" />
+                <span>Cetak Sertifikat</span>
+              </button>
+            )}
 
             {!isPetugas && (
               <button
@@ -267,47 +267,49 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Column 1: Pemenang Ditetapkan & Dokumen Resmi */}
         <div className="space-y-4">
-          {/* Pemenang Terpilih Card */}
-          <div className="bg-white border border-[rgba(36,33,28,0.12)] rounded-2xl p-4 sm:p-5 shadow-xs">
-            <div className="flex items-center justify-between pb-3 mb-3 border-b border-[rgba(36,33,28,0.08)]">
-              <div>
-                <h3 className="font-bold text-sm text-[#24211c]">Pemenang Ditetapkan</h3>
-                <p className="text-[11px] text-[#7c7b77]">Penerima anugerah utama</p>
+          {/* Pemenang Terpilih Card (Khusus Admin - Petugas Tidak Ditampilkan) */}
+          {!isPetugas && (
+            <div className="bg-white border border-[rgba(36,33,28,0.12)] rounded-2xl p-4 sm:p-5 shadow-xs">
+              <div className="flex items-center justify-between pb-3 mb-3 border-b border-[rgba(36,33,28,0.08)]">
+                <div>
+                  <h3 className="font-bold text-sm text-[#24211c]">Pemenang Ditetapkan</h3>
+                  <p className="text-[11px] text-[#7c7b77]">Penerima anugerah utama</p>
+                </div>
+                <button
+                  onClick={() => setActiveTab('sertifikat')}
+                  className="text-xs font-semibold text-[#8a7c4c] hover:underline cursor-pointer"
+                >
+                  Cetak Semua
+                </button>
               </div>
-              <button
-                onClick={() => setActiveTab('sertifikat')}
-                className="text-xs font-semibold text-[#8a7c4c] hover:underline cursor-pointer"
-              >
-                Cetak Semua
-              </button>
-            </div>
 
-            <div className="space-y-2">
-              {nominations.filter((n) => n.status === 'Pemenang').slice(0, 5).map((nom) => {
-                const cat = categories.find((c) => c.id === nom.categoryId);
-                return (
-                  <div key={nom.id} className="flex items-center justify-between p-2.5 rounded-xl bg-[#f7f6f2] border border-[rgba(36,33,28,0.06)] text-xs">
-                    <div className="flex items-center space-x-2.5 truncate">
-                      <span className="shrink-0 text-amber-600">🏆</span>
-                      <div className="truncate">
-                        <p className="font-bold text-[#24211c] truncate">{nom.candidateName}</p>
-                        <p className="text-[10px] text-[#7c7b77] truncate">{cat?.title || 'Kategori'}</p>
+              <div className="space-y-2">
+                {nominations.filter((n) => n.status === 'Pemenang').slice(0, 5).map((nom) => {
+                  const cat = categories.find((c) => c.id === nom.categoryId);
+                  return (
+                    <div key={nom.id} className="flex items-center justify-between p-2.5 rounded-xl bg-[#f7f6f2] border border-[rgba(36,33,28,0.06)] text-xs">
+                      <div className="flex items-center space-x-2.5 truncate">
+                        <span className="shrink-0 text-amber-600">🏆</span>
+                        <div className="truncate">
+                          <p className="font-bold text-[#24211c] truncate">{nom.candidateName}</p>
+                          <p className="text-[10px] text-[#7c7b77] truncate">{cat?.title || 'Kategori'}</p>
+                        </div>
                       </div>
+                      <span className="font-bold text-[#675c37] bg-[#f2eee3] border border-[#c3b68b]/40 px-2 py-0.5 rounded text-[10px] shrink-0">
+                        {nom.score} Pts
+                      </span>
                     </div>
-                    <span className="font-bold text-[#675c37] bg-[#f2eee3] border border-[#c3b68b]/40 px-2 py-0.5 rounded text-[10px] shrink-0">
-                      {nom.score} Pts
-                    </span>
-                  </div>
-                );
-              })}
+                  );
+                })}
 
-              {nominations.filter((n) => n.status === 'Pemenang').length === 0 && (
-                <p className="text-center text-[#7c7b77] text-xs italic py-4">
-                  Belum ada calon yang ditetapkan sebagai pemenang.
-                </p>
-              )}
+                {nominations.filter((n) => n.status === 'Pemenang').length === 0 && (
+                  <p className="text-center text-[#7c7b77] text-xs italic py-4">
+                    Belum ada calon yang ditetapkan sebagai pemenang.
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Quick Access Card: Surat & SK */}
           <div className="bg-white border border-[rgba(36,33,28,0.12)] rounded-2xl p-4 shadow-xs">
@@ -374,28 +376,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-            </div>
-          )}
-
-          {/* Quick Access Card: Google Sheets */}
-          {onOpenWebhookModal && (
-            <div className="bg-[#f2eee3]/60 border border-[#c3b68b]/40 rounded-2xl p-4 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="flex items-center space-x-1.5 font-bold text-[#675c37]">
-                  <FileSpreadsheet className="w-4 h-4 text-[#8a7c4c]" />
-                  <span>Google Sheets Sync</span>
-                </span>
-                <span className="w-2 h-2 rounded-full bg-[#8a7c4c]"></span>
-              </div>
-              <p className="text-[11px] text-[#7c7b77] mt-1.5">
-                Sinkronisasi otomatis seluruh database ke Google Sheets panitia.
-              </p>
-              <button
-                onClick={onOpenWebhookModal}
-                className="mt-3 w-full py-1.5 bg-white hover:bg-[#efede7] border border-[rgba(36,33,28,0.15)] rounded-lg text-xs font-semibold text-[#24211c] transition cursor-pointer text-center"
-              >
-                Atur URL Webhook
-              </button>
             </div>
           )}
         </div>

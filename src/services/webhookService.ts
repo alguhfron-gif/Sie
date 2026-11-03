@@ -49,41 +49,11 @@ export async function fetchWebhookUrlFromFirestore(): Promise<string> {
  * Send JSON payload asynchronously to Google Apps Script Webhook URL
  */
 export async function sendWebhookPayload(
-  eventType: 'financial_transaction' | 'nomination_update' | 'committee_task' | 'certificate_generated' | 'bulk_export',
-  payload: any
+  _eventType: 'financial_transaction' | 'nomination_update' | 'committee_task' | 'certificate_generated' | 'bulk_export',
+  _payload: any
 ): Promise<{ success: boolean; message: string }> {
-  const webhookUrl = getWebhookUrl();
-
-  if (!webhookUrl) {
-    console.log(`[Webhook Bypass] Event "${eventType}" recorded locally. Webhook URL not set yet.`);
-    return { success: false, message: 'Webhook URL belum dikonfigurasi di Pengaturan.' };
-  }
-
-  const dataToSend = {
-    event: eventType,
-    timestamp: new Date().toISOString(),
-    source: 'Sie Penganugerahan App',
-    data: payload,
-  };
-
-  try {
-    // Note: Google Apps Script Webhook requires mode: 'no-cors' for browser requests without preflight errors,
-    // or direct POST.
-    await fetch(webhookUrl, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(dataToSend),
-    });
-
-    console.log(`[Webhook Success] Payload for "${eventType}" sent to Google Apps Script.`);
-    return { success: true, message: 'Data berhasil dikirim ke Google Sheets via Webhook!' };
-  } catch (error) {
-    console.warn(`[Webhook Warning] Failed to send payload for "${eventType}":`, error);
-    return { success: false, message: 'Gagal mengirim data ke Webhook. Cek koneksi atau URL.' };
-  }
+  // Integrasi Webhook eksternal dinonaktifkan sesuai preferensi pengguna
+  return { success: true, message: 'Data berhasil diproses secara lokal.' };
 }
 
 /**

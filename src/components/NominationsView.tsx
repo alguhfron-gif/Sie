@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Award, Plus, Search, Filter, CheckCircle2, Edit2, Trash2, Trophy, Star, UserCheck, ShieldCheck, LayoutGrid, List, Phone, Briefcase, IdCard, Sparkles, FileSpreadsheet, Download, Loader2, Scale, FileText, FileCheck, Building2, GraduationCap, HeartHandshake, BookOpen, Info, Check, ChevronDown, ChevronUp, Lock, X, CheckSquare, Users, ClipboardCheck, Eye } from 'lucide-react';
+import { Award, Plus, Search, Filter, CheckCircle2, Edit2, Trash2, Trophy, Star, UserCheck, ShieldCheck, LayoutGrid, List, Phone, Briefcase, IdCard, Sparkles, FileSpreadsheet, Download, Loader2, Scale, FileText, FileCheck, Building2, GraduationCap, HeartHandshake, BookOpen, Info, Check, ChevronDown, ChevronUp, Lock, X, CheckSquare, Users, ClipboardCheck, Eye, AlertCircle } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import ExcelJS from 'exceljs';
 import { AwardCategory, Nomination, NominationStatus, UserSession, GuruIdentityItem, SantriMuridIdentityItem } from '../types';
-import { sendWebhookPayload, exportToCSV } from '../services/webhookService';
+import { exportToCSV } from '../services/webhookService';
 import { ContentHeader } from './ContentHeader';
 import { CollapsibleSection } from './CollapsibleSection';
 import { getAllowedCategoryIdsForUser, getRoleOptionById } from '../utils/accountRoles';
@@ -441,6 +441,13 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(isAddModalOpenOpenDirectly);
   const [editingNomination, setEditingNomination] = useState<Nomination | null>(null);
 
+  // 2-Step Confirmation Notif State (Sesuai Permintaan User: Notif 1 Validitas, Notif 2 Konfirmasi Final)
+  const [nominationConfirmStep, setNominationConfirmStep] = useState<null | 1 | 2>(null);
+  const [pendingNominationPayload, setPendingNominationPayload] = useState<any>(null);
+
+  // Notifikasi Sukses Pengiriman Usulan (Sesuai Permintaan User: Selamat, usulan Anda telah berhasil. Semoga usulan Anda senantiasa beriringan dengan ridha Masyayikh Sidogiri)
+  const [nominationSuccessMessage, setNominationSuccessMessage] = useState<string | null>(null);
+
   // Active rubric tab ID for full view (defaults to user's first allowed category)
   const [activeRubricId, setActiveRubricId] = useState<string>(() => {
     const allowed = getAllowedCategoryIdsForUser(currentUser);
@@ -871,14 +878,20 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
       categories.find((c) => c.id === categoryId)?.title
     );
 
+    const guruNames = guruIdentitas
+      .map((g) => g.nama.trim())
+      .filter((n) => n.length > 0);
+
+    const santriNames = santriMuridIdentitas
+      .map((s) => s.nama.trim())
+      .filter((n) => n.length > 0);
+
     const effectiveCandidateName = isGuruCategory
       ? candidateName.trim() ||
-        guruIdentitas.find((g) => g.nama.trim().length > 0)?.nama.trim() ||
-        'Nominasi 5 Guru Teladan MMU'
+        (guruNames.length > 0 ? guruNames.join(', ') : 'Nominasi 5 Guru Teladan MMU')
       : isSantriMuridCategory
       ? candidateName.trim() ||
-        santriMuridIdentitas.find((s) => s.nama.trim().length > 0)?.nama.trim() ||
-        'Nominasi 2 Santri / Murid Terbaik'
+        (santriNames.length > 0 ? santriNames.join(', ') : 'Nominasi 2 Santri / Murid Terbaik')
       : candidateName.trim();
 
     if (!effectiveCandidateName) return;
@@ -917,6 +930,9 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
       pengusulDomisili,
       pengusulAlamat,
       pengusulPhone,
+      pengusulIdPersonalia: currentUser?.idPersonalia || '',
+      pengusulUsername: currentUser?.username || '',
+      pengusulAccountId: currentUser?.id || '',
 
       // Simpan 5 Identitas Guru
       guruIdentitas: isGuruCategory ? guruIdentitas : undefined,
@@ -932,30 +948,45 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
       lainLainNote: isGuruCategory ? (guruIdentitas[0]?.lainLainNote || lainLainNote) : isSantriMuridCategory ? (santriMuridIdentitas[0]?.lainLainNote || lainLainNote) : lainLainNote,
     };
 
+    // Jika usulan sudah terkunci, cegah pengeditan ulang
+    if (editingNomination?.isLocked) {
+      return;
+    }
+
+    // Sesuai Permintaan User: Jangan langsung tersimpan, melainkan buka notif 2 kali bertahap
+    setPendingNominationPayload(nomPayload);
+    setNominationConfirmStep(1);
+  };
+
+  // Simpan data final setelah konfirmasi 2 tahap disetujui (Data langsung tersimpan dan tidak bisa diedit)
+  const handleFinalSaveNomination = (payloadToSave: any) => {
+    if (!payloadToSave) return;
+    const finalPayload = {
+      ...payloadToSave,
+      isLocked: true, // Data terkunci permanen dan tidak bisa diedit
+      lockedAt: new Date().toISOString(),
+    };
+
     if (editingNomination) {
       onUpdateNomination({
         ...editingNomination,
-        ...nomPayload,
+        ...finalPayload,
       });
-      if (status === 'Pemenang') {
-        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-      }
     } else {
-      onAddNomination(nomPayload);
-      if (status === 'Pemenang') {
-        confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
-      }
+      onAddNomination(finalPayload);
     }
 
-    sendWebhookPayload('nomination_update', nomPayload);
-
+    confetti({ particleCount: 150, spread: 85, origin: { y: 0.6 } });
+    setNominationConfirmStep(null);
+    setPendingNominationPayload(null);
     closeModal();
+    // Notif sesuai permintaan: "Selamat, usulan Anda telah berhasil. Semoga usulan Anda senantiasa beriringan dengan ridha Masyayikh Sidogiri"
+    setNominationSuccessMessage('Selamat, usulan Anda telah berhasil. Semoga usulan Anda senantiasa beriringan dengan ridha Masyayikh Sidogiri');
   };
 
   const handleSetWinner = (nom: Nomination) => {
     const updated = { ...nom, status: 'Pemenang' as NominationStatus };
     onUpdateNomination(updated);
-    sendWebhookPayload('nomination_update', updated);
     confetti({ particleCount: 150, spread: 90, origin: { y: 0.5 } });
   };
 
@@ -2126,12 +2157,6 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
         nom.pengusulNama || nom.nominatorName || '-',
       ]);
       exportToCSV(`Data_Peserta_Nominasi_${dateStr}.csv`, csvHeaders, csvRows);
-
-      await sendWebhookPayload('bulk_export', {
-        module: 'Nominasi',
-        totalItems: dataToExport.length,
-        nominations: dataToExport,
-      });
     } catch (error) {
       console.error('Export Excel Error:', error);
       alert('Gagal mengekspor data ke Excel. Silakan coba lagi.');
@@ -2149,52 +2174,52 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
         activeTab="nominasi"
       />
 
-      {/* Top Header Box in Milad Sidogiri Clean Style (Mendukung Admin & Seluruh 5 Role Akun Petugas) */}
-      <div className="bg-white border border-[rgba(36,33,28,0.12)] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Trophy className="w-5 h-5 text-[#8a7c4c]" />
-            <h1 className="text-base font-extrabold text-[#24211c]">
-              {isAdmin ? "Daftar Peserta & Nominasi Penganugerahan" : `Portal Pengusulan & Penilaian: ${userRoleOption.name}`}
-            </h1>
-            <span className="flex items-center space-x-1 text-[10px] font-bold bg-[#f2eee3] text-[#675c37] border border-[#c3b68b]/40 px-2.5 py-0.5 rounded-full">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#8a7c4c] animate-pulse"></span>
-              <span>{userRoleOption.badge}</span>
-            </span>
+      {/* Top Header Box in Milad Sidogiri Clean Style (Khusus Admin - Petugas Tidak Ditampilkan) */}
+      {isAdmin && (
+        <div className="bg-white border border-[rgba(36,33,28,0.12)] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Trophy className="w-5 h-5 text-[#8a7c4c]" />
+              <h1 className="text-base font-extrabold text-[#24211c]">
+                Daftar Peserta & Nominasi Penganugerahan
+              </h1>
+              <span className="flex items-center space-x-1 text-[10px] font-bold bg-[#f2eee3] text-[#675c37] border border-[#c3b68b]/40 px-2.5 py-0.5 rounded-full">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#8a7c4c] animate-pulse"></span>
+                <span>{userRoleOption.badge}</span>
+              </span>
+            </div>
+            <p className="text-xs text-[#7c7b77] mt-1">
+              Manajemen data lengkap peserta, penambahan atribut identitas (NIP/NIK, Jabatan, Kontak, Karya), penilaian, hingga penetapan pemenang.
+            </p>
           </div>
-          <p className="text-xs text-[#7c7b77] mt-1">
-            {isAdmin
-              ? "Manajemen data lengkap peserta, penambahan atribut identitas (NIP/NIK, Jabatan, Kontak, Karya), penilaian, hingga penetapan pemenang."
-              : `Hak akses penganugerahan khusus: ${userRoleOption.description}.`}
-          </p>
-        </div>
 
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={handleExportExcel}
-            disabled={isExporting}
-            className="flex items-center justify-center space-x-1.5 bg-white hover:bg-[#f7f6f2] text-[#24211c] border border-[rgba(36,33,28,0.15)] font-bold px-3.5 py-2 rounded-xl shadow-2xs transition text-xs cursor-pointer disabled:opacity-50"
-            title="Ekspor seluruh data peserta ke file Excel (.xlsx)"
-          >
-            {isExporting ? (
-              <Loader2 className="w-4 h-4 animate-spin text-[#8a7c4c]" />
-            ) : (
-              <FileSpreadsheet className="w-4 h-4 text-[#8a7c4c]" />
-            )}
-            <span>{isExporting ? 'Mengekspor...' : 'Ekspor Excel'}</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={handleExportExcel}
+              disabled={isExporting}
+              className="flex items-center justify-center space-x-1.5 bg-white hover:bg-[#f7f6f2] text-[#24211c] border border-[rgba(36,33,28,0.15)] font-bold px-3.5 py-2 rounded-xl shadow-2xs transition text-xs cursor-pointer disabled:opacity-50"
+              title="Ekspor seluruh data peserta ke file Excel (.xlsx)"
+            >
+              {isExporting ? (
+                <Loader2 className="w-4 h-4 animate-spin text-[#8a7c4c]" />
+              ) : (
+                <FileSpreadsheet className="w-4 h-4 text-[#8a7c4c]" />
+              )}
+              <span>{isExporting ? 'Mengekspor...' : 'Ekspor Excel'}</span>
+            </button>
 
-          <button
-            type="button"
-            onClick={() => handleOpenAdd()}
-            className="flex items-center justify-center space-x-1.5 bg-[#8a7c4c] hover:bg-[#675c37] text-white font-bold px-3.5 py-2 rounded-xl shadow-xs transition text-xs cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>{isAdmin ? 'Tambah Peserta Baru' : 'Ajukan Usulan Baru'}</span>
-          </button>
+            <button
+              type="button"
+              onClick={() => handleOpenAdd()}
+              className="flex items-center justify-center space-x-1.5 bg-[#8a7c4c] hover:bg-[#675c37] text-white font-bold px-3.5 py-2 rounded-xl shadow-xs transition text-xs cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Tambah Peserta Baru</span>
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Ketentuan dan Syarat Penilaian Nominasi (Dinamis Sesuai Kategori yang Diizinkan) */}
       <CollapsibleSection
@@ -2520,11 +2545,12 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
         })()}
       </CollapsibleSection>
 
-      {/* Main Participants List & Awarding Section (Mendukung Admin & Seluruh 5 Role Akun Petugas) */}
-      <CollapsibleSection
-        sectionId="nomination_list_section"
-        title={isAdmin ? "Daftar Peserta Nominasi & Penganugerahan" : "Daftar Usulan & Peserta Nominasi"}
-        subtitle={isAdmin ? "Kelola data pendaftaran calon penerima, verifikasi kelayakan, rekap skor penjurian, dan penetapan pemenang resmi Milad Sidogiri" : `Daftar usulan calon penerima anugerah untuk kewenangan: ${userRoleOption.description}`}
+      {/* Main Participants List & Awarding Section (Khusus Admin - Petugas Tidak Ditampilkan) */}
+      {isAdmin && (
+        <CollapsibleSection
+          sectionId="nomination_list_section"
+          title="Daftar Peserta Nominasi & Penganugerahan"
+          subtitle="Kelola data pendaftaran calon penerima, verifikasi kelayakan, rekap skor penjurian, dan penetapan pemenang resmi Milad Sidogiri"
         icon={<Trophy className="w-4 h-4 text-[#8a7c4c]" />}
         defaultOpen={true}
         badge={
@@ -2784,6 +2810,12 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                                   {nom.idPps || nom.nipNik}
                                 </span>
                               )}
+                              {nom.isLocked && (
+                                <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-lg bg-amber-100 text-amber-900 border border-amber-300 flex items-center space-x-1 shadow-2xs">
+                                  <Lock className="w-2.5 h-2.5 text-amber-700" />
+                                  <span>Terkunci</span>
+                                </span>
+                              )}
                             </div>
 
                             <h3 className="font-black text-[#24211c] text-base sm:text-lg flex items-center space-x-1.5 pt-0.5">
@@ -3039,10 +3071,14 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                           <button
                             type="button"
                             onClick={() => handleOpenEdit(nom)}
-                            className="p-1.5 text-[#5c5b57] hover:text-[#24211c] bg-white hover:bg-[#f7f6f2] border border-[#dcd7cb] rounded-xl transition cursor-pointer shadow-2xs"
-                            title={isAdmin ? "Edit Data Peserta & Rubrik" : "Lihat / Edit Detail Usulan"}
+                            className={`p-1.5 border rounded-xl transition cursor-pointer shadow-2xs ${
+                              nom.isLocked
+                                ? 'text-amber-700 bg-amber-50 hover:bg-amber-100 border-amber-300'
+                                : 'text-[#5c5b57] hover:text-[#24211c] bg-white hover:bg-[#f7f6f2] border-[#dcd7cb]'
+                            }`}
+                            title={nom.isLocked ? "Lihat Detail Usulan (Data Terkunci & Tidak Bisa Diedit)" : (isAdmin ? "Edit Data Peserta & Rubrik" : "Lihat / Edit Detail Usulan")}
                           >
-                            <Edit2 className="w-3.5 h-3.5" />
+                            {nom.isLocked ? <Lock className="w-3.5 h-3.5 text-amber-700" /> : <Edit2 className="w-3.5 h-3.5" />}
                           </button>
                           {isAdmin && (
                             <button
@@ -3102,22 +3138,52 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                               {nom.idPps || nom.nipNik || '-'}
                             </td>
                             <td className="px-4 py-3.5">
-                              <div className="font-black text-[#24211c] text-sm flex items-center space-x-1.5">
+                              <div className="font-black text-[#24211c] text-sm flex items-center space-x-1.5 flex-wrap">
                                 <span>{nom.candidateName}</span>
                                 {isWinner && <Trophy className="w-3.5 h-3.5 text-[#8a7c4c] shrink-0 inline" />}
+                                {nom.isLocked && (
+                                  <span className="inline-flex items-center space-x-0.5 text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 border border-amber-300">
+                                    <Lock className="w-2.5 h-2.5 text-amber-700 mr-0.5" />
+                                    <span>Terkunci</span>
+                                  </span>
+                                )}
                               </div>
-                              {nom.guruIdentitas && nom.guruIdentitas.some((g) => g.nama || g.idPersonalia) && (
+                              {nom.guruIdentitas && nom.guruIdentitas.some((g) => g.nama?.trim()) ? (
+                                <div className="mt-1 space-y-1">
+                                  {nom.guruIdentitas
+                                    .filter((g) => g.nama?.trim())
+                                    .map((g, gIdx) => (
+                                      <div key={gIdx} className="text-[11px] font-bold text-slate-800 bg-[#faf8f4] px-2 py-0.5 rounded border border-[#e8e4da] flex items-center space-x-1.5">
+                                        <span className="text-[10px] text-[#8a7c4c] font-black">{gIdx + 1}.</span>
+                                        <span className="font-extrabold text-[#24211c]">{g.nama}</span>
+                                        {g.idPersonalia && <span className="text-[9.5px] font-mono text-slate-500">({g.idPersonalia})</span>}
+                                      </div>
+                                    ))}
+                                </div>
+                              ) : nom.guruIdentitas && nom.guruIdentitas.some((g) => g.nama || g.idPersonalia) ? (
                                 <div className="text-[9.5px] font-extrabold text-[#675c37] bg-[#ede9df] px-1.5 py-0.2 rounded border border-[#c3b68b]/30 w-fit mt-0.5 flex items-center space-x-1">
                                   <Users className="w-3 h-3 text-[#8a7c4c]" />
                                   <span>5 Guru Terdaftar</span>
                                 </div>
-                              )}
-                              {nom.santriMuridIdentitas && nom.santriMuridIdentitas.some((s) => s.nama || s.idPersonalia) && (
+                              ) : null}
+                              {nom.santriMuridIdentitas && nom.santriMuridIdentitas.some((s) => s.nama?.trim()) ? (
+                                <div className="mt-1 space-y-1">
+                                  {nom.santriMuridIdentitas
+                                    .filter((s) => s.nama?.trim())
+                                    .map((s, sIdx) => (
+                                      <div key={sIdx} className="text-[11px] font-bold text-slate-800 bg-[#faf8f4] px-2 py-0.5 rounded border border-[#e8e4da] flex items-center space-x-1.5">
+                                        <span className="text-[10px] text-[#8a7c4c] font-black">{sIdx + 1}.</span>
+                                        <span className="font-extrabold text-[#24211c]">{s.nama}</span>
+                                        {s.idPersonalia && <span className="text-[9.5px] font-mono text-slate-500">({s.idPersonalia})</span>}
+                                      </div>
+                                    ))}
+                                </div>
+                              ) : nom.santriMuridIdentitas && nom.santriMuridIdentitas.some((s) => s.nama || s.idPersonalia) ? (
                                 <div className="text-[9.5px] font-extrabold text-[#675c37] bg-[#ede9df] px-1.5 py-0.2 rounded border border-[#c3b68b]/30 w-fit mt-0.5 flex items-center space-x-1">
                                   <GraduationCap className="w-3 h-3 text-[#8a7c4c]" />
                                   <span>2 Santri/Murid Terdaftar</span>
                                 </div>
-                              )}
+                              ) : null}
                               {nom.phone && (
                                 <div className="text-[10px] text-[#8a7c4c] font-mono mt-0.5">📱 {nom.phone}</div>
                               )}
@@ -3171,10 +3237,14 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => handleOpenEdit(nom)}
-                                  className="p-1.5 text-[#5c5b57] hover:text-[#24211c] bg-[#faf8f4] hover:bg-[#f2eee3] border border-[#dcd7cb] rounded-lg transition cursor-pointer shadow-2xs"
-                                  title={isAdmin ? "Edit Data Peserta" : "Lihat / Edit Detail Usulan"}
+                                  className={`p-1.5 border rounded-lg transition cursor-pointer shadow-2xs ${
+                                    nom.isLocked
+                                      ? 'text-amber-700 bg-amber-50 hover:bg-amber-100 border-amber-300'
+                                      : 'text-[#5c5b57] hover:text-[#24211c] bg-[#faf8f4] hover:bg-[#f2eee3] border-[#dcd7cb]'
+                                  }`}
+                                  title={nom.isLocked ? "Lihat Detail Usulan (Data Terkunci & Tidak Bisa Diedit)" : (isAdmin ? "Edit Data Peserta" : "Lihat / Edit Detail Usulan")}
                                 >
-                                  <Edit2 className="w-3.5 h-3.5" />
+                                  {nom.isLocked ? <Lock className="w-3.5 h-3.5 text-amber-700" /> : <Edit2 className="w-3.5 h-3.5" />}
                                 </button>
                                 {isAdmin && (
                                   <button
@@ -3206,6 +3276,7 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
             )}
           </div>
         </CollapsibleSection>
+      )}
 
       {/* Modal Add / Edit Nomination (Form LENGKAP Data Peserta & Rubrik Dinamis Sesuai Kategori) */}
       {isModalOpen && (
@@ -3228,17 +3299,27 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-black text-base sm:text-lg text-[#24211c] tracking-tight">
                       {editingNomination
-                        ? (isAdmin ? 'Edit Data Peserta & Penilaian Nominasi' : 'Detail Usulan Calon Penerima Anugerah')
+                        ? (editingNomination.isLocked
+                            ? 'Detail Usulan Peserta (Data Terkunci)'
+                            : (isAdmin ? 'Edit Data Peserta & Penilaian Nominasi' : 'Detail Usulan Calon Penerima Anugerah'))
                         : (isAdmin ? 'Tambah Peserta & Nominasi Baru' : 'Formulir Pengusulan Calon Penerima Anugerah')}
                     </h3>
                     <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-[#f2eee3] text-[#675c37] border border-[#c3b68b]/40">
                       Milad ke-290 Sidogiri
                     </span>
+                    {editingNomination?.isLocked && (
+                      <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300 flex items-center space-x-1">
+                        <Lock className="w-2.5 h-2.5 text-amber-700" />
+                        <span>Terkunci Permanen</span>
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs text-[#7c7b77] mt-0.5">
-                    {isAdmin
-                      ? 'Formulir resmi pendaftaran, kualifikasi identitas, verifikasi, dan penilaian calon penerima anugerah'
-                      : 'Formulir pengusulan resmi: isi identitas pengusul, calon yang diusulkan, dan centang kriteria kelayakan'}
+                    {editingNomination?.isLocked
+                      ? 'Data usulan telah dikirim secara final dan tersimpan permanen sehingga tidak dapat diedit kembali'
+                      : (isAdmin
+                        ? 'Formulir resmi pendaftaran, kualifikasi identitas, verifikasi, dan penilaian calon penerima anugerah'
+                        : 'Formulir pengusulan resmi: isi identitas pengusul, calon yang diusulkan, dan centang kriteria kelayakan')}
                   </p>
                 </div>
               </div>
@@ -3252,7 +3333,23 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
               </button>
             </div>
 
+            {/* Banner Informasi Jika Data Sudah Terkunci */}
+            {editingNomination?.isLocked && (
+              <div className="mx-5 sm:mx-7 mt-3.5 p-3.5 bg-amber-50 border border-amber-300 text-amber-900 rounded-2xl text-xs flex items-center space-x-3 font-bold shrink-0 shadow-2xs">
+                <div className="w-8 h-8 rounded-xl bg-amber-200/80 flex items-center justify-center text-amber-800 shrink-0">
+                  <Lock className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="font-black text-amber-950">Data Usulan Terkunci (Telah Terkirim Final)</p>
+                  <p className="text-[11px] text-amber-800 font-medium mt-0.5">
+                    Data usulan nominasi ini telah dikirim dan tersimpan secara permanen ke dalam sistem. Sesuai ketentuan, data ini tidak dapat diedit kembali.
+                  </p>
+                </div>
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="p-5 sm:p-7 space-y-5 overflow-y-auto flex-1">
+              <fieldset disabled={Boolean(editingNomination?.isLocked)} className="contents">
               {/* Info Cabang Penganugerahan (Ditentukan Langsung dari Kolom CABANG PENGANUGERAHAN, Tanpa Perlu Klik Pilihan Lagi di Form) */}
               {(() => {
                 const activeFormCat = (categories.length === 6 ? categories : OFFICIAL_AWARD_RUBRICS).find((c) => c.id === categoryId) || categories.find((c) => c.id === categoryId) || OFFICIAL_AWARD_RUBRICS[0];
@@ -5225,11 +5322,12 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                   />
                 </div>
               </div>
+              </fieldset>
 
               {/* Tombol Aksi Bawah */}
               <div className="pt-2 border-t border-[rgba(36,33,28,0.12)] flex items-center justify-between gap-3">
                 <div>
-                  {isAdmin && editingNomination && (
+                  {isAdmin && editingNomination && !editingNomination.isLocked && (
                     <button
                       type="button"
                       onClick={handleDeleteInModal}
@@ -5248,18 +5346,322 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                     onClick={closeModal}
                     className="px-4 py-2.5 border border-[rgba(36,33,28,0.15)] text-[#24211c] text-xs font-bold rounded-xl hover:bg-[#f7f6f2] transition cursor-pointer"
                   >
-                    Batal
+                    {editingNomination?.isLocked ? 'Tutup Formulir' : 'Batal'}
                   </button>
-                  <button
-                    type="submit"
-                    className="flex items-center space-x-2 px-5 py-2.5 bg-[#8a7c4c] hover:bg-[#675c37] text-white text-xs font-extrabold rounded-xl shadow-xs transition cursor-pointer"
-                  >
-                    <Check className="w-4 h-4" />
-                    <span>{editingNomination ? 'Simpan Perubahan' : (isAdmin ? 'Tambah Peserta' : 'Kirim Usulan Peserta')}</span>
-                  </button>
+                  {editingNomination?.isLocked ? (
+                    <div className="flex items-center space-x-1.5 px-4 py-2.5 bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-xs font-extrabold shadow-2xs">
+                      <Lock className="w-3.5 h-3.5 text-amber-700" />
+                      <span>Data Terkunci (Tidak Bisa Diedit)</span>
+                    </div>
+                  ) : (
+                    <button
+                      type="submit"
+                      className="flex items-center space-x-2 px-5 py-2.5 bg-[#8a7c4c] hover:bg-[#675c37] text-white text-xs font-extrabold rounded-xl shadow-xs transition cursor-pointer"
+                    >
+                      <Check className="w-4 h-4" />
+                      <span>{editingNomination ? 'Simpan Perubahan' : (isAdmin ? 'Tambah Peserta' : 'Kirim Usulan Peserta')}</span>
+                    </button>
+                  )}
                 </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Notifikasi Konfirmasi Tahap 1 (Sesuai Permintaan User: "apakah data yang anda masukkan sudah valid") */}
+      {nominationConfirmStep === 1 && pendingNominationPayload && (
+        <div className="fixed inset-0 z-60 bg-[#24211c]/70 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-[rgba(36,33,28,0.15)] space-y-4 animate-scale-up">
+            <div className="flex items-center space-x-3 text-amber-600">
+              <div className="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center shrink-0">
+                <CheckCircle2 className="w-6 h-6 text-amber-600" />
+              </div>
+              <div>
+                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">
+                  Verifikasi Tahap 1 dari 2
+                </span>
+                <h3 className="text-base sm:text-lg font-black text-[#24211c] mt-0.5">
+                  Validasi Data Usulan
+                </h3>
+              </div>
+            </div>
+
+            <div className="bg-[#fcfbf9] border border-[rgba(36,33,28,0.1)] rounded-2xl p-4 text-center space-y-3">
+              <p className="text-sm sm:text-base font-extrabold text-[#24211c] leading-snug">
+                "Apakah data yang anda masukkan sudah valid?"
+              </p>
+
+              {/* Kolom Validasi Data Usulan Nama Calon Lengkap */}
+              <div className="bg-white p-3.5 rounded-xl border border-[#dcd7cb] text-left text-xs space-y-2.5 shadow-2xs">
+                {/* Kategori & Pengusul */}
+                <div className="flex flex-wrap items-center justify-between gap-1 text-[11px] pb-2 border-b border-[#e8e4da]">
+                  <div>
+                    <span className="text-slate-500 font-semibold block text-[10px]">Kategori Penghargaan:</span>
+                    <span className="font-bold text-[#8a7c4c]">
+                      {categories.find((c) => c.id === pendingNominationPayload?.categoryId)?.title || pendingNominationPayload?.categoryId}
+                    </span>
+                  </div>
+                  {pendingNominationPayload?.nominatorName && (
+                    <div className="text-right">
+                      <span className="text-slate-500 font-semibold block text-[10px]">Pengusul:</span>
+                      <span className="text-[#24211c] font-bold">{pendingNominationPayload.nominatorName}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Daftar Semua Nama Calon Lengkap yang Diajukan (Sesuai Permintaan User) */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[11px] font-black uppercase tracking-wider text-[#675c37] flex items-center space-x-1">
+                      <UserCheck className="w-3.5 h-3.5 text-[#8a7c4c]" />
+                      <span>Nama Calon yang Diusulkan:</span>
+                    </span>
+                    <span className="text-[9.5px] font-bold text-[#8a7c4c] bg-[#8a7c4c]/10 px-2 py-0.5 rounded-md border border-[#c3b68b]/30">
+                      Semua Nama Lengkap Sesuai yang Diajukan
+                    </span>
+                  </div>
+
+                  <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                    {(() => {
+                      const gurus = pendingNominationPayload.guruIdentitas?.filter((g: any) => g.nama?.trim() || g.idPersonalia?.trim());
+                      const santris = pendingNominationPayload.santriMuridIdentitas?.filter((s: any) => s.nama?.trim() || s.idPersonalia?.trim());
+
+                      if (gurus && gurus.length > 0) {
+                        return gurus.map((g: any, gIdx: number) => (
+                          <div key={gIdx} className="p-2 rounded-xl bg-[#faf8f4] border border-[#e8e4da] flex flex-wrap items-center justify-between gap-1.5">
+                            <div className="flex items-center space-x-2">
+                              <span className="w-5 h-5 rounded-lg bg-[#8a7c4c] text-white text-[10px] font-black flex items-center justify-center shrink-0">
+                                {gIdx + 1}
+                              </span>
+                              <div>
+                                <span className="font-extrabold text-[#24211c] text-xs sm:text-sm block leading-tight">
+                                  {g.nama?.trim() || '(Nama belum diisi)'}
+                                </span>
+                                {g.jabatan && <span className="text-[10px] text-[#7c7b77] block mt-0.5">• {g.jabatan}</span>}
+                              </div>
+                            </div>
+                            {g.idPersonalia && (
+                              <span className="font-mono text-[10px] font-bold text-[#8a7c4c] bg-white px-2 py-0.5 rounded-md border border-[#dcd7cb]">
+                                ID: {g.idPersonalia}
+                              </span>
+                            )}
+                          </div>
+                        ));
+                      }
+
+                      if (santris && santris.length > 0) {
+                        return santris.map((s: any, sIdx: number) => (
+                          <div key={sIdx} className="p-2 rounded-xl bg-[#faf8f4] border border-[#e8e4da] flex flex-wrap items-center justify-between gap-1.5">
+                            <div className="flex items-center space-x-2">
+                              <span className="w-5 h-5 rounded-lg bg-[#8a7c4c] text-white text-[10px] font-black flex items-center justify-center shrink-0">
+                                {sIdx + 1}
+                              </span>
+                              <div>
+                                <span className="font-extrabold text-[#24211c] text-xs sm:text-sm block leading-tight">
+                                  {s.nama?.trim() || '(Nama belum diisi)'}
+                                </span>
+                                {s.domisiliAlamat && <span className="text-[10px] text-[#7c7b77] block mt-0.5">📍 {s.domisiliAlamat}</span>}
+                              </div>
+                            </div>
+                            {s.idPersonalia && (
+                              <span className="font-mono text-[10px] font-bold text-[#8a7c4c] bg-white px-2 py-0.5 rounded-md border border-[#dcd7cb]">
+                                ID: {s.idPersonalia}
+                              </span>
+                            )}
+                          </div>
+                        ));
+                      }
+
+                      // Jika nama dipisah koma (multiple candidates)
+                      if (pendingNominationPayload.candidateName?.includes(',')) {
+                        return pendingNominationPayload.candidateName.split(',').map((namePart: string, pIdx: number) => (
+                          <div key={pIdx} className="p-2 rounded-xl bg-[#faf8f4] border border-[#e8e4da] flex items-center space-x-2">
+                            <span className="w-5 h-5 rounded-lg bg-[#8a7c4c] text-white text-[10px] font-black flex items-center justify-center shrink-0">
+                              {pIdx + 1}
+                            </span>
+                            <span className="font-extrabold text-[#24211c] text-xs sm:text-sm">
+                              {namePart.trim()}
+                            </span>
+                          </div>
+                        ));
+                      }
+
+                      // Single candidate full name
+                      return (
+                        <div className="p-2.5 rounded-xl bg-[#faf8f4] border border-[#e8e4da] flex items-center justify-between">
+                          <span className="font-extrabold text-[#24211c] text-xs sm:text-sm">
+                            {pendingNominationPayload.candidateName}
+                          </span>
+                          {pendingNominationPayload.idPps && (
+                            <span className="font-mono text-[10px] font-bold text-[#8a7c4c] bg-white px-2 py-0.5 rounded-md border border-[#dcd7cb]">
+                              ID: {pendingNominationPayload.idPps}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-slate-500 italic">
+                Pilih "Tidak" jika ingin kembali ke halaman tambah peserta dan nominasi baru tanpa menghilangkan data yang dimasukkan tadi.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              <button
+                type="button"
+                onClick={() => setNominationConfirmStep(null)}
+                className="w-full py-2.5 px-4 rounded-xl border border-[rgba(36,33,28,0.2)] text-slate-700 text-xs font-bold hover:bg-slate-100 transition cursor-pointer text-center"
+              >
+                Tidak
+              </button>
+              <button
+                type="button"
+                onClick={() => setNominationConfirmStep(2)}
+                className="w-full py-2.5 px-4 rounded-xl bg-[#8a7c4c] hover:bg-[#675c37] text-white text-xs font-black shadow-sm transition cursor-pointer text-center"
+              >
+                Iya
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notifikasi Konfirmasi Tahap 2 (Sesuai Permintaan User: "apakah anda yakin ingin mengirim data nominasi ini") */}
+      {nominationConfirmStep === 2 && pendingNominationPayload && (
+        <div className="fixed inset-0 z-60 bg-[#24211c]/70 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-[rgba(36,33,28,0.15)] space-y-4 animate-scale-up">
+            <div className="flex items-center space-x-3 text-emerald-600">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-100 flex items-center justify-center shrink-0">
+                <Lock className="w-6 h-6 text-emerald-700" />
+              </div>
+              <div>
+                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+                  Konfirmasi Final Tahap 2 dari 2
+                </span>
+                <h3 className="text-base sm:text-lg font-black text-[#24211c] mt-0.5">
+                  Pengiriman Data Usulan
+                </h3>
+              </div>
+            </div>
+
+            <div className="bg-[#fcfbf9] border border-[rgba(36,33,28,0.1)] rounded-2xl p-4 text-center space-y-3">
+              <p className="text-sm sm:text-base font-extrabold text-[#24211c] leading-snug">
+                "Apakah anda yakin ingin mengirim data nominasi ini?"
+              </p>
+
+              {/* Tampilkan Semua Nama Calon Lengkap sebelum dikirim & dikunci permanen */}
+              <div className="bg-white p-3 rounded-xl border border-[#dcd7cb] text-left text-xs space-y-2 shadow-2xs max-h-40 overflow-y-auto">
+                <span className="text-[10px] font-black uppercase text-[#675c37] block">
+                  Daftar Calon yang Dikirim (Nama Lengkap):
+                </span>
+                {(() => {
+                  const gurus = pendingNominationPayload.guruIdentitas?.filter((g: any) => g.nama?.trim() || g.idPersonalia?.trim());
+                  const santris = pendingNominationPayload.santriMuridIdentitas?.filter((s: any) => s.nama?.trim() || s.idPersonalia?.trim());
+
+                  if (gurus && gurus.length > 0) {
+                    return gurus.map((g: any, gIdx: number) => (
+                      <div key={gIdx} className="flex items-center space-x-2 py-1 border-b border-[#f2eee3] last:border-b-0">
+                        <span className="text-[#8a7c4c] font-black text-xs shrink-0">{gIdx + 1}.</span>
+                        <span className="font-bold text-[#24211c] text-xs">{g.nama?.trim() || '(Nama belum diisi)'}</span>
+                        {g.idPersonalia && <span className="text-[10px] font-mono text-slate-500">({g.idPersonalia})</span>}
+                      </div>
+                    ));
+                  }
+
+                  if (santris && santris.length > 0) {
+                    return santris.map((s: any, sIdx: number) => (
+                      <div key={sIdx} className="flex items-center space-x-2 py-1 border-b border-[#f2eee3] last:border-b-0">
+                        <span className="text-[#8a7c4c] font-black text-xs shrink-0">{sIdx + 1}.</span>
+                        <span className="font-bold text-[#24211c] text-xs">{s.nama?.trim() || '(Nama belum diisi)'}</span>
+                        {s.idPersonalia && <span className="text-[10px] font-mono text-slate-500">({s.idPersonalia})</span>}
+                      </div>
+                    ));
+                  }
+
+                  if (pendingNominationPayload.candidateName?.includes(',')) {
+                    return pendingNominationPayload.candidateName.split(',').map((namePart: string, pIdx: number) => (
+                      <div key={pIdx} className="flex items-center space-x-2 py-1 border-b border-[#f2eee3] last:border-b-0">
+                        <span className="text-[#8a7c4c] font-black text-xs shrink-0">{pIdx + 1}.</span>
+                        <span className="font-bold text-[#24211c] text-xs">{namePart.trim()}</span>
+                      </div>
+                    ));
+                  }
+
+                  return (
+                    <div className="flex items-center space-x-2 py-1">
+                      <span className="text-[#8a7c4c] font-black text-xs shrink-0">1.</span>
+                      <span className="font-bold text-[#24211c] text-xs">{pendingNominationPayload.candidateName}</span>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              <div className="bg-rose-50 border border-rose-200 text-rose-800 p-2.5 rounded-xl text-[11px] font-semibold text-left flex items-start space-x-1.5">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <span>
+                  Perhatian: Jika memilih <strong>Iya</strong>, data akan langsung tersimpan secara permanen dan <strong>tidak bisa diedit</strong> kembali.
+                </span>
+              </div>
+              <p className="text-[11px] text-amber-900 bg-amber-50/90 p-2.5 rounded-xl border border-amber-200 font-semibold italic text-left">
+                Jika "Tidak" maka kembali ke formulir pengisian atau usulan dan anda wajib laporan lagi.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              <button
+                type="button"
+                onClick={() => setNominationConfirmStep(null)}
+                className="w-full py-2.5 px-4 rounded-xl border border-[rgba(36,33,28,0.2)] text-slate-700 text-xs font-bold hover:bg-slate-100 transition cursor-pointer text-center"
+              >
+                Tidak
+              </button>
+              <button
+                type="button"
+                onClick={() => handleFinalSaveNomination(pendingNominationPayload)}
+                className="w-full py-2.5 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-black shadow-md transition cursor-pointer text-center flex items-center justify-center space-x-1"
+              >
+                <Check className="w-4 h-4 mr-1" />
+                <span>Iya</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Notifikasi Sukses Pengiriman Usulan (Sesuai Permintaan User: Selamat, usulan Anda telah berhasil. Semoga usulan Anda senantiasa beriringan dengan ridha Masyayikh Sidogiri) */}
+      {nominationSuccessMessage && (
+        <div className="fixed inset-0 z-70 bg-[#24211c]/75 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-[rgba(36,33,28,0.15)] text-center space-y-5 animate-scale-up">
+            <div className="w-16 h-16 mx-auto rounded-3xl bg-emerald-50 text-emerald-700 flex items-center justify-center shadow-inner border border-emerald-200">
+              <CheckCircle2 className="w-9 h-9 text-emerald-600 animate-bounce-short" />
+            </div>
+
+            <div className="space-y-2">
+              <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-[10.5px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300">
+                <Sparkles className="w-3.5 h-3.5 text-emerald-700" />
+                <span>Usulan Berhasil Dikirim</span>
+              </span>
+              <h3 className="text-base sm:text-lg font-black text-[#24211c] leading-snug pt-1">
+                "{nominationSuccessMessage}"
+              </h3>
+            </div>
+
+            <div className="bg-[#faf8f4] border border-[#e8e4da] rounded-2xl p-3.5 text-xs text-[#675c37] leading-relaxed font-medium">
+              Data usulan nominasi peserta telah tersimpan secara resmi dan terkunci permanen di sistem penganugerahan.
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setNominationSuccessMessage(null)}
+              className="w-full py-3 px-5 rounded-xl bg-[#8a7c4c] hover:bg-[#675c37] text-white text-xs sm:text-sm font-black shadow-md transition cursor-pointer flex items-center justify-center space-x-2"
+            >
+              <Check className="w-4 h-4" />
+              <span>Alhamdulillah, Selesai</span>
+            </button>
           </div>
         </div>
       )}

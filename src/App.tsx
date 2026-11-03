@@ -52,23 +52,19 @@ import { getRoleOptionById, getAllowedCategoryIdsForUser } from './utils/account
 import { setUserOnline, setUserOffline } from './services/presenceService';
 import { subscribeCertificates, CertificateRecord } from './services/certificatesService';
 import { subscribeCustomLogo } from './services/logoService';
-import { syncAllCollectionsToGoogleSheets, getWebhookUrl } from './services/googleSheets';
-import { syncCollectionToSheets } from './services/googleSheetsSync';
-import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
 import { BottomNav } from './components/BottomNav';
+import { MiladLogo } from './components/MiladLogo';
 import { DashboardView } from './components/DashboardView';
 import { NominationsView } from './components/NominationsView';
 import { FinanceView } from './components/FinanceView';
 import { CoordinationView } from './components/CoordinationView';
 import { CertificatesView } from './components/CertificatesView';
-import { DocumentsView } from './components/DocumentsView';
+import { AuditReportView } from './components/AuditReportView';
 import { AccountsView } from './components/AccountsView';
 
 import { LoginView } from './components/LoginView';
-import { WebhookModal } from './components/WebhookModal';
 import { ErrorBoundary, ViewErrorBoundary } from './components/ErrorBoundary';
-import { fetchWebhookUrlFromFirestore } from './services/webhookService';
 import {
   registerGlobalSelfHealingInterceptor,
   safeJSONParse,
@@ -79,7 +75,7 @@ import {
   sanitizeDocument,
   sanitizeRegulation,
 } from './services/errorRecoveryService';
-import { ShieldCheck, CheckCircle } from 'lucide-react';
+import { ShieldCheck, CheckCircle, Menu, RefreshCw } from 'lucide-react';
 
 export default function App() {
   // Self-Healing toast message state for non-intrusive recovery notice
@@ -93,11 +89,17 @@ export default function App() {
     });
   }, []);
 
-  // Safe initialization of activeTab from localStorage
+  // Safe initialization of activeTab from localStorage (Petugas defaults to 'nominasi')
   const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
     try {
+      const savedUserStr = localStorage.getItem('sie_user_session') || sessionStorage.getItem('sie_user_session');
+      if (savedUserStr) {
+        const parsed = JSON.parse(savedUserStr);
+        const isPetugasUser = parsed && (parsed.category === 'petugas' || (parsed.role && parsed.role.toUpperCase().includes('PETUGAS')));
+        if (isPetugasUser) return 'nominasi';
+      }
       const savedTab = localStorage.getItem('sie_active_tab');
-      if (savedTab && ['dashboard', 'nominasi', 'keuangan', 'koordinasi', 'sertifikat', 'surat', 'akun'].includes(savedTab)) {
+      if (savedTab && ['dashboard', 'nominasi', 'keuangan', 'koordinasi', 'sertifikat', 'laporan', 'akun'].includes(savedTab)) {
         return savedTab as ActiveTab;
       }
     } catch (e) {
@@ -216,13 +218,13 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // Enforce access control: Admin sees everything; Petugas strictly limited to Dasbor, Nominasi, and Surat
+  // Enforce access control: Admin sees everything; Petugas strictly limited to Ketentuan Nominasi (Dasbor disembunyikan)
   const isAdmin = currentUser?.category === 'admin' || (currentUser?.role && currentUser.role.toUpperCase().includes('ADMIN'));
   const isPetugas = !isAdmin && (currentUser?.category === 'petugas' || (currentUser?.role && currentUser.role.toUpperCase().includes('PETUGAS')));
 
   useEffect(() => {
-    if (isPetugas && activeTab !== 'dashboard' && activeTab !== 'nominasi' && activeTab !== 'surat') {
-      setActiveTab('dashboard');
+    if (isPetugas && activeTab !== 'nominasi') {
+      setActiveTab('nominasi');
     }
   }, [isPetugas, activeTab]);
 
@@ -259,6 +261,10 @@ export default function App() {
   const handleLoginSuccess = (user: UserSession) => {
     setCurrentUser(user);
     setUserOnline(user).catch(() => {});
+    const isLoggingInPetugas = user.category === 'petugas' || (user.role && user.role.toUpperCase().includes('PETUGAS'));
+    if (isLoggingInPetugas) {
+      setActiveTab('nominasi');
+    }
     try {
       localStorage.setItem('sie_user_session', JSON.stringify(user));
       sessionStorage.setItem('sie_user_session', JSON.stringify(user));
@@ -593,45 +599,6 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // Fetch Webhook URL from Firestore on mount
-  useEffect(() => {
-    fetchWebhookUrlFromFirestore();
-  }, []);
-
-  // Automatic Background Sync to Google Sheets when datasets update
-  useEffect(() => {
-    const webhookUrl = getWebhookUrl();
-    if (!webhookUrl || document.hidden) return;
-
-    const timer = setTimeout(() => {
-      if (document.hidden) return;
-
-      // Sync batch payload
-      syncAllCollectionsToGoogleSheets({
-        nominations,
-        transactions,
-        tasks,
-        rundown,
-        inventory,
-        certificates,
-        documents,
-        regulations,
-        accounts,
-      });
-
-      // Also sync individual collections using syncCollectionToSheets helper
-      if (nominations.length > 0) syncCollectionToSheets('Nominasi', nominations);
-      if (transactions.length > 0) syncCollectionToSheets('Keuangan', transactions);
-      if (tasks.length > 0) syncCollectionToSheets('Tugas Panitia', tasks);
-      if (rundown.length > 0) syncCollectionToSheets('Rundown Acara', rundown);
-      if (inventory.length > 0) syncCollectionToSheets('Inventaris', inventory);
-      if (certificates.length > 0) syncCollectionToSheets('Sertifikat', certificates);
-      if (documents.length > 0) syncCollectionToSheets('Surat & Dokumen', documents);
-      if (accounts.length > 0) syncCollectionToSheets('Akun Petugas', accounts);
-    }, 4000); // 4 second debounce to prevent spamming webhooks during typing/bulk operations
-
-    return () => clearTimeout(timer);
-  }, [nominations, transactions, tasks, rundown, inventory, certificates, documents, regulations, accounts]);
 
   // Sync state to LocalStorage
   useEffect(() => {
@@ -887,40 +854,52 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#efede7] text-[#24211c] font-sans flex flex-col antialiased selection:bg-[#8a7c4c] selection:text-white relative overflow-x-hidden">
-      {/* Header Navigation */}
-      <Navbar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        onResetData={handleResetData}
-        currentUser={currentUser}
-        onLogout={handleLogout}
-        onLogin={() => setCurrentUser(null)}
-        onOpenWebhookModal={() => setIsWebhookModalOpen(true)}
-        onRefreshData={() => window.location.reload()}
-        onToggleSidebar={() => {
-          setIsSidebarCollapsed((prev) => !prev);
-          setIsMobileSidebarOpen((prev) => !prev);
-        }}
-      />
-
-      {/* Google Sheets Webhook Configuration Modal */}
-      <WebhookModal
-        isOpen={isWebhookModalOpen}
-        onClose={() => setIsWebhookModalOpen(false)}
-      />
+      {/* Mobile Top Header (Hanya di layar ponsel/tablet kecil untuk buka drawer menu) */}
+      <div className="md:hidden sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[rgba(36,33,28,0.12)] px-3 py-2 flex items-center justify-between shadow-2xs">
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => setIsMobileSidebarOpen(true)}
+            title="Buka Menu Navigasi"
+            className="p-1.5 rounded-lg border border-[rgba(36,33,28,0.15)] bg-[#f7f6f2] hover:bg-[#e5e2da] text-[#24211c] transition cursor-pointer active:scale-95"
+          >
+            <Menu className="w-5 h-5 text-[#24211c]" />
+          </button>
+          <MiladLogo size="sm" className="w-7 h-7 shrink-0" />
+          <div className="flex flex-col">
+            <span className="font-extrabold text-xs tracking-tight text-[#24211c] leading-none">
+              SIE PENGANUGERAHAN
+            </span>
+            <span className="text-[9px] text-[#8a7c4c] font-bold">MILAD SIDOGIRI</span>
+          </div>
+        </div>
+        <div className="flex items-center space-x-1.5">
+          <button
+            onClick={() => window.location.reload()}
+            title="Segarkan Data"
+            className="p-1.5 rounded-lg bg-[#f7f6f2] hover:bg-[#e5e2da] text-[#24211c] border border-[rgba(36,33,28,0.12)] cursor-pointer"
+          >
+            <RefreshCw className="w-4 h-4 text-[#8a7c4c]" />
+          </button>
+          {currentUser && (
+            <div className="w-7 h-7 rounded-lg bg-[#8a7c4c] text-white font-bold text-xs flex items-center justify-center shadow-xs">
+              {currentUser.name.charAt(0).toUpperCase()}
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Main Layout Area with Left Sidebar & Content */}
-      <div className="max-w-7xl w-full mx-auto flex flex-1 min-h-[calc(100vh-4rem)]">
+      <div className="w-full mx-auto flex flex-1 min-h-screen">
         <Sidebar
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           currentUser={currentUser}
           onLogout={handleLogout}
+          onRefreshData={() => window.location.reload()}
           collapsed={isSidebarCollapsed}
           setCollapsed={setIsSidebarCollapsed}
           mobileOpen={isMobileSidebarOpen}
           onCloseMobile={() => setIsMobileSidebarOpen(false)}
-          onOpenWebhookModal={() => setIsWebhookModalOpen(true)}
         />
 
         {/* Main Content Area wrapped in ErrorBoundary & View-specific boundaries */}
@@ -934,7 +913,7 @@ export default function App() {
           )}
 
           <ErrorBoundary>
-            {activeTab === 'dashboard' && (
+            {activeTab === 'dashboard' && !isPetugas && (
               <ViewErrorBoundary viewName="Dasbor Utama">
                 <DashboardView
                   setActiveTab={setActiveTab}
@@ -951,7 +930,6 @@ export default function App() {
                     setActiveTab('keuangan');
                     setOpenAddTransactionDirectly(true);
                   }}
-                  onOpenWebhookModal={() => setIsWebhookModalOpen(true)}
                 />
               </ViewErrorBoundary>
             )}
@@ -1007,22 +985,14 @@ export default function App() {
               </ViewErrorBoundary>
             )}
 
-            {activeTab === 'surat' && (
-              <ViewErrorBoundary viewName="Surat & Ketentuan">
-                <DocumentsView
-                  documents={documents}
-                  regulations={regulations}
-                  onAddDocument={handleAddDocument}
-                  onUpdateDocument={handleUpdateDocument}
-                  onDeleteDocument={handleDeleteDocument}
-                  onAddRegulation={handleAddRegulation}
-                  onUpdateRegulation={handleUpdateRegulation}
-                  onDeleteRegulation={handleDeleteRegulation}
+            {activeTab === 'laporan' && (
+              <ViewErrorBoundary viewName="Laporan Pengisian">
+                <AuditReportView
+                  accounts={accounts}
+                  nominations={nominations}
+                  categories={categories}
                   currentUser={currentUser}
-                  onNavigateToNominees={() => {
-                    setActiveTab('nominasi');
-                    setOpenAddNominationDirectly(true);
-                  }}
+                  setActiveTab={setActiveTab}
                 />
               </ViewErrorBoundary>
             )}

@@ -15,7 +15,7 @@ import {
   Cloud,
   UserPlus,
   Shield,
-  FileText,
+  BarChart3,
   Moon,
   ChevronDown,
   Clock,
@@ -145,15 +145,15 @@ export const Navbar: React.FC<NavbarProps> = ({
   const allNavItems: { id: ActiveTab; label: string; icon: React.ReactNode }[] = [
     { id: 'dashboard', label: 'Dasbor', icon: <LayoutDashboard className="w-4 h-4" /> },
     { id: 'nominasi', label: 'Nominasi', icon: <Award className="w-4 h-4" /> },
+    { id: 'laporan', label: 'Laporan Pengisian', icon: <BarChart3 className="w-4 h-4" /> },
     { id: 'sertifikat', label: 'Sertifikat', icon: <FileCheck className="w-4 h-4" /> },
-    { id: 'surat', label: 'Surat & SK', icon: <FileText className="w-4 h-4" /> },
     { id: 'keuangan', label: 'Keuangan', icon: <DollarSign className="w-4 h-4" /> },
     { id: 'koordinasi', label: 'Panitia', icon: <Users className="w-4 h-4" /> },
     { id: 'akun', label: 'Akun', icon: <UserPlus className="w-4 h-4" /> },
   ];
 
   const navItems = isPetugas
-    ? allNavItems.filter((item) => item.id === 'dashboard' || item.id === 'nominasi' || item.id === 'surat')
+    ? allNavItems.filter((item) => item.id === 'nominasi')
     : allNavItems;
 
   return (
@@ -258,18 +258,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span>Sync</span>
             </button>
 
-            {/* Google Sheets Webhook */}
-            {onOpenWebhookModal && (
-              <button
-                onClick={onOpenWebhookModal}
-                title="Integrasi Google Sheets"
-                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-[#f7f6f2] text-[#24211c] border border-[rgba(36,33,28,0.15)] text-xs font-semibold transition cursor-pointer shrink-0"
-              >
-                <FileSpreadsheet className="w-3.5 h-3.5 text-[#8a7c4c]" />
-                <span className="hidden xl:inline">Google Sheets</span>
-                <span className="xl:hidden">Sheets</span>
-              </button>
-            )}
 
             {/* User Profile Pill & Dropdown */}
             {currentUser ? (
@@ -331,19 +319,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                         </button>
                       )}
 
-                      {onOpenWebhookModal && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setUserDropdownOpen(false);
-                            onOpenWebhookModal();
-                          }}
-                          className="w-full flex items-center space-x-2 text-xs font-semibold text-[#24211c] hover:bg-[#efede7] p-2 rounded-lg transition cursor-pointer"
-                        >
-                          <FileSpreadsheet className="w-4 h-4 text-[#8a7c4c]" />
-                          <span>Webhook Google Sheets</span>
-                        </button>
-                      )}
 
                       {onLogout && (
                         <button
@@ -384,16 +359,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               <RefreshCw className={`w-3.5 h-3.5 text-[#8a7c4c] ${isRefreshing ? 'animate-spin' : ''}`} />
             </button>
 
-            {/* Sheets button */}
-            {onOpenWebhookModal && (
-              <button
-                onClick={onOpenWebhookModal}
-                title="Google Sheets"
-                className="p-1.5 rounded-lg bg-white hover:bg-[#f7f6f2] text-[#24211c] border border-[rgba(36,33,28,0.12)] text-xs cursor-pointer shrink-0"
-              >
-                <FileSpreadsheet className="w-3.5 h-3.5 text-[#8a7c4c]" />
-              </button>
-            )}
 
             {/* User Mobile Button */}
             {currentUser ? (

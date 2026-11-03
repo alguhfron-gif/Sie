@@ -24,51 +24,18 @@ export interface AllDataPayload {
 }
 
 /**
- * Send payload to Google Sheets Web App URL
+ * Send payload to Google Sheets Web App URL (dinonaktifkan sesuai permintaan pengguna)
  */
 export async function sendToGoogleSheets(
-  action: string,
-  data: any,
-  customUrl?: string
+  _action: string,
+  _data: any,
+  _customUrl?: string
 ): Promise<{ success: boolean; message: string }> {
-  const url = (customUrl && customUrl.trim()) || getWebhookUrl();
-
-  if (!url) {
-    return {
-      success: false,
-      message: 'Web App URL Google Sheets belum dikonfigurasi. Silakan isi URL di Pengaturan Webhook.',
-    };
-  }
-
-  const payload = {
-    action,
-    event: action,
-    timestamp: new Date().toISOString(),
-    appName: 'Sie Penganugerahan Web App',
-    data,
+  // Integrasi Google Sheets dinonaktifkan
+  return {
+    success: true,
+    message: 'Sinkronisasi Google Sheets dinonaktifkan.',
   };
-
-  try {
-    await fetch(url, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
-
-    return {
-      success: true,
-      message: 'Data berhasil dikirim ke Google Sheets!',
-    };
-  } catch (error) {
-    console.error('Failed to sync data with Google Sheets:', error);
-    return {
-      success: false,
-      message: 'Gagal menghubungkan ke Google Sheets. Pastikan URL Web App valid.',
-    };
-  }
 }
 
 /**

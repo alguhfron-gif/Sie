@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { FileCheck, Printer, Award, Shield, Sparkles, UserCheck, FileSpreadsheet, Check, ChevronDown, Image as ImageIcon } from 'lucide-react';
 import { AwardCategory, Nomination, UserSession } from '../types';
-import { sendWebhookPayload, exportToCSV } from '../services/webhookService';
+import { exportToCSV } from '../services/webhookService';
 import { addCertificateRecordToFirestore } from '../services/certificatesService';
 import { ContentHeader } from './ContentHeader';
 import { CollapsibleSection } from './CollapsibleSection';
@@ -84,7 +84,6 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
 
     try {
       await addCertificateRecordToFirestore(certPayload);
-      sendWebhookPayload('certificate_generated', certPayload);
     } catch (e) {
       console.warn('Certificate sync notice:', e);
     }
@@ -104,12 +103,6 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
     ]);
 
     exportToCSV('Data_Penerima_Sertifikat_Penganugerahan.csv', headers, rows);
-
-    await sendWebhookPayload('bulk_export', {
-      module: 'Sertifikat',
-      totalWinners: winners.length,
-      winners,
-    });
   };
 
   return (
@@ -138,11 +131,11 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={handleExportCertificates}
-            title="Ekspor Data Sertifikat & Pemenang ke CSV & Google Sheets"
+            title="Ekspor Data Sertifikat & Pemenang ke CSV"
             className="flex items-center space-x-1.5 bg-white hover:bg-[#f7f6f2] text-[#24211c] border border-[rgba(36,33,28,0.15)] font-bold px-3.5 py-2 rounded-xl text-xs transition shadow-2xs cursor-pointer"
           >
             <FileSpreadsheet className="w-4 h-4 text-[#8a7c4c]" />
-            <span>Ekspor ke Sheets / CSV</span>
+            <span>Ekspor ke CSV</span>
           </button>
 
           <button
