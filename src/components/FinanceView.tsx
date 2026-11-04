@@ -244,6 +244,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
   const [pemasukanPenerima, setPemasukanPenerima] = useState(currentUser?.name || 'Bendahara Sie Penganugerahan');
   const [pemasukanNotes, setPemasukanNotes] = useState('');
   const [isSavingPemasukan, setIsSavingPemasukan] = useState(false);
+  const [confirmDeletePemasukanId, setConfirmDeletePemasukanId] = useState<string | null>(null);
 
   // RAPB Management Modal (Single)
   const [isRapbModalOpen, setIsRapbModalOpen] = useState(false);
@@ -504,12 +505,17 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
       setProofFile(file);
       setIsUploadingProof(true);
       try {
-        const compressed = await compressImage(file, 1200, 0.8);
+        const compressed = await compressImage(file, 1000, 0.75);
         setProofPreviewUrl(compressed);
       } catch (err) {
-        console.warn('Canvas compression fallback to blob preview:', err);
-        const previewUrl = URL.createObjectURL(file);
-        setProofPreviewUrl(previewUrl);
+        console.warn('Canvas compression notice, falling back to direct reader:', err);
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (typeof reader.result === 'string') {
+            setProofPreviewUrl(reader.result);
+          }
+        };
+        reader.readAsDataURL(file);
       } finally {
         setIsUploadingProof(false);
       }
@@ -529,7 +535,11 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
     e.preventDefault();
     const numAmount = typeof pemasukanAmount === 'number' ? pemasukanAmount : parseFloat(pemasukanAmount) || 0;
     if (numAmount <= 0) {
-      setToast({ show: true, message: 'Nominal saldo masuk harus lebih besar dari Rp 0', isError: true });
+      setToast({
+        type: 'error',
+        title: 'Nominal Tidak Valid',
+        message: 'Nominal saldo masuk harus lebih besar dari Rp 0.',
+      });
       return;
     }
 
@@ -554,20 +564,20 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
       }
 
       setToast({
-        show: true,
+        type: 'success',
+        title: 'Saldo Berhasil Ditambahkan',
         message: `Saldo kas sebesar ${formatIDR(numAmount)} berhasil ditambahkan ke Saldo Fisik!`,
-        isError: false,
       });
 
       setIsAddPemasukanModalOpen(false);
       setPemasukanAmount(1000000);
       setPemasukanNotes('');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Gagal menyimpan saldo kas fisik:', err);
       setToast({
-        show: true,
-        message: 'Gagal menambahkan saldo kas ke Firebase Firestore. Silakan coba lagi.',
-        isError: true,
+        type: 'error',
+        title: 'Gagal Menambah Saldo',
+        message: err?.message || 'Gagal menambahkan saldo kas ke Firebase Firestore. Silakan coba lagi.',
       });
     } finally {
       setIsSavingPemasukan(false);
@@ -781,7 +791,10 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
 
     let uploadedProofUrl: string | undefined = editingTransaction?.proofUrl;
 
-    if (proofFile) {
+    if (proofPreviewUrl && proofPreviewUrl.startsWith('data:')) {
+      // Foto telah terkompresi di memori: gunakan langsung untuk penyimpanan instan (0.1 detik)
+      uploadedProofUrl = proofPreviewUrl;
+    } else if (proofFile) {
       setIsUploadingProof(true);
       try {
         uploadedProofUrl = await uploadReceiptImage(proofFile);
@@ -790,6 +803,8 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
       } finally {
         setIsUploadingProof(false);
       }
+    } else if (proofUrlInput && proofUrlInput.trim()) {
+      uploadedProofUrl = proofUrlInput.trim();
     } else if (proofPreviewUrl === null) {
       uploadedProofUrl = undefined;
     }
@@ -3402,43 +3417,41 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      {/* Hidden File Inputs controlled via explicit refs */}
-                      <input
-                        type="file"
-                        ref={cameraInputRef}
-                        accept="image/*"
-                        capture="environment"
-                        onChange={handleFileChange}
-                        className="hidden"
-                      />
-                      <input
-                        type="file"
-                        ref={galleryInputRef}
-                        accept="image/*"
-                        onChange={handleFileChange}
-                        className="hidden"
-                      />
-
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {/* Tombol Kamera Langsung untuk HP */}
-                        <button
-                          type="button"
-                          onClick={() => cameraInputRef.current?.click()}
-                          className="flex items-center justify-center space-x-2 p-3 bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold rounded-xl text-xs shadow-2xs transition cursor-pointer active:scale-98"
+                        {/* Tombol Kamera Langsung untuk HP (Native label activation) */}
+                        <label
+                          htmlFor="camera-photo-input"
+                          className="flex items-center justify-center space-x-2 p-3.5 bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold rounded-xl text-xs shadow-2xs transition cursor-pointer active:scale-95 text-center select-none"
                         >
                           <Camera className="w-4 h-4 text-emerald-200" />
                           <span>Ambil Foto Kamera HP</span>
-                        </button>
+                          <input
+                            id="camera-photo-input"
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            onChange={handleFileChange}
+                            className="sr-only"
+                            style={{ position: 'absolute', width: '1px', height: '1px', opacity: 0, pointerEvents: 'none' }}
+                          />
+                        </label>
 
                         {/* Tombol Pilih dari Galeri */}
-                        <button
-                          type="button"
-                          onClick={() => galleryInputRef.current?.click()}
-                          className="flex items-center justify-center space-x-2 p-3 bg-white hover:bg-slate-50 text-slate-800 font-extrabold rounded-xl text-xs border border-slate-200 shadow-2xs transition cursor-pointer active:scale-98"
+                        <label
+                          htmlFor="gallery-photo-input"
+                          className="flex items-center justify-center space-x-2 p-3.5 bg-white hover:bg-slate-50 text-slate-800 font-extrabold rounded-xl text-xs border border-slate-200 shadow-2xs transition cursor-pointer active:scale-95 text-center select-none"
                         >
                           <Upload className="w-4 h-4 text-[#8a7c4c]" />
-                          <span>Pilih dari Galeri / File</span>
-                        </button>
+                          <span>Pilih dari Galeri / Berkas</span>
+                          <input
+                            id="gallery-photo-input"
+                            type="file"
+                            accept="image/*"
+                            onChange={handleFileChange}
+                            className="sr-only"
+                            style={{ position: 'absolute', width: '1px', height: '1px', opacity: 0, pointerEvents: 'none' }}
+                          />
+                        </label>
                       </div>
 
                       {/* Atau Input Link / URL Bukti Foto */}
@@ -3453,7 +3466,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                               setProofPreviewUrl(e.target.value.trim());
                             }
                           }}
-                          className="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#8a7c4c]"
+                          className="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#8a7c4c]"
                         />
                       </div>
                     </div>
@@ -3764,30 +3777,56 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                         <span className="font-black text-emerald-700 font-mono text-sm">
                           +{formatIDR(item.amount)}
                         </span>
-                        {isAdmin && (
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              if (confirm(`Hapus pencatatan saldo "${item.title}" sebesar ${formatIDR(item.amount)}?`)) {
-                                try {
-                                  await deleteTransactionFromFirestore(item.id);
-                                  onDeleteTransaction(item.id);
-                                  setToast({
-                                    show: true,
-                                    message: 'Pencatatan penerimaan saldo berhasil dihapus.',
-                                    isError: false,
-                                  });
-                                } catch (e) {
-                                  console.error(e);
-                                }
-                              }
-                            }}
-                            className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition cursor-pointer"
-                            title="Hapus Penerimaan Saldo"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
+                        <div className="flex items-center space-x-1.5">
+                          {confirmDeletePemasukanId === item.id ? (
+                            <div className="flex items-center space-x-1 animate-in fade-in duration-150">
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  try {
+                                    await deleteTransactionFromFirestore(item.id);
+                                    if (onDeleteTransaction) {
+                                      await onDeleteTransaction(item.id);
+                                    }
+                                    setConfirmDeletePemasukanId(null);
+                                    setToast({
+                                      type: 'success',
+                                      title: 'Saldo Dihapus',
+                                      message: `Penerimaan kas "${item.title}" sebesar ${formatIDR(item.amount)} berhasil dihapus dari Saldo Fisik.`,
+                                    });
+                                  } catch (e: any) {
+                                    console.error('Gagal menghapus saldo:', e);
+                                    setToast({
+                                      type: 'error',
+                                      title: 'Gagal Menghapus',
+                                      message: e?.message || 'Gagal menghapus data dari Firestore.',
+                                    });
+                                  }
+                                }}
+                                className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-[11px] rounded-lg shadow-xs transition cursor-pointer"
+                              >
+                                Ya, Hapus!
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setConfirmDeletePemasukanId(null)}
+                                className="px-2 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-[11px] rounded-lg transition cursor-pointer"
+                              >
+                                Batal
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setConfirmDeletePemasukanId(item.id)}
+                              className="px-2 py-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition cursor-pointer flex items-center space-x-1"
+                              title="Hapus Penerimaan Saldo"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span className="text-[10.5px] font-bold">Hapus</span>
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))
