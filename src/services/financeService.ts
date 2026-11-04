@@ -1,6 +1,7 @@
 import {
   collection,
   doc,
+  addDoc,
   setDoc,
   deleteDoc,
   onSnapshot,
@@ -74,26 +75,44 @@ export function subscribeTransactions(
 }
 
 /**
- * Add a new financial transaction to Firestore.
+ * Add a new financial transaction to Firestore using addDoc().
+ * Saves date, title/uraian, posCode, qty, unit, amount/nominal, remainingBudget, and proofUrl.
  */
 export async function addTransactionToFirestore(
   newTrx: Omit<Transaction, 'id'>
 ): Promise<Transaction> {
-  const docId = `trx-${Date.now()}`;
-  const created: Transaction = {
-    ...newTrx,
-    id: docId,
-  };
+  const colRef = collection(db, TRANSACTIONS_COLLECTION);
 
-  const firestoreData = cleanForFirestore(created);
-  const docRef = doc(db, TRANSACTIONS_COLLECTION, docId);
+  const payload = cleanForFirestore({
+    date: newTrx.date || new Date().toISOString().split('T')[0],
+    title: newTrx.title || '',
+    category: newTrx.category || 'SEKSI PENGANUGERAHAN',
+    type: newTrx.type || 'pengeluaran',
+    amount: Number(newTrx.amount) || 0,
+    posCode: newTrx.posCode || '',
+    programName: newTrx.programName || '',
+    qty: newTrx.qty !== undefined ? Number(newTrx.qty) : (newTrx.type === 'pengeluaran' ? 1 : undefined),
+    unit: newTrx.unit || '',
+    unitPrice: newTrx.unitPrice !== undefined ? Number(newTrx.unitPrice) : Number(newTrx.amount) || 0,
+    remainingBudget: newTrx.remainingBudget !== undefined ? Number(newTrx.remainingBudget) : undefined,
+    proofUrl: newTrx.proofUrl || '',
+    receiptNumber: newTrx.receiptNumber || '',
+    recipient: newTrx.recipient || '',
+    notes: newTrx.notes || '',
+    createdAt: new Date().toISOString(),
+  });
+
   try {
-    await setDoc(docRef, firestoreData);
+    const docRef = await addDoc(colRef, payload);
+    const created: Transaction = {
+      ...(payload as any),
+      id: docRef.id,
+    };
     return created;
   } catch (error) {
-    console.error('Failed to add transaction to Firestore:', error);
+    console.error('Failed to add transaction to Firestore via addDoc:', error);
     try {
-      handleFirestoreError(error, OperationType.WRITE, `${TRANSACTIONS_COLLECTION}/${docId}`);
+      handleFirestoreError(error, OperationType.WRITE, TRANSACTIONS_COLLECTION);
     } catch {
       // rethrow
     }

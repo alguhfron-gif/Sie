@@ -40,6 +40,7 @@ export interface Transaction {
   unit?: string;
   unitPrice?: number;
   recipient?: string; // Penerima / Rekanan / Toko
+  remainingBudget?: number; // Sisa anggaran saat transaksi dicatat
 }
 
 export type NominationStatus = 'Draf' | 'Penilaian' | 'Disetujui' | 'Pemenang';

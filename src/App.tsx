@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ActiveTab, AwardCategory, Nomination, Transaction, CommitteeTask, InventoryItem, RundownItem, TaskStatus, UserSession, CommitteeAccount, OfficialDocument, RegulationRule } from './types';
+import { ActiveTab, AwardCategory, Nomination, Transaction, RapbItem, CommitteeTask, InventoryItem, RundownItem, TaskStatus, UserSession, CommitteeAccount, OfficialDocument, RegulationRule } from './types';
 import {
   INITIAL_CATEGORIES,
   INITIAL_NOMINATIONS,
@@ -23,6 +23,12 @@ import {
   addTransactionToFirestore,
   updateTransactionInFirestore,
   deleteTransactionFromFirestore,
+  subscribeRapbItems,
+  addRapbItemToFirestore,
+  updateRapbItemInFirestore,
+  deleteRapbItemFromFirestore,
+  bulkAddRapbItemsToFirestore,
+  clearAllRapbItemsFromFirestore,
 } from './services/financeService';
 import {
   subscribeCommitteeTasks,
@@ -302,6 +308,17 @@ export default function App() {
     }
   });
 
+  const [rapbItems, setRapbItems] = useState<RapbItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('sie_rapb_items');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {}
+    return [];
+  });
+
   const [nominations, setNominations] = useState<Nomination[]>(() => {
     try {
       const saved = localStorage.getItem('sie_nominations');
@@ -483,6 +500,21 @@ export default function App() {
       },
       (error) => {
         console.warn('Realtime Firestore transactions notice:', error);
+      }
+    );
+    return () => unsubscribe();
+  }, []);
+
+  // Subscribe to Cloud Firestore RAPB Items Real-time Updates
+  useEffect(() => {
+    const unsubscribe = subscribeRapbItems(
+      (firestoreItems) => {
+        if (firestoreItems && Array.isArray(firestoreItems)) {
+          setRapbItems(firestoreItems);
+        }
+      },
+      (error) => {
+        console.warn('Realtime Firestore RAPB items notice:', error);
       }
     );
     return () => unsubscribe();
@@ -697,9 +729,11 @@ export default function App() {
   // Transaction Handlers with Firestore Real-time Integration
   const handleAddTransaction = async (newTrx: Omit<Transaction, 'id'>) => {
     try {
-      await addTransactionToFirestore(newTrx);
+      const created = await addTransactionToFirestore(newTrx);
+      return created;
     } catch (err) {
       console.error('Firestore sync failed on add transaction:', err);
+      throw err;
     }
   };
 
@@ -716,6 +750,59 @@ export default function App() {
       await deleteTransactionFromFirestore(id);
     } catch (err) {
       console.error('Firestore sync failed on delete transaction:', err);
+    }
+  };
+
+  // RAPB Handlers with Firestore Real-time Integration
+  const handleAddRapbItem = async (item: Omit<RapbItem, 'id'> | RapbItem) => {
+    try {
+      const created = await addRapbItemToFirestore(item);
+      setRapbItems((prev) => [...prev.filter((p) => p.id !== created.id), created]);
+      return created;
+    } catch (err) {
+      console.error('Firestore sync failed on add RAPB item:', err);
+    }
+  };
+
+  const handleUpdateRapbItem = async (item: RapbItem) => {
+    try {
+      await updateRapbItemInFirestore(item);
+      setRapbItems((prev) => prev.map((p) => (p.id === item.id ? item : p)));
+    } catch (err) {
+      console.error('Firestore sync failed on update RAPB item:', err);
+    }
+  };
+
+  const handleDeleteRapbItem = async (id: string) => {
+    try {
+      await deleteRapbItemFromFirestore(id);
+      setRapbItems((prev) => prev.filter((p) => p.id !== id));
+    } catch (err) {
+      console.error('Firestore sync failed on delete RAPB item:', err);
+    }
+  };
+
+  const handleBulkAddRapb = async (items: RapbItem[], mode: 'append' | 'replace') => {
+    try {
+      if (mode === 'replace') {
+        await clearAllRapbItemsFromFirestore();
+        await bulkAddRapbItemsToFirestore(items);
+        setRapbItems(items);
+      } else {
+        await bulkAddRapbItemsToFirestore(items);
+        setRapbItems((prev) => [...prev, ...items]);
+      }
+    } catch (err) {
+      console.error('Firestore sync failed on bulk add RAPB items:', err);
+    }
+  };
+
+  const handleClearAllRapb = async () => {
+    try {
+      await clearAllRapbItemsFromFirestore();
+      setRapbItems([]);
+    } catch (err) {
+      console.error('Firestore sync failed on clear RAPB items:', err);
     }
   };
 
@@ -960,6 +1047,12 @@ export default function App() {
                   isAddModalOpenDirectly={openAddTransactionDirectly}
                   onCloseAddModalDirectly={() => setOpenAddTransactionDirectly(false)}
                   currentUser={currentUser}
+                  rapbItems={rapbItems}
+                  onAddRapbItem={handleAddRapbItem}
+                  onUpdateRapbItem={handleUpdateRapbItem}
+                  onDeleteRapbItem={handleDeleteRapbItem}
+                  onBulkAddRapb={handleBulkAddRapb}
+                  onClearAllRapb={handleClearAllRapb}
                 />
               </ViewErrorBoundary>
             )}

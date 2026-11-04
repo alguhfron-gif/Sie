@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   DollarSign,
   Plus,
@@ -45,18 +45,35 @@ import { Transaction, TransactionCategory, TransactionType, UserSession, RapbIte
 import { DEFAULT_RAPB_ITEMS } from '../data/initialData';
 import { uploadReceiptImage } from '../services/storageService';
 import { exportToCSV } from '../services/webhookService';
+import {
+  addTransactionToFirestore,
+  updateTransactionInFirestore,
+  deleteTransactionFromFirestore,
+  addRapbItemToFirestore,
+  updateRapbItemInFirestore,
+  deleteRapbItemFromFirestore,
+  bulkAddRapbItemsToFirestore,
+  clearAllRapbItemsFromFirestore,
+  subscribeRapbItems,
+} from '../services/financeService';
 import { ContentHeader } from './ContentHeader';
 import { CollapsibleSection } from './CollapsibleSection';
 import { RapbImportModal } from './RapbImportModal';
 
 interface FinanceViewProps {
   transactions: Transaction[];
-  onAddTransaction: (trx: Omit<Transaction, 'id'>) => void;
-  onUpdateTransaction?: (trx: Transaction) => void;
-  onDeleteTransaction: (id: string) => void;
+  onAddTransaction: (trx: Omit<Transaction, 'id'>) => Promise<Transaction | void> | void;
+  onUpdateTransaction?: (trx: Transaction) => Promise<void> | void;
+  onDeleteTransaction: (id: string) => Promise<void> | void;
   isAddModalOpenDirectly?: boolean;
   onCloseAddModalDirectly?: () => void;
   currentUser?: UserSession | null;
+  rapbItems?: RapbItem[];
+  onAddRapbItem?: (item: Omit<RapbItem, 'id'> | RapbItem) => Promise<RapbItem | void>;
+  onUpdateRapbItem?: (item: RapbItem) => Promise<void>;
+  onDeleteRapbItem?: (id: string) => Promise<void>;
+  onBulkAddRapb?: (items: RapbItem[], mode: 'append' | 'replace') => Promise<void>;
+  onClearAllRapb?: () => Promise<void>;
 }
 
 export const FinanceView: React.FC<FinanceViewProps> = ({
@@ -67,6 +84,12 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
   isAddModalOpenDirectly = false,
   onCloseAddModalDirectly,
   currentUser,
+  rapbItems: propRapbItems,
+  onAddRapbItem,
+  onUpdateRapbItem,
+  onDeleteRapbItem,
+  onBulkAddRapb,
+  onClearAllRapb,
 }) => {
   const isPetugas = currentUser?.category === 'petugas' || (currentUser?.role ? currentUser.role.toUpperCase().includes('PETUGAS') : false);
   // Seluruh panitia dan petugas aktif Sie Penganugerahan memiliki hak kelola RAPB & keuangan
@@ -77,15 +100,26 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
   const [showClearAllConfirm, setShowClearAllConfirm] = useState(false);
   const [trxToDelete, setTrxToDelete] = useState<Transaction | null>(null);
 
-  // RAPB State (persisted in localStorage with empty default)
-  const [rapbItems, setRapbItems] = useState<RapbItem[]>(() => {
+  // In-App Toast Notification State (Success / Error / Info)
+  const [toast, setToast] = useState<{
+    type: 'success' | 'error' | 'info';
+    title: string;
+    message: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
+  // Loading state when submitting transaction to Firestore
+  const [isSubmittingTransaction, setIsSubmittingTransaction] = useState(false);
+
+  // RAPB State (persisted in Cloud Firestore with localStorage offline cache)
+  const [localRapbItems, setLocalRapbItems] = useState<RapbItem[]>(() => {
     try {
-      const resetFlag = localStorage.getItem('sie_rapb_cleared_by_user_v2');
-      if (!resetFlag) {
-        localStorage.removeItem('sie_rapb_items');
-        localStorage.setItem('sie_rapb_cleared_by_user_v2', 'true');
-        return [];
-      }
       const saved = localStorage.getItem('sie_rapb_items');
       if (saved) {
         const parsed = JSON.parse(saved);
@@ -97,12 +131,38 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
     return [];
   });
 
-  const saveRapbItems = (items: RapbItem[]) => {
-    setRapbItems(items);
+  // Subscribe to Cloud Firestore rapb_items collection if not passed from parent
+  useEffect(() => {
+    if (propRapbItems !== undefined) return;
+    const unsub = subscribeRapbItems((items) => {
+      setLocalRapbItems(items);
+    });
+    return () => unsub();
+  }, [propRapbItems]);
+
+  const rapbItems = propRapbItems !== undefined ? propRapbItems : localRapbItems;
+
+  const saveRapbItems = async (items: RapbItem[], mode: 'append' | 'replace' = 'replace') => {
+    setLocalRapbItems(items);
     try {
       localStorage.setItem('sie_rapb_items', JSON.stringify(items));
     } catch (e) {
-      console.warn('Failed to save RAPB items:', e);
+      console.warn('Failed to save RAPB items locally:', e);
+    }
+
+    try {
+      if (onBulkAddRapb) {
+        await onBulkAddRapb(items, mode);
+      } else {
+        if (mode === 'replace') {
+          await clearAllRapbItemsFromFirestore();
+          await bulkAddRapbItemsToFirestore(items);
+        } else {
+          await bulkAddRapbItemsToFirestore(items);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to sync RAPB items to Firestore:', err);
     }
   };
 
@@ -229,15 +289,25 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
   // Per-Program Spending & Real-time Remaining Budget Mapping
   const rapbStats = useMemo(() => {
     return rapbItems.map((item) => {
-      // Find transactions matching this RAPB item by posCode or programName
+      // Find transactions matching this RAPB item by posCode or programName with category validation
       const spent = transactions
-        .filter(
-          (t) =>
-            t.type === 'pengeluaran' &&
-            ((t.posCode && t.posCode.trim().toUpperCase() === item.posCode.trim().toUpperCase()) ||
-              (t.programName && t.programName.trim().toLowerCase() === item.programName.trim().toLowerCase()) ||
-              (!t.posCode && !t.programName && t.category === item.category))
-        )
+        .filter((t) => {
+          if (t.type !== 'pengeluaran') return false;
+          // 1. Explicit posCode match
+          if (t.posCode && item.posCode && t.posCode.trim().toUpperCase() === item.posCode.trim().toUpperCase()) {
+            return true;
+          }
+          // 2. Program Name match with same Category
+          if (
+            t.programName &&
+            item.programName &&
+            t.programName.trim().toLowerCase() === item.programName.trim().toLowerCase() &&
+            normalizeCategory(t.category) === normalizeCategory(item.category)
+          ) {
+            return true;
+          }
+          return false;
+        })
         .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
 
       const remaining = item.allocatedBudget - spent;
@@ -298,7 +368,8 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
   const handleSelectProgram = (item: RapbItem) => {
     setProgramName(item.programName);
     setPosCode(item.posCode);
-    setCategory(item.category);
+    const resolvedCat = resolveCategoryFromPos(item.posCode) || normalizeCategory(item.category);
+    setCategory(resolvedCat);
     setAutocompleteInput(item.programName);
     setIsAutocompleteOpen(false);
 
@@ -327,8 +398,8 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
     }
   };
 
-  // Open Add Transaction Modal
-  const handleOpenAdd = (prefilledPos?: string) => {
+  // Open Add Transaction Modal (supports prefilledPos and prefilledCat)
+  const handleOpenAdd = (prefilledPos?: string, prefilledCat?: TransactionCategory) => {
     setEditingTransaction(null);
     setType('pengeluaran');
     setDate(new Date().toISOString().split('T')[0]);
@@ -344,24 +415,27 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
     setIsUploadingProof(false);
 
     if (prefilledPos) {
-      const matched = rapbItems.find((r) => r.posCode === prefilledPos);
+      const cleanPos = prefilledPos.trim().toUpperCase();
+      const matched = rapbItems.find((r) => r.posCode && r.posCode.trim().toUpperCase() === cleanPos);
       if (matched) {
         setProgramName(matched.programName);
         setPosCode(matched.posCode);
-        setCategory(matched.category);
+        const resolved = resolveCategoryFromPos(matched.posCode) || normalizeCategory(matched.category);
+        setCategory(resolved);
         setTitle(matched.programName);
         setAutocompleteInput(matched.programName);
       } else {
         setProgramName('');
         setPosCode(prefilledPos);
-        setCategory('SEKSI PENGANUGERAHAN');
+        const resolved = resolveCategoryFromPos(prefilledPos) || prefilledCat || 'SEKSI PENGANUGERAHAN';
+        setCategory(resolved);
         setTitle('');
         setAutocompleteInput('');
       }
     } else {
       setProgramName('');
       setPosCode('');
-      setCategory('SEKSI PENGANUGERAHAN');
+      setCategory(prefilledCat || 'SEKSI PENGANUGERAHAN');
       setTitle('');
       setAutocompleteInput('');
     }
@@ -374,7 +448,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
     setEditingTransaction(trx);
     setTitle(trx.title);
     setType(trx.type);
-    setCategory(trx.category);
+    setCategory(getEffectiveCategory(trx) as TransactionCategory);
     setDate(trx.date);
     setProgramName(trx.programName || '');
     setPosCode(trx.posCode || '');
@@ -416,7 +490,115 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
     setProofPreviewUrl(null);
   };
 
-  // Handle Form Submit
+  // 5 Kategori Akun Induk Resmi Sie Penganugerahan
+  const categoriesList: TransactionCategory[] = [
+    'SEKSI PENGANUGERAHAN',
+    'PENGANUGERAHAN (25.200)',
+    'HADIAH LOMBA (25.300)',
+    'JUARAWAN MMU DAN DAERAH (25.400)',
+    'LAIN-LAIN (25.500)',
+  ];
+
+  /**
+   * Deteksi pasti kategori resmi berdasarkan pola kode pos RAPB.
+   * 251xx -> SEKSI PENGANUGERAHAN
+   * 252xx -> PENGANUGERAHAN (25.200)
+   * 253xx -> HADIAH LOMBA (25.300)
+   * 254xx -> JUARAWAN MMU DAN DAERAH (25.400)
+   * 255xx -> LAIN-LAIN (25.500)
+   */
+  const resolveCategoryFromPos = (pos?: string): TransactionCategory | null => {
+    if (!pos) return null;
+    const clean = pos.trim().toUpperCase();
+    const digits = clean.replace(/[^0-9]/g, '');
+    if (digits.startsWith('251') || clean.startsWith('POS-01') || clean.startsWith('POS-07')) {
+      return 'SEKSI PENGANUGERAHAN';
+    }
+    if (digits.startsWith('252') || clean.startsWith('POS-02') || clean.startsWith('POS-03') || clean.startsWith('POS-04')) {
+      return 'PENGANUGERAHAN (25.200)';
+    }
+    if (digits.startsWith('253') || clean.startsWith('POS-05')) {
+      return 'HADIAH LOMBA (25.300)';
+    }
+    if (digits.startsWith('254') || clean.startsWith('POS-06')) {
+      return 'JUARAWAN MMU DAN DAERAH (25.400)';
+    }
+    if (digits.startsWith('255')) {
+      return 'LAIN-LAIN (25.500)';
+    }
+    return null;
+  };
+
+  /**
+   * Normalisasi kategori ke 1 dari 5 kategori resmi.
+   * Jangan pernah mengembalikan 'LAIN-LAIN' jika tidak ada pos/kategori 255!
+   */
+  const normalizeCategory = (cat?: string): TransactionCategory => {
+    if (!cat) return 'SEKSI PENGANUGERAHAN';
+    const clean = cat.trim();
+    if (categoriesList.includes(clean as TransactionCategory)) return clean as TransactionCategory;
+    const upper = clean.toUpperCase();
+
+    if (upper.includes('251') || upper.includes('25.1') || upper.includes('SEKSI') || upper.includes('RAPAT') || upper.includes('KONSUMSI') || upper.includes('KAS') || upper.includes('SPONSOR')) {
+      return 'SEKSI PENGANUGERAHAN';
+    }
+    if (upper.includes('252') || upper.includes('25.2') || upper.includes('25.200') || upper.includes('PENGANUGERAHAN') || upper.includes('TROFI') || upper.includes('PLAKAT') || upper.includes('SERTIFIKAT') || upper.includes('MEDALI') || upper.includes('SELEMPANG')) {
+      return 'PENGANUGERAHAN (25.200)';
+    }
+    if (upper.includes('253') || upper.includes('25.3') || upper.includes('25.300') || upper.includes('HADIAH LOMBA') || upper.includes('LOMBA')) {
+      return 'HADIAH LOMBA (25.300)';
+    }
+    if (upper.includes('254') || upper.includes('25.4') || upper.includes('25.400') || upper.includes('JUARAWAN') || upper.includes('MMU') || upper.includes('DAERAH')) {
+      return 'JUARAWAN MMU DAN DAERAH (25.400)';
+    }
+    if (upper.includes('255') || upper.includes('25.5') || upper.includes('25.500') || upper.includes('LAIN-LAIN') || upper.includes('DEKORASI') || upper.includes('DOKUMENTASI')) {
+      return 'LAIN-LAIN (25.500)';
+    }
+    return 'SEKSI PENGANUGERAHAN';
+  };
+
+  /**
+   * Dapatkan kategori efektif dari transaksi.
+   * 1. Cek kode pos (251xx -> Seksi Penganugerahan, dsb)
+   * 2. Cek kecocokan di RAPB items
+   * 3. Kategori yang disimpan
+   * 4. Normalisasi fallback
+   */
+  const getEffectiveCategory = (t: { category?: string; posCode?: string; programName?: string; title?: string }): TransactionCategory => {
+    // 1. Cek dari kode pos langsung (akurasi 100%)
+    if (t.posCode) {
+      const fromPos = resolveCategoryFromPos(t.posCode);
+      if (fromPos) return fromPos;
+    }
+
+    // 2. Cek dari referensi item RAPB
+    if (t.posCode || t.programName || t.title) {
+      const cleanPos = (t.posCode || '').trim().toUpperCase();
+      const normPos = cleanPos.replace(/[^0-9A-Z]/g, '');
+      const cleanProg = (t.programName || '').trim().toLowerCase();
+      const cleanTitle = (t.title || '').trim().toLowerCase();
+
+      const matched = rapbItems.find(
+        (r) =>
+          (cleanPos && r.posCode && r.posCode.trim().toUpperCase() === cleanPos) ||
+          (normPos && r.posCode && r.posCode.trim().toUpperCase().replace(/[^0-9A-Z]/g, '') === normPos) ||
+          (cleanProg && r.programName && r.programName.trim().toLowerCase() === cleanProg) ||
+          (cleanTitle && r.programName && cleanTitle === r.programName.trim().toLowerCase())
+      );
+      if (matched && matched.category) {
+        return normalizeCategory(matched.category);
+      }
+    }
+
+    // 3. Cek kategori transaksi tersimpan
+    if (t.category && categoriesList.includes(t.category as TransactionCategory)) {
+      return t.category as TransactionCategory;
+    }
+
+    return normalizeCategory(t.category);
+  };
+
+  // Handle Form Submit: langsung simpan ke koleksi 'transactions' di Firebase Firestore menggunakan addDoc
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || amount <= 0) return;
@@ -439,33 +621,95 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
     const numQty = typeof qty === 'number' ? qty : parseFloat(qty) || 1;
     const numUnitPrice = typeof unitPrice === 'number' ? unitPrice : parseFloat(unitPrice) || amount;
 
-    const trxPayload = {
-      title,
+    // Resolve matching RAPB item
+    const matchedRapb = rapbItems.find(
+      (r) =>
+        (posCode && r.posCode && r.posCode.trim().toUpperCase() === posCode.trim().toUpperCase()) ||
+        (posCode && r.posCode && r.posCode.replace(/[^0-9A-Z]/g, '') === posCode.replace(/[^0-9A-Z]/g, '')) ||
+        (programName && r.programName && r.programName.trim().toLowerCase() === programName.trim().toLowerCase()) ||
+        (title && r.programName && title.trim().toLowerCase() === r.programName.trim().toLowerCase())
+    );
+
+    // Kategori pasti: prioritas dari posCode, kemudian dari item RAPB, atau pilihan form pengguna
+    let finalCategory: TransactionCategory = category;
+    const fromPos = resolveCategoryFromPos(posCode);
+    if (fromPos) {
+      finalCategory = fromPos;
+    } else if (matchedRapb && matchedRapb.category) {
+      finalCategory = normalizeCategory(matchedRapb.category);
+    } else {
+      finalCategory = normalizeCategory(category);
+    }
+
+    // Hitung sisa anggaran real-time saat transaksi disimpan
+    let calculatedRemaining: number | undefined = undefined;
+    if (selectedProgramStat) {
+      calculatedRemaining = Math.max(0, selectedProgramStat.remaining - amount);
+    } else if (matchedRapb) {
+      const currentSpent = transactions
+        .filter((t) => t.type === 'pengeluaran' && (t.posCode === matchedRapb.posCode || t.programName === matchedRapb.programName))
+        .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+      calculatedRemaining = Math.max(0, matchedRapb.allocatedBudget - (currentSpent + amount));
+    }
+
+    const trxPayload: Omit<Transaction, 'id'> = {
+      title: title.trim(),
       type,
-      category,
+      category: finalCategory,
       amount,
       date,
       notes: notes.trim() || undefined,
       receiptNumber: receiptNumber.trim() || `NOT-${Date.now().toString().slice(-4)}`,
-      proofUrl: uploadedProofUrl,
-      programName: programName.trim() || undefined,
+      proofUrl: uploadedProofUrl || '',
+      programName: programName.trim() || title.trim(),
       posCode: posCode.trim() || undefined,
       qty: type === 'pengeluaran' ? numQty : undefined,
       unit: type === 'pengeluaran' ? unit.trim() || undefined : undefined,
       unitPrice: type === 'pengeluaran' ? numUnitPrice : undefined,
       recipient: recipient.trim() || undefined,
+      remainingBudget: calculatedRemaining,
     };
 
-    if (editingTransaction && onUpdateTransaction) {
-      onUpdateTransaction({
-        ...editingTransaction,
-        ...trxPayload,
-      });
-    } else {
-      onAddTransaction(trxPayload);
-    }
+    setIsSubmittingTransaction(true);
 
-    closeModal();
+    try {
+      if (editingTransaction && onUpdateTransaction) {
+        // Mode Edit: update data di Firestore
+        const updatedObj: Transaction = {
+          ...editingTransaction,
+          ...trxPayload,
+        };
+        await updateTransactionInFirestore(updatedObj);
+        await onUpdateTransaction(updatedObj);
+        setToast({
+          type: 'success',
+          title: 'Perubahan Berhasil Disimpan',
+          message: `Transaksi "${title}" telah diperbarui di Firebase Firestore.`,
+        });
+      } else {
+        // Mode Tambah: langsung simpan ke koleksi 'transactions' via addDoc
+        const created = await addTransactionToFirestore(trxPayload);
+        if (onAddTransaction) {
+          await onAddTransaction(created);
+        }
+        setToast({
+          type: 'success',
+          title: 'Berhasil Disimpan ke Firebase Firestore!',
+          message: `Transaksi "${title}" (Nominal: ${formatIDR(amount)}, Pos: ${posCode || '-'}, Kategori: ${finalCategory}) berhasil disimpan ke koleksi 'transactions' via addDoc().`,
+        });
+      }
+
+      closeModal();
+    } catch (err: any) {
+      console.error('Gagal menyimpan transaksi ke Firebase Firestore:', err);
+      setToast({
+        type: 'error',
+        title: 'Gagal Menyimpan ke Firebase Firestore',
+        message: err?.message || 'Terjadi kendala saat menyimpan transaksi. Silakan coba kembali.',
+      });
+    } finally {
+      setIsSubmittingTransaction(false);
+    }
   };
 
   // Export CSV Handler
@@ -481,6 +725,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
       'Satuan',
       'Harga Satuan (Rp)',
       'Total Nominal (Rp)',
+      'Sisa Anggaran (Rp)',
       'Penerima / Rekanan',
       'Keterangan Tambahan',
     ];
@@ -496,6 +741,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
       t.unit || '-',
       t.unitPrice !== undefined ? t.unitPrice : '-',
       t.amount,
+      t.remainingBudget !== undefined ? t.remainingBudget : '-',
       t.recipient || '-',
       t.notes || '-',
     ]);
@@ -503,38 +749,21 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
     exportToCSV('Laporan_Keuangan_RAPB_Sie_Penganugerahan.csv', headers, rows);
   };
 
-  // 5 Kategori Akun Induk Resmi Sie Penganugerahan
-  const categoriesList: TransactionCategory[] = [
-    'SEKSI PENGANUGERAHAN',
-    'PENGANUGERAHAN (25.200)',
-    'HADIAH LOMBA (25.300)',
-    'JUARAWAN MMU DAN DAERAH (25.400)',
-    'LAIN-LAIN (25.500)',
-  ];
-
-  // Normalisasi kategori
-  const normalizeCategory = (cat?: string): string => {
-    if (!cat) return 'LAIN-LAIN (25.500)';
-    const clean = cat.trim();
-    if (categoriesList.includes(clean as TransactionCategory)) return clean;
-    const upper = clean.toUpperCase();
-    if (upper.includes('25.200') || upper.includes('TROFI') || upper.includes('PLAKAT') || upper.includes('SERTIFIKAT')) {
-      return 'PENGANUGERAHAN (25.200)';
-    }
-    if (upper.includes('25.300') || upper.includes('HADIAH') || upper.includes('LOMBA')) {
-      return 'HADIAH LOMBA (25.300)';
-    }
-    if (upper.includes('25.400') || upper.includes('JUARAWAN') || upper.includes('MMU') || upper.includes('DAERAH')) {
-      return 'JUARAWAN MMU DAN DAERAH (25.400)';
-    }
-    if (upper.includes('25.500') || upper.includes('LAIN') || upper.includes('DEKORASI') || upper.includes('DOKUMENTASI')) {
-      return 'LAIN-LAIN (25.500)';
-    }
-    if (upper.includes('SEKSI') || upper.includes('KONSUMSI') || upper.includes('KAS') || upper.includes('SPONSOR')) {
-      return 'SEKSI PENGANUGERAHAN';
-    }
-    return clean;
-  };
+  // Sinkronisasi otomatis mandiri (Self-healing): perbaiki transaksi di Firestore yang tersimpan dengan kategori keliru
+  useEffect(() => {
+    if (!rapbItems || rapbItems.length === 0) return;
+    transactions.forEach((t) => {
+      if (t.type === 'pengeluaran' && (t.posCode || t.programName)) {
+        const eff = getEffectiveCategory(t);
+        if (t.category !== eff && onUpdateTransaction) {
+          onUpdateTransaction({
+            ...t,
+            category: eff,
+          });
+        }
+      }
+    });
+  }, [transactions.length, rapbItems.length]);
 
   // Rekapitulasi Realisasi per Kategori (Pagu, Pengeluaran, Sisa Dana)
   const categoryStats = useMemo(() => {
@@ -544,7 +773,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
         .reduce((sum, item) => sum + (Number(item.allocatedBudget) || 0), 0);
 
       const spent = transactions
-        .filter((t) => t.type === 'pengeluaran' && normalizeCategory(t.category) === cat)
+        .filter((t) => t.type === 'pengeluaran' && getEffectiveCategory(t) === cat)
         .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
 
       const remaining = pagu - spent;
@@ -591,7 +820,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
   const pieData = categoriesList
     .map((cat) => {
       const sum = transactions
-        .filter((t) => normalizeCategory(t.category) === cat && t.type === 'pengeluaran')
+        .filter((t) => getEffectiveCategory(t) === cat && t.type === 'pengeluaran')
         .reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
       return { name: cat, value: sum };
     })
@@ -602,9 +831,11 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
   // Filtered Transactions
   const filteredTransactions = transactions.filter((t) => {
     const q = searchTerm.toLowerCase();
+    const effCat = getEffectiveCategory(t);
     const matchesSearch =
       t.title.toLowerCase().includes(q) ||
       t.category.toLowerCase().includes(q) ||
+      effCat.toLowerCase().includes(q) ||
       (t.programName && t.programName.toLowerCase().includes(q)) ||
       (t.posCode && t.posCode.toLowerCase().includes(q)) ||
       (t.recipient && t.recipient.toLowerCase().includes(q)) ||
@@ -612,7 +843,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
       (t.receiptNumber && t.receiptNumber.toLowerCase().includes(q));
 
     const matchesType = typeFilter === 'ALL' || t.type === typeFilter;
-    const matchesCategory = categoryFilter === 'ALL' || t.category === categoryFilter;
+    const matchesCategory = categoryFilter === 'ALL' || effCat === categoryFilter || t.category === categoryFilter;
     const matchesPos = selectedPosFilter === 'ALL' || t.posCode === selectedPosFilter;
 
     return matchesSearch && matchesType && matchesCategory && matchesPos;
@@ -654,8 +885,8 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
     }
   };
 
-  // Save / Update RAPB Program
-  const handleSaveRapbItem = (e: React.FormEvent) => {
+  // Save / Update RAPB Program directly to Firestore
+  const handleSaveRapbItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!rapbPosInput.trim() || !rapbNameInput.trim()) return;
 
@@ -665,27 +896,34 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
     const computedBudget = Number(rapbBudgetInput) > 0 ? Number(rapbBudgetInput) : Math.round(numQtm * numVol * numUnitPrice);
 
     if (editingRapb) {
-      const updated = rapbItems.map((item) =>
-        item.id === editingRapb.id
-          ? {
-              ...item,
-              posCode: rapbPosInput.trim().toUpperCase(),
-              programName: rapbNameInput.trim(),
-              qtm: numQtm,
-              qtmKet: rapbQtmKetInput.trim() || undefined,
-              vol: numVol,
-              volKet: rapbVolKetInput.trim() || undefined,
-              unitPrice: numUnitPrice,
-              allocatedBudget: computedBudget,
-              category: rapbCatInput,
-              description: rapbDescInput.trim() || undefined,
-            }
-          : item
-      );
-      saveRapbItems(updated);
+      const updated: RapbItem = {
+        ...editingRapb,
+        posCode: rapbPosInput.trim().toUpperCase(),
+        programName: rapbNameInput.trim(),
+        qtm: numQtm,
+        qtmKet: rapbQtmKetInput.trim() || undefined,
+        vol: numVol,
+        volKet: rapbVolKetInput.trim() || undefined,
+        unitPrice: numUnitPrice,
+        allocatedBudget: computedBudget,
+        category: rapbCatInput,
+        description: rapbDescInput.trim() || undefined,
+      };
+
+      setLocalRapbItems((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+      try {
+        if (onUpdateRapbItem) {
+          await onUpdateRapbItem(updated);
+        } else {
+          await updateRapbItemInFirestore(updated);
+        }
+        setBulkSuccessNotice(`Pos anggaran ${updated.posCode} berhasil diperbarui di Cloud Firebase.`);
+      } catch (err) {
+        console.error('Gagal memperbarui pos di Firestore:', err);
+      }
     } else {
       const newItem: RapbItem = {
-        id: `rapb-${Date.now()}`,
+        id: `rapb-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
         posCode: rapbPosInput.trim().toUpperCase(),
         programName: rapbNameInput.trim(),
         qtm: numQtm,
@@ -698,10 +936,22 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
         description: rapbDescInput.trim() || undefined,
         keywords: [rapbNameInput.toLowerCase(), rapbPosInput.toLowerCase()],
       };
-      saveRapbItems([...rapbItems, newItem]);
+
+      setLocalRapbItems((prev) => [...prev, newItem]);
+      try {
+        if (onAddRapbItem) {
+          await onAddRapbItem(newItem);
+        } else {
+          await addRapbItemToFirestore(newItem);
+        }
+        setBulkSuccessNotice(`Pos anggaran ${newItem.posCode} berhasil disimpan ke Cloud Firebase.`);
+      } catch (err) {
+        console.error('Gagal menambah pos ke Firestore:', err);
+      }
     }
     setIsRapbModalOpen(false);
     setEditingRapb(null);
+    setTimeout(() => setBulkSuccessNotice(null), 3500);
   };
 
   const handleOpenEditRapb = (item: RapbItem) => {
@@ -726,16 +976,26 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
     }
   };
 
-  const executeConfirmDeleteRapb = () => {
+  const executeConfirmDeleteRapb = async () => {
     if (!rapbToDelete) return;
     const target = rapbToDelete;
     const updated = rapbItems.filter((i) => i.id !== target.id);
-    saveRapbItems(updated);
+    setLocalRapbItems(updated);
     setRapbToDelete(null);
     if (editingRapb?.id === target.id) {
       setIsRapbModalOpen(false);
     }
-    setBulkSuccessNotice(`Pos anggaran ${target.posCode} (${target.programName}) berhasil dihapus.`);
+
+    try {
+      if (onDeleteRapbItem) {
+        await onDeleteRapbItem(target.id);
+      } else {
+        await deleteRapbItemFromFirestore(target.id);
+      }
+      setBulkSuccessNotice(`Pos anggaran ${target.posCode} (${target.programName}) berhasil dihapus dari Cloud Firebase.`);
+    } catch (err) {
+      console.error('Gagal menghapus pos dari Firestore:', err);
+    }
     setTimeout(() => setBulkSuccessNotice(null), 3000);
   };
 
@@ -743,10 +1003,19 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
     setShowClearAllConfirm(true);
   };
 
-  const executeConfirmClearAllRapb = () => {
-    saveRapbItems([]);
+  const executeConfirmClearAllRapb = async () => {
+    setLocalRapbItems([]);
     setShowClearAllConfirm(false);
-    setBulkSuccessNotice('Seluruh data pagu RAPB berhasil dikosongkan.');
+    try {
+      if (onClearAllRapb) {
+        await onClearAllRapb();
+      } else {
+        await clearAllRapbItemsFromFirestore();
+      }
+      setBulkSuccessNotice('Seluruh data pagu RAPB berhasil dikosongkan dari Cloud Firebase.');
+    } catch (err) {
+      console.error('Gagal mengosongkan pos di Firestore:', err);
+    }
     setTimeout(() => setBulkSuccessNotice(null), 3500);
   };
 
@@ -916,7 +1185,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
     });
   }, [bulkPasteText, rapbItems.length, categoriesList]);
 
-  const handleSaveBulkRapb = () => {
+  const handleSaveBulkRapb = async () => {
     let rowsToProcess: {
       posCode: string;
       programName: string;
@@ -948,12 +1217,13 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
     }
 
     if (rowsToProcess.length === 0) {
-      alert('Mohon isi minimal satu baris program RAPB dengan nama kegiatan dan pagu anggaran.');
+      setBulkSuccessNotice('Mohon isi minimal satu baris program RAPB dengan nama kegiatan dan pagu anggaran.');
+      setTimeout(() => setBulkSuccessNotice(null), 3000);
       return;
     }
 
     const newRapbItems: RapbItem[] = rowsToProcess.map((r, i) => ({
-      id: `rapb-${Date.now()}-${i}`,
+      id: `rapb-${Date.now()}-${i}-${Math.random().toString(36).substr(2, 4)}`,
       posCode: r.posCode,
       programName: r.programName,
       allocatedBudget: r.allocatedBudget,
@@ -963,25 +1233,25 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
     }));
 
     const updated = [...rapbItems, ...newRapbItems];
-    saveRapbItems(updated);
+    await saveRapbItems(updated, 'append');
     setIsBulkRapbModalOpen(false);
-    setBulkSuccessNotice(`Berhasil menambahkan ${newRapbItems.length} pos RAPB baru serentak!`);
+    setBulkSuccessNotice(`Berhasil menyimpan ${newRapbItems.length} pos RAPB ke Cloud Firebase!`);
     setTimeout(() => setBulkSuccessNotice(null), 4000);
   };
 
   // Bulk Add handler from RapbImportModal (Excel / CSV)
-  const handleBulkAddRapb = (newItems: RapbItem[], mode: 'append' | 'replace') => {
+  const handleBulkAddRapb = async (newItems: RapbItem[], mode: 'append' | 'replace') => {
     let updated: RapbItem[] = [];
     if (mode === 'replace') {
       updated = newItems;
     } else {
       updated = [...rapbItems, ...newItems];
     }
-    saveRapbItems(updated);
+    await saveRapbItems(updated, mode);
     setBulkSuccessNotice(
       mode === 'replace'
-        ? `Berhasil memperbarui seluruh RAPB dengan ${newItems.length} pos dari berkas!`
-        : `Berhasil mengimpor ${newItems.length} pos RAPB baru dari berkas!`
+        ? `Berhasil memperbarui seluruh data pagu (${newItems.length} pos) di Cloud Firebase!`
+        : `Berhasil mengimpor ${newItems.length} pos RAPB ke Cloud Firebase!`
     );
     setTimeout(() => setBulkSuccessNotice(null), 4500);
   };
@@ -1422,6 +1692,40 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
         </div>
       ) : (
         <>
+          {/* TOAST NOTIFICATION REAL-TIME (SUCCESS / ERROR / INFO) */}
+          {toast && (
+            <div className="fixed top-5 right-5 z-50 max-w-md w-full bg-white rounded-2xl shadow-2xl border border-[rgba(36,33,28,0.18)] p-4 flex items-start space-x-3 animate-in slide-in-from-top-4 duration-300">
+              <div
+                className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                  toast.type === 'success'
+                    ? 'bg-emerald-100 text-emerald-800'
+                    : toast.type === 'error'
+                    ? 'bg-rose-100 text-rose-800'
+                    : 'bg-blue-100 text-blue-800'
+                }`}
+              >
+                {toast.type === 'success' ? (
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                ) : toast.type === 'error' ? (
+                  <AlertTriangle className="w-5 h-5 text-rose-600" />
+                ) : (
+                  <Sparkles className="w-5 h-5 text-blue-600" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-xs font-black text-slate-900">{toast.title}</h4>
+                <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">{toast.message}</p>
+              </div>
+              <button
+                onClick={() => setToast(null)}
+                className="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+                title="Tutup Notifikasi"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
           {/* =========================================================================
               HEADER & TOP ACTION BAR (SIDOGIRI DESIGN SYSTEM)
               ========================================================================= */}
@@ -1445,6 +1749,16 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
               <p className="text-xs text-[#7c7b77] mt-1">
                 Pencatatan kas pengeluaran dengan pencocokan pintar pos RAPB, monitoring sisa dana real-time, dan lampiran nota fisik.
               </p>
+              <div className="flex flex-wrap items-center gap-2 mt-2">
+                <span className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>Cloud Firestore Terhubung • Koleksi 'transactions' ({transactions.length} Data)</span>
+                </span>
+                <span className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-[#8a7c4c]/10 text-[#6f633a] border border-[#8a7c4c]/20">
+                  <CheckCircle className="w-3.5 h-3.5 text-[#8a7c4c]" />
+                  <span>{rapbItems.length} Pos Pagu RAPB Koleksi 'rapb_items' Tersinkronisasi</span>
+                </span>
+              </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
@@ -1733,23 +2047,33 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                                 </div>
                               </td>
                               <td className="p-3 text-center">
-                                <button
-                                  onClick={() => {
-                                    if (categoryFilter === catStat.category) {
-                                      setCategoryFilter('ALL');
-                                    } else {
-                                      setCategoryFilter(catStat.category);
-                                    }
-                                  }}
-                                  className={`px-2.5 py-1 rounded-lg text-[10.5px] font-bold transition cursor-pointer ${
-                                    isFiltered
-                                      ? 'bg-[#8a7c4c] text-white hover:bg-[#6f633a]'
-                                      : 'bg-[#f7f6f2] hover:bg-[#edece6] text-slate-700 border border-slate-200'
-                                  }`}
-                                  title="Filter transaksi berdasarkan kategori ini"
-                                >
-                                  {isFiltered ? 'Lepas Filter' : 'Filter Transaksi'}
-                                </button>
+                                <div className="flex items-center justify-center space-x-1.5">
+                                  <button
+                                    onClick={() => handleOpenAdd(undefined, catStat.category as TransactionCategory)}
+                                    className="px-2 py-1 rounded-lg text-[10px] font-extrabold bg-[#8a7c4c]/15 hover:bg-[#8a7c4c] text-[#8a7c4c] hover:text-white transition cursor-pointer flex items-center space-x-1 shadow-2xs"
+                                    title={`Catat pengeluaran baru untuk kategori ${catStat.category}`}
+                                  >
+                                    <Plus className="w-3 h-3" />
+                                    <span>+ Belanja</span>
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      if (categoryFilter === catStat.category) {
+                                        setCategoryFilter('ALL');
+                                      } else {
+                                        setCategoryFilter(catStat.category);
+                                      }
+                                    }}
+                                    className={`px-2 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer ${
+                                      isFiltered
+                                        ? 'bg-[#8a7c4c] text-white hover:bg-[#6f633a]'
+                                        : 'bg-[#f7f6f2] hover:bg-[#edece6] text-slate-700 border border-slate-200'
+                                    }`}
+                                    title="Filter transaksi berdasarkan kategori ini"
+                                  >
+                                    {isFiltered ? 'Lepas' : 'Filter'}
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           );
@@ -2147,6 +2471,10 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                                 <span className="text-slate-600 truncate">{t.recipient}</span>
                               </>
                             )}
+                            <span>•</span>
+                            <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded">
+                              {getEffectiveCategory(t)}
+                            </span>
                           </div>
                         </div>
 
@@ -2270,7 +2598,9 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
 
                           <td className="p-3.5">
                             <div className="font-semibold text-slate-800">{t.recipient || '-'}</div>
-                            <span className="text-[10px] text-slate-400">{t.category}</span>
+                            <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded inline-block mt-0.5">
+                              {getEffectiveCategory(t)}
+                            </span>
                           </td>
 
                           <td className="p-3.5 text-center font-medium">
@@ -2551,10 +2881,20 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                       placeholder="Ketik kata kunci: 'trofi', 'plakat', 'sertifikat', 'konsumsi'..."
                       value={autocompleteInput}
                       onChange={(e) => {
-                        setAutocompleteInput(e.target.value);
-                        setProgramName(e.target.value);
+                        const val = e.target.value;
+                        setAutocompleteInput(val);
+                        setProgramName(val);
                         if (!title.trim() || title === programName) {
-                          setTitle(e.target.value);
+                          setTitle(val);
+                        }
+                        const directMatch = rapbItems.find(
+                          (r) =>
+                            r.programName.trim().toLowerCase() === val.trim().toLowerCase() ||
+                            r.posCode.trim().toUpperCase() === val.trim().toUpperCase()
+                        );
+                        if (directMatch) {
+                          setPosCode(directMatch.posCode);
+                          setCategory(normalizeCategory(directMatch.category));
                         }
                         setIsAutocompleteOpen(true);
                       }}
@@ -2638,6 +2978,34 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                 </div>
               )}
 
+              {/* Kategori Akun Induk (5 Pos Induk Resmi - Sinkron ke Rekap Anggaran) */}
+              <div className="p-3 bg-amber-50/40 border border-[#8a7c4c]/30 rounded-2xl space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="font-extrabold text-slate-800 text-xs flex items-center space-x-1.5">
+                    <Layers className="w-3.5 h-3.5 text-[#8a7c4c]" />
+                    <span>Kategori Akun Induk (5 Pos Induk) *</span>
+                  </label>
+                  <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-bold border border-emerald-200">
+                    Sinkron ke Rekapitulasi Anggaran
+                  </span>
+                </div>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value as TransactionCategory)}
+                  className="w-full px-3 py-2 bg-white border border-[#8a7c4c]/40 text-slate-900 rounded-xl font-black text-xs focus:ring-2 focus:ring-[#8a7c4c]/50 focus:outline-none"
+                >
+                  {categoriesList.map((cat, idx) => (
+                    <option key={cat} value={cat}>
+                      {idx + 1}. {cat}
+                    </option>
+                  ))}
+                </select>
+                <div className="flex items-center justify-between text-[10px] text-slate-500 pt-0.5">
+                  <span>Realisasi pengeluaran ini langsung masuk ke rekapitulasi:</span>
+                  <strong className="text-[#8a7c4c] font-black">{category}</strong>
+                </div>
+              </div>
+
               {/* Kode Pos & Judul / Uraian Transaksi */}
               <div className="grid grid-cols-3 gap-3">
                 {type === 'pengeluaran' && (
@@ -2647,7 +3015,27 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                       type="text"
                       placeholder="e.g. POS-01"
                       value={posCode}
-                      onChange={(e) => setPosCode(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setPosCode(val);
+                        const resolved = resolveCategoryFromPos(val);
+                        if (resolved) {
+                          setCategory(resolved);
+                        }
+                        const matchByPos = rapbItems.find(
+                          (r) =>
+                            r.posCode.trim().toUpperCase() === val.trim().toUpperCase() ||
+                            r.posCode.replace(/[^0-9A-Z]/g, '') === val.replace(/[^0-9A-Z]/g, '')
+                        );
+                        if (matchByPos) {
+                          const cat = resolveCategoryFromPos(matchByPos.posCode) || normalizeCategory(matchByPos.category);
+                          setCategory(cat);
+                          if (!programName) {
+                            setProgramName(matchByPos.programName);
+                            setAutocompleteInput(matchByPos.programName);
+                          }
+                        }
+                      }}
                       className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs font-bold text-[#8a7c4c] focus:ring-2 focus:ring-[#8a7c4c]/50 focus:outline-none uppercase"
                     />
                   </div>
@@ -2833,23 +3221,31 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                 <button
                   type="button"
                   onClick={closeModal}
-                  disabled={isUploadingProof}
+                  disabled={isUploadingProof || isSubmittingTransaction}
                   className="px-4 py-2 border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-100 transition cursor-pointer disabled:opacity-50"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  disabled={isUploadingProof}
-                  className="px-5 py-2 bg-[#8a7c4c] hover:bg-[#6f633a] text-white font-extrabold rounded-xl shadow-xs transition flex items-center space-x-2 cursor-pointer disabled:opacity-50"
+                  disabled={isUploadingProof || isSubmittingTransaction}
+                  className="px-5 py-2.5 bg-[#8a7c4c] hover:bg-[#6f633a] text-white font-extrabold rounded-xl shadow-xs transition flex items-center space-x-2 cursor-pointer disabled:opacity-50"
                 >
                   {isUploadingProof ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
                       <span>Mengunggah Nota...</span>
                     </>
+                  ) : isSubmittingTransaction ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Menyimpan ke Firebase Firestore...</span>
+                    </>
                   ) : (
-                    <span>{editingTransaction ? 'Simpan Perubahan' : 'Simpan Transaksi Kas'}</span>
+                    <>
+                      <Check className="w-4 h-4" />
+                      <span>{editingTransaction ? 'Simpan Perubahan' : 'Simpan Transaksi Kas (addDoc)'}</span>
+                    </>
                   )}
                 </button>
               </div>
