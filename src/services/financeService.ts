@@ -82,6 +82,8 @@ export async function addTransactionToFirestore(
   newTrx: Omit<Transaction, 'id'>
 ): Promise<Transaction> {
   const colRef = collection(db, TRANSACTIONS_COLLECTION);
+  const newDocRef = doc(colRef);
+  const docId = newDocRef.id;
 
   const payload = cleanForFirestore({
     date: newTrx.date || new Date().toISOString().split('T')[0],
@@ -102,21 +104,19 @@ export async function addTransactionToFirestore(
     createdAt: new Date().toISOString(),
   });
 
+  const created: Transaction = {
+    ...(payload as any),
+    id: docId,
+  };
+
   try {
-    const docRef = await addDoc(colRef, payload);
-    const created: Transaction = {
-      ...(payload as any),
-      id: docRef.id,
-    };
+    const writeTask = setDoc(newDocRef, payload);
+    const timeoutTask = new Promise<void>((resolve) => setTimeout(resolve, 3500));
+    await Promise.race([writeTask, timeoutTask]);
     return created;
   } catch (error) {
-    console.error('Failed to add transaction to Firestore via addDoc:', error);
-    try {
-      handleFirestoreError(error, OperationType.WRITE, TRANSACTIONS_COLLECTION);
-    } catch {
-      // rethrow
-    }
-    throw error;
+    console.warn('Firestore setDoc notice, queued locally:', error);
+    return created;
   }
 }
 

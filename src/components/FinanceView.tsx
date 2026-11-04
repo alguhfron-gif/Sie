@@ -234,6 +234,61 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
   const [proofUrlInput, setProofUrlInput] = useState('');
   const [isUploadingProof, setIsUploadingProof] = useState(false);
 
+  // In-App Live Camera State
+  const [isLiveCameraOpen, setIsLiveCameraOpen] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+
+  const startLiveCamera = async () => {
+    try {
+      setIsLiveCameraOpen(true);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' } },
+        audio: false,
+      });
+      setCameraStream(stream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play();
+      }
+    } catch (err) {
+      console.warn('Live camera stream notice, falling back to file input:', err);
+      setIsLiveCameraOpen(false);
+      const el = document.getElementById('camera-photo-input') as HTMLInputElement | null;
+      if (el) el.click();
+    }
+  };
+
+  const captureLiveFrame = () => {
+    if (!videoRef.current) return;
+    const video = videoRef.current;
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.min(800, video.videoWidth || 640);
+    canvas.height = Math.round(canvas.width * ((video.videoHeight || 480) / (video.videoWidth || 640)));
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+      setProofPreviewUrl(dataUrl);
+    }
+    stopLiveCamera();
+  };
+
+  const stopLiveCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach((track) => track.stop());
+      setCameraStream(null);
+    }
+    setIsLiveCameraOpen(false);
+  };
+
+  useEffect(() => {
+    if (isLiveCameraOpen && videoRef.current && cameraStream) {
+      videoRef.current.srcObject = cameraStream;
+      videoRef.current.play().catch(() => {});
+    }
+  }, [isLiveCameraOpen, cameraStream]);
+
   // Saldo Kas Fisik (Penerimaan / Top-Up Kas) State
   const [isAddPemasukanModalOpen, setIsAddPemasukanModalOpen] = useState(false);
   const [showPemasukanListModal, setShowPemasukanListModal] = useState(false);
@@ -487,6 +542,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
   };
 
   const closeModal = () => {
+    stopLiveCamera();
     setIsModalOpen(false);
     setEditingTransaction(null);
     setProofFile(null);
@@ -3416,46 +3472,111 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                       </div>
                     </div>
                   ) : (
-                    <div className="space-y-2">
+                    <div className="space-y-2.5">
+                      {/* Hidden File Inputs for Native Camera & Gallery */}
+                      <input
+                        ref={cameraInputRef}
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        onChange={handleFileChange}
+                        className="hidden"
+                        tabIndex={-1}
+                      />
+                      <input
+                        ref={galleryInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="hidden"
+                        tabIndex={-1}
+                      />
+
+                      {/* Live In-App Camera Viewfinder */}
+                      {isLiveCameraOpen && (
+                        <div className="p-3 bg-slate-900 rounded-2xl space-y-2.5 border border-slate-700 animate-in fade-in duration-200">
+                          <div className="relative rounded-xl overflow-hidden bg-black aspect-4/3 flex items-center justify-center">
+                            <video
+                              ref={videoRef}
+                              autoPlay
+                              playsInline
+                              muted
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute top-2 left-2 bg-rose-600/90 text-white text-[10px] font-black px-2 py-0.5 rounded-full flex items-center space-x-1 animate-pulse">
+                              <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
+                              <span>LIVE KAMERA</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-center space-x-2 pt-0.5">
+                            <button
+                              type="button"
+                              onClick={captureLiveFrame}
+                              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl flex items-center space-x-1.5 shadow-md transition active:scale-95 cursor-pointer"
+                            >
+                              <Camera className="w-4 h-4" />
+                              <span>Ambil Foto Nota Sekarang</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={stopLiveCamera}
+                              className="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl transition cursor-pointer"
+                            >
+                              Tutup
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Action Buttons for Mobile */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {/* Tombol Kamera Langsung untuk HP (Native label activation) */}
-                        <label
-                          htmlFor="camera-photo-input"
-                          className="flex items-center justify-center space-x-2 p-3.5 bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold rounded-xl text-xs shadow-2xs transition cursor-pointer active:scale-95 text-center select-none"
+                        {/* Tombol Kamera HP Langsung */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (cameraInputRef.current) {
+                              cameraInputRef.current.value = '';
+                              cameraInputRef.current.click();
+                            }
+                          }}
+                          className="flex items-center justify-center space-x-2 p-3 bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold rounded-xl text-xs shadow-xs transition cursor-pointer active:scale-95 text-center"
                         >
-                          <Camera className="w-4 h-4 text-emerald-200" />
-                          <span>Ambil Foto Kamera HP</span>
-                          <input
-                            id="camera-photo-input"
-                            type="file"
-                            accept="image/*"
-                            capture="environment"
-                            onChange={handleFileChange}
-                            className="sr-only"
-                            style={{ position: 'absolute', width: '1px', height: '1px', opacity: 0, pointerEvents: 'none' }}
-                          />
-                        </label>
+                          <Camera className="w-4 h-4 text-emerald-200 shrink-0" />
+                          <span>Buka Kamera HP</span>
+                        </button>
 
                         {/* Tombol Pilih dari Galeri */}
-                        <label
-                          htmlFor="gallery-photo-input"
-                          className="flex items-center justify-center space-x-2 p-3.5 bg-white hover:bg-slate-50 text-slate-800 font-extrabold rounded-xl text-xs border border-slate-200 shadow-2xs transition cursor-pointer active:scale-95 text-center select-none"
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (galleryInputRef.current) {
+                              galleryInputRef.current.value = '';
+                              galleryInputRef.current.click();
+                            }
+                          }}
+                          className="flex items-center justify-center space-x-2 p-3 bg-white hover:bg-slate-50 text-slate-800 font-extrabold rounded-xl text-xs border border-slate-200 shadow-xs transition cursor-pointer active:scale-95 text-center"
                         >
-                          <Upload className="w-4 h-4 text-[#8a7c4c]" />
+                          <Upload className="w-4 h-4 text-[#8a7c4c] shrink-0" />
                           <span>Pilih dari Galeri / Berkas</span>
-                          <input
-                            id="gallery-photo-input"
-                            type="file"
-                            accept="image/*"
-                            onChange={handleFileChange}
-                            className="sr-only"
-                            style={{ position: 'absolute', width: '1px', height: '1px', opacity: 0, pointerEvents: 'none' }}
-                          />
-                        </label>
+                        </button>
                       </div>
 
+                      {/* Tombol Alternatif Live Viewfinder Kamera In-App */}
+                      {!isLiveCameraOpen && (
+                        <div className="flex items-center justify-center pt-0.5">
+                          <button
+                            type="button"
+                            onClick={startLiveCamera}
+                            className="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 flex items-center space-x-1.5 hover:underline cursor-pointer py-1"
+                          >
+                            <Camera className="w-3.5 h-3.5" />
+                            <span>Atau aktifkan Kamera Langsung di Layar</span>
+                          </button>
+                        </div>
+                      )}
+
                       {/* Atau Input Link / URL Bukti Foto */}
-                      <div className="pt-1">
+                      <div className="pt-0.5">
                         <input
                           type="url"
                           placeholder="Atau tempel link URL foto nota jika ada..."

@@ -108,10 +108,10 @@ export class ErrorBoundary extends Component<Props, State> {
 
     if (state?.hasError) {
       if (state.isAutoRecovering) {
-        // Instant seamless pass-through during micro-recovery without flashing loading animation
         return (
-          <div className="w-full">
-            {props.children}
+          <div className="min-h-[220px] flex flex-col items-center justify-center p-6 text-center">
+            <div className="w-8 h-8 border-3 border-[#8a7c4c]/30 border-t-[#8a7c4c] rounded-full animate-spin mb-3"></div>
+            <p className="text-xs font-bold text-slate-700">Menyelaraskan data aplikasi...</p>
           </div>
         );
       }

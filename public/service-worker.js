@@ -1,32 +1,25 @@
-const CACHE_NAME = 'sie-penganugerahan-v4';
-const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
+const CACHE_NAME = 'sie-penganugerahan-v6-clean';
+const STATIC_IMAGES = [
   '/logo-milad.png',
   '/icon-192.png',
   '/icon-512.png',
-  '/icon.svg'
+  '/icon.svg',
+  '/manifest.json'
 ];
 
-// Install Event - Resiliently Cache Core Assets
+// Install Event - Only cache static icons & manifest
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then(async (cache) => {
-      // Use individual caching so single failure does not fail the whole SW
       await Promise.allSettled(
-        STATIC_ASSETS.map((asset) =>
-          cache.add(asset).catch((err) => {
-            console.warn(`[ServiceWorker] Asset cache notice for ${asset}:`, err);
-          })
-        )
+        STATIC_IMAGES.map((asset) => cache.add(asset).catch(() => {}))
       );
     })
   );
 });
 
-// Activate Event - Clean old caches & claim clients immediately
+// Activate Event - Purge ALL old caches immediately
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
@@ -39,62 +32,41 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch Event - Network First with Safe Fallback (never resolves to undefined)
+// Fetch Event - PASS THROUGH EVERYTHING EXCEPT STATIC LOGOS/ICONS
 self.addEventListener('fetch', (event) => {
-  // Only handle GET requests
   if (event.request.method !== 'GET') return;
 
   const url = new URL(event.request.url);
 
-  // Skip Firebase, Firestore, Google APIs, and Vite internal dev routes from SW caching
+  // NEVER intercept any JavaScript, TypeScript, CSS, HTML, Vite, or API routes
   if (
+    url.pathname.endsWith('.ts') ||
+    url.pathname.endsWith('.tsx') ||
+    url.pathname.endsWith('.js') ||
+    url.pathname.endsWith('.css') ||
+    url.pathname.includes('/src/') ||
+    url.pathname.includes('/node_modules/') ||
+    url.pathname.includes('/@') ||
     url.hostname.includes('firebaseio.com') ||
     url.hostname.includes('googleapis.com') ||
-    url.hostname.includes('firestore.googleapis.com') ||
-    url.pathname.includes('/@vite/') ||
-    url.pathname.includes('/@fs/') ||
-    url.pathname.includes('__vite_ping')
+    url.hostname.includes('run.app') && !STATIC_IMAGES.includes(url.pathname)
   ) {
+    // Pure network pass-through, no caching
     return;
   }
 
-  // Only handle same-origin or known CDN assets
-  if (!event.request.url.startsWith(self.location.origin) && !url.hostname.includes('fonts.gstatic.com')) {
-    return;
-  }
-
-  event.respondWith(
-    fetch(event.request)
-      .then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
-        }
-        return networkResponse;
-      })
-      .catch(async () => {
-        // Network failed (offline or poor mobile connection)
-        const cachedResponse = await caches.match(event.request);
-        if (cachedResponse) {
-          return cachedResponse;
-        }
-
-        // If navigation request (e.g. opening app), fallback to cached /index.html or /
-        if (event.request.mode === 'navigate') {
-          const fallbackIndex = (await caches.match('/index.html')) || (await caches.match('/'));
-          if (fallbackIndex) {
-            return fallbackIndex;
+  // Only handle offline fallback for static images
+  if (STATIC_IMAGES.includes(url.pathname)) {
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        return cached || fetch(event.request).then((res) => {
+          if (res && res.status === 200) {
+            const clone = res.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
           }
-        }
-
-        // Return valid offline response rather than undefined to prevent NetworkError crash
-        return new Response('Aplikasi sedang offline atau memuat pembaruan.', {
-          status: 503,
-          statusText: 'Service Unavailable',
-          headers: new Headers({ 'Content-Type': 'text/plain; charset=utf-8' }),
+          return res;
         });
       })
-  );
+    );
+  }
 });

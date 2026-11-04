@@ -131,13 +131,23 @@
     </div>
 
     <script>
-      // Show fallback reload buttons if React takes longer than 4.5 seconds to mount
+      // Global error interceptor for mobile PWA standalone launch
+      window.addEventListener('error', function(e) {
+        var actions = document.getElementById('preloader-actions');
+        if (actions) actions.style.display = 'block';
+        var status = document.getElementById('preloader-status');
+        if (status) {
+          status.innerHTML = '<span style="color:#e11d48;font-weight:700;">Menyiapkan penyelarasan versi modul di HP...</span>';
+        }
+      });
+
+      // Show fallback reload buttons if React takes longer than 3.5 seconds to mount
       setTimeout(() => {
         const actions = document.getElementById('preloader-actions');
         if (actions) actions.style.display = 'block';
         const status = document.getElementById('preloader-status');
         if (status) status.innerText = 'Menyiapkan modul aplikasi...';
-      }, 4500);
+      }, 3500);
 
       function clearAppDataAndReload() {
         try {

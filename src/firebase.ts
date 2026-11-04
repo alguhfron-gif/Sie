@@ -50,22 +50,14 @@ export const auth = authService;
 let dbService: Firestore;
 try {
   const customDbId = firebaseConfigJson.firestoreDatabaseId;
-  const firestoreSettings = {
-    experimentalForceLongPolling: true,
-  };
   if (customDbId && customDbId !== '(default)') {
-    dbService = initializeFirestore(app, firestoreSettings, customDbId);
+    dbService = getFirestore(app, customDbId);
   } else {
-    dbService = initializeFirestore(app, firestoreSettings);
-  }
-} catch (error) {
-  console.warn("Firestore initialization with settings fallback, using getFirestore:", error);
-  try {
-    const customDbId = firebaseConfigJson.firestoreDatabaseId;
-    dbService = customDbId && customDbId !== '(default)' ? getFirestore(app, customDbId) : getFirestore(app);
-  } catch (e) {
     dbService = getFirestore(app);
   }
+} catch (error) {
+  console.warn("Firestore initialization fallback:", error);
+  dbService = getFirestore(app);
 }
 export const db = dbService;
 
