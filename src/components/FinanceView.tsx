@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   DollarSign,
   Plus,
@@ -39,11 +39,16 @@ import {
   Copy,
   Check,
   FileUp,
+  Camera,
+  Wallet,
+  PlusCircle,
+  ArrowDownLeft,
+  ArrowUpRight,
 } from 'lucide-react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 import { Transaction, TransactionCategory, TransactionType, UserSession, RapbItem } from '../types';
 import { DEFAULT_RAPB_ITEMS } from '../data/initialData';
-import { uploadReceiptImage } from '../services/storageService';
+import { uploadReceiptImage, compressImage } from '../services/storageService';
 import { exportToCSV } from '../services/webhookService';
 import {
   addTransactionToFirestore,
@@ -221,10 +226,24 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
   const [autocompleteInput, setAutocompleteInput] = useState('');
   const [isAutocompleteOpen, setIsAutocompleteOpen] = useState(false);
 
-  // Proof Upload State
+  // Proof Upload State & Mobile Input Refs
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [proofPreviewUrl, setProofPreviewUrl] = useState<string | null>(null);
+  const [proofUrlInput, setProofUrlInput] = useState('');
   const [isUploadingProof, setIsUploadingProof] = useState(false);
+
+  // Saldo Kas Fisik (Penerimaan / Top-Up Kas) State
+  const [isAddPemasukanModalOpen, setIsAddPemasukanModalOpen] = useState(false);
+  const [showPemasukanListModal, setShowPemasukanListModal] = useState(false);
+  const [pemasukanAmount, setPemasukanAmount] = useState<number | string>(1000000);
+  const [pemasukanDate, setPemasukanDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [pemasukanSource, setPemasukanSource] = useState('Dropping Kas Bendahara Milad');
+  const [pemasukanPenyetor, setPemasukanPenyetor] = useState('Bendahara Umum Milad');
+  const [pemasukanPenerima, setPemasukanPenerima] = useState(currentUser?.name || 'Bendahara Sie Penganugerahan');
+  const [pemasukanNotes, setPemasukanNotes] = useState('');
+  const [isSavingPemasukan, setIsSavingPemasukan] = useState(false);
 
   // RAPB Management Modal (Single)
   const [isRapbModalOpen, setIsRapbModalOpen] = useState(false);
@@ -471,23 +490,88 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
     setEditingTransaction(null);
     setProofFile(null);
     setProofPreviewUrl(null);
+    setProofUrlInput('');
     setIsUploadingProof(false);
     setIsAutocompleteOpen(false);
+    if (cameraInputRef.current) cameraInputRef.current.value = '';
+    if (galleryInputRef.current) galleryInputRef.current.value = '';
     if (onCloseAddModalDirectly) onCloseAddModalDirectly();
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setProofFile(file);
-      const previewUrl = URL.createObjectURL(file);
-      setProofPreviewUrl(previewUrl);
+      setIsUploadingProof(true);
+      try {
+        const compressed = await compressImage(file, 1200, 0.8);
+        setProofPreviewUrl(compressed);
+      } catch (err) {
+        console.warn('Canvas compression fallback to blob preview:', err);
+        const previewUrl = URL.createObjectURL(file);
+        setProofPreviewUrl(previewUrl);
+      } finally {
+        setIsUploadingProof(false);
+      }
     }
   };
 
   const handleRemoveProof = () => {
     setProofFile(null);
     setProofPreviewUrl(null);
+    setProofUrlInput('');
+    if (cameraInputRef.current) cameraInputRef.current.value = '';
+    if (galleryInputRef.current) galleryInputRef.current.value = '';
+  };
+
+  // Simpan Penambahan Saldo Kas Fisik (Penerimaan / Top-Up Kas) langsung ke Firestore
+  const handleSavePemasukan = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const numAmount = typeof pemasukanAmount === 'number' ? pemasukanAmount : parseFloat(pemasukanAmount) || 0;
+    if (numAmount <= 0) {
+      setToast({ show: true, message: 'Nominal saldo masuk harus lebih besar dari Rp 0', isError: true });
+      return;
+    }
+
+    setIsSavingPemasukan(true);
+    try {
+      const payload: Omit<Transaction, 'id'> = {
+        title: pemasukanSource.trim() || 'Penerimaan Kas Panitia',
+        type: 'pemasukan',
+        category: 'SEKSI PENGANUGERAHAN',
+        amount: numAmount,
+        date: pemasukanDate || new Date().toISOString().split('T')[0],
+        recipient: pemasukanPenerima.trim() || currentUser?.name || 'Bendahara Sie Penganugerahan',
+        notes: `Penyetor: ${pemasukanPenyetor.trim() || 'Bendahara Umum'}${pemasukanNotes ? ` • ${pemasukanNotes.trim()}` : ''}`,
+        programName: 'Penerimaan Saldo Kas Fisik',
+        receiptNumber: `KAS-IN-${Date.now().toString().slice(-4)}`,
+        proofUrl: '',
+      };
+
+      const created = await addTransactionToFirestore(payload);
+      if (onAddTransaction) {
+        await onAddTransaction(created);
+      }
+
+      setToast({
+        show: true,
+        message: `Saldo kas sebesar ${formatIDR(numAmount)} berhasil ditambahkan ke Saldo Fisik!`,
+        isError: false,
+      });
+
+      setIsAddPemasukanModalOpen(false);
+      setPemasukanAmount(1000000);
+      setPemasukanNotes('');
+    } catch (err) {
+      console.error('Gagal menyimpan saldo kas fisik:', err);
+      setToast({
+        show: true,
+        message: 'Gagal menambahkan saldo kas ke Firebase Firestore. Silakan coba lagi.',
+        isError: true,
+      });
+    } finally {
+      setIsSavingPemasukan(false);
+    }
   };
 
   // 5 Kategori Akun Induk Resmi Sie Penganugerahan
@@ -539,30 +623,71 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
     if (categoriesList.includes(clean as TransactionCategory)) return clean as TransactionCategory;
     const upper = clean.toUpperCase();
 
-    if (upper.includes('251') || upper.includes('25.1') || upper.includes('SEKSI') || upper.includes('RAPAT') || upper.includes('KONSUMSI') || upper.includes('KAS') || upper.includes('SPONSOR')) {
+    if (
+      upper.includes('251') ||
+      upper.includes('25.1') ||
+      upper.includes('SEKSI') ||
+      upper.includes('RAPAT') ||
+      upper.includes('RAKER') ||
+      upper.includes('KONSUMSI') ||
+      upper.includes('KAS') ||
+      upper.includes('SPONSOR') ||
+      upper.includes('PENGANUGRAHAN') ||
+      upper.includes('PENGANUGERAHAN')
+    ) {
       return 'SEKSI PENGANUGERAHAN';
     }
-    if (upper.includes('252') || upper.includes('25.2') || upper.includes('25.200') || upper.includes('PENGANUGERAHAN') || upper.includes('TROFI') || upper.includes('PLAKAT') || upper.includes('SERTIFIKAT') || upper.includes('MEDALI') || upper.includes('SELEMPANG')) {
+    if (
+      upper.includes('252') ||
+      upper.includes('25.2') ||
+      upper.includes('25.200') ||
+      upper.includes('TROFI') ||
+      upper.includes('PLAKAT') ||
+      upper.includes('SERTIFIKAT') ||
+      upper.includes('MEDALI') ||
+      upper.includes('SELEMPANG') ||
+      upper.includes('SURBAN')
+    ) {
       return 'PENGANUGERAHAN (25.200)';
     }
-    if (upper.includes('253') || upper.includes('25.3') || upper.includes('25.300') || upper.includes('HADIAH LOMBA') || upper.includes('LOMBA')) {
+    if (
+      upper.includes('253') ||
+      upper.includes('25.3') ||
+      upper.includes('25.300') ||
+      upper.includes('HADIAH LOMBA') ||
+      upper.includes('LOMBA') ||
+      upper.includes('MQK') ||
+      upper.includes('MTQ')
+    ) {
       return 'HADIAH LOMBA (25.300)';
     }
-    if (upper.includes('254') || upper.includes('25.4') || upper.includes('25.400') || upper.includes('JUARAWAN') || upper.includes('MMU') || upper.includes('DAERAH')) {
+    if (
+      upper.includes('254') ||
+      upper.includes('25.4') ||
+      upper.includes('25.400') ||
+      upper.includes('JUARAWAN') ||
+      upper.includes('MMU') ||
+      upper.includes('DAERAH')
+    ) {
       return 'JUARAWAN MMU DAN DAERAH (25.400)';
     }
-    if (upper.includes('255') || upper.includes('25.5') || upper.includes('25.500') || upper.includes('LAIN-LAIN') || upper.includes('DEKORASI') || upper.includes('DOKUMENTASI')) {
+    if (
+      upper.includes('255') ||
+      upper.includes('25.5') ||
+      upper.includes('25.500') ||
+      upper.includes('LAIN-LAIN')
+    ) {
       return 'LAIN-LAIN (25.500)';
     }
     return 'SEKSI PENGANUGERAHAN';
   };
 
   /**
-   * Dapatkan kategori efektif dari transaksi.
-   * 1. Cek kode pos (251xx -> Seksi Penganugerahan, dsb)
-   * 2. Cek kecocokan di RAPB items
-   * 3. Kategori yang disimpan
-   * 4. Normalisasi fallback
+   * Dapatkan kategori efektif dari transaksi:
+   * 1. Cek kode pos langsung (251xx -> Seksi Penganugerahan, dsb)
+   * 2. Cek kecocokan di RAPB items (posCode, programName, keywords)
+   * 3. Analisis kata kunci judul / nama program
+   * 4. Kategori yang disimpan
    */
   const getEffectiveCategory = (t: { category?: string; posCode?: string; programName?: string; title?: string }): TransactionCategory => {
     // 1. Cek dari kode pos langsung (akurasi 100%)
@@ -572,25 +697,76 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
     }
 
     // 2. Cek dari referensi item RAPB
-    if (t.posCode || t.programName || t.title) {
-      const cleanPos = (t.posCode || '').trim().toUpperCase();
-      const normPos = cleanPos.replace(/[^0-9A-Z]/g, '');
-      const cleanProg = (t.programName || '').trim().toLowerCase();
-      const cleanTitle = (t.title || '').trim().toLowerCase();
+    const cleanPos = (t.posCode || '').trim().toUpperCase();
+    const normPos = cleanPos.replace(/[^0-9A-Z]/g, '');
+    const cleanProg = (t.programName || '').trim().toLowerCase();
+    const cleanTitle = (t.title || '').trim().toLowerCase();
 
-      const matched = rapbItems.find(
-        (r) =>
-          (cleanPos && r.posCode && r.posCode.trim().toUpperCase() === cleanPos) ||
-          (normPos && r.posCode && r.posCode.trim().toUpperCase().replace(/[^0-9A-Z]/g, '') === normPos) ||
-          (cleanProg && r.programName && r.programName.trim().toLowerCase() === cleanProg) ||
-          (cleanTitle && r.programName && cleanTitle === r.programName.trim().toLowerCase())
-      );
+    if (cleanPos || cleanProg || cleanTitle) {
+      const matched = rapbItems.find((r) => {
+        const rPos = (r.posCode || '').trim().toUpperCase();
+        const rNormPos = rPos.replace(/[^0-9A-Z]/g, '');
+        const rName = (r.programName || '').trim().toLowerCase();
+
+        if (cleanPos && rPos && cleanPos === rPos) return true;
+        if (normPos && rNormPos && normPos === rNormPos) return true;
+        if (cleanProg && rName && (cleanProg === rName || cleanProg.includes(rName) || rName.includes(cleanProg))) return true;
+        if (cleanTitle && rName && (cleanTitle === rName || cleanTitle.includes(rName) || rName.includes(cleanTitle))) return true;
+        if (r.keywords && r.keywords.some((kw) => cleanTitle.includes(kw.toLowerCase()) || cleanProg.includes(kw.toLowerCase()))) return true;
+        return false;
+      });
+
       if (matched && matched.category) {
-        return normalizeCategory(matched.category);
+        return resolveCategoryFromPos(matched.posCode) || normalizeCategory(matched.category);
       }
     }
 
-    // 3. Cek kategori transaksi tersimpan
+    // 3. Analisis semantik dari Judul atau Program Name
+    const combinedText = `${cleanTitle} ${cleanProg}`.toUpperCase();
+    if (
+      combinedText.includes('251') ||
+      combinedText.includes('RAPAT') ||
+      combinedText.includes('RAKER') ||
+      combinedText.includes('KONSUMSI') ||
+      combinedText.includes('SEKSI') ||
+      combinedText.includes('PENGANUGRAHAN') ||
+      combinedText.includes('PENGANUGERAHAN')
+    ) {
+      return 'SEKSI PENGANUGERAHAN';
+    }
+    if (
+      combinedText.includes('252') ||
+      combinedText.includes('TROFI') ||
+      combinedText.includes('PLAKAT') ||
+      combinedText.includes('SERTIFIKAT') ||
+      combinedText.includes('MEDALI') ||
+      combinedText.includes('SELEMPANG') ||
+      combinedText.includes('SURBAN')
+    ) {
+      return 'PENGANUGERAHAN (25.200)';
+    }
+    if (
+      combinedText.includes('253') ||
+      combinedText.includes('HADIAH') ||
+      combinedText.includes('LOMBA') ||
+      combinedText.includes('MQK') ||
+      combinedText.includes('MTQ')
+    ) {
+      return 'HADIAH LOMBA (25.300)';
+    }
+    if (
+      combinedText.includes('254') ||
+      combinedText.includes('JUARAWAN') ||
+      combinedText.includes('MMU') ||
+      combinedText.includes('DAERAH')
+    ) {
+      return 'JUARAWAN MMU DAN DAERAH (25.400)';
+    }
+    if (combinedText.includes('255') || combinedText.includes('LAIN-LAIN')) {
+      return 'LAIN-LAIN (25.500)';
+    }
+
+    // 4. Cek kategori transaksi tersimpan jika valid
     if (t.category && categoriesList.includes(t.category as TransactionCategory)) {
       return t.category as TransactionCategory;
     }
@@ -768,13 +944,17 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
   // Rekapitulasi Realisasi per Kategori (Pagu, Pengeluaran, Sisa Dana)
   const categoryStats = useMemo(() => {
     return categoriesList.map((cat, idx) => {
-      const pagu = rapbItems
-        .filter((item) => normalizeCategory(item.category) === cat)
-        .reduce((sum, item) => sum + (Number(item.allocatedBudget) || 0), 0);
+      const matchedRapb = rapbItems.filter(
+        (i) => (resolveCategoryFromPos(i.posCode) || normalizeCategory(i.category)) === cat
+      );
+      const pagu = matchedRapb.reduce((sum, item) => sum + (Number(item.allocatedBudget) || 0), 0);
+      const posCount = matchedRapb.length;
 
-      const spent = transactions
-        .filter((t) => t.type === 'pengeluaran' && getEffectiveCategory(t) === cat)
-        .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+      const matchedTrx = transactions.filter(
+        (t) => t.type === 'pengeluaran' && getEffectiveCategory(t) === cat
+      );
+      const spent = matchedTrx.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+      const trxCount = matchedTrx.length;
 
       const remaining = pagu - spent;
       const percentageUsed = pagu > 0 ? (spent / pagu) * 100 : spent > 0 ? 100 : 0;
@@ -796,7 +976,9 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
         number: idx + 1,
         category: cat,
         pagu,
+        posCount,
         spent,
+        trxCount,
         remaining,
         percentageUsed: Math.min(percentageUsed, 100),
         rawPercentage: percentageUsed,
@@ -843,7 +1025,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
       (t.receiptNumber && t.receiptNumber.toLowerCase().includes(q));
 
     const matchesType = typeFilter === 'ALL' || t.type === typeFilter;
-    const matchesCategory = categoryFilter === 'ALL' || effCat === categoryFilter || t.category === categoryFilter;
+    const matchesCategory = categoryFilter === 'ALL' || effCat === categoryFilter;
     const matchesPos = selectedPosFilter === 'ALL' || t.posCode === selectedPosFilter;
 
     return matchesSearch && matchesType && matchesCategory && matchesPos;
@@ -1731,7 +1913,6 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
               ========================================================================= */}
           <ContentHeader
             title="Pengelolaan RAPB & Realisasi Kas Keuangan"
-            subtitle="Integrasi Rencana Anggaran Pendapatan & Belanja (RAPB), Pencatatan Pengeluaran Kas Pintar, dan Monitoring Sisa Dana Real-Time"
             activeTab="keuangan"
           />
 
@@ -1745,19 +1926,6 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                 <h1 className="text-base font-extrabold text-[#24211c]">
                   Sistem Realisasi Anggaran RAPB & Kas Sie Penganugerahan
                 </h1>
-              </div>
-              <p className="text-xs text-[#7c7b77] mt-1">
-                Pencatatan kas pengeluaran dengan pencocokan pintar pos RAPB, monitoring sisa dana real-time, dan lampiran nota fisik.
-              </p>
-              <div className="flex flex-wrap items-center gap-2 mt-2">
-                <span className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>Cloud Firestore Terhubung • Koleksi 'transactions' ({transactions.length} Data)</span>
-                </span>
-                <span className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-[#8a7c4c]/10 text-[#6f633a] border border-[#8a7c4c]/20">
-                  <CheckCircle className="w-3.5 h-3.5 text-[#8a7c4c]" />
-                  <span>{rapbItems.length} Pos Pagu RAPB Koleksi 'rapb_items' Tersinkronisasi</span>
-                </span>
               </div>
             </div>
 
@@ -1854,15 +2022,42 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                   </p>
                 </div>
 
-                <div className="bg-[#fdfbf7] p-4.5 rounded-2xl border border-[rgba(138,124,76,0.25)] shadow-xs">
-                  <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-[#8a7c4c]">
-                    <span>Saldo Kas Fisik</span>
-                    <CheckCircle className="w-4 h-4 text-[#8a7c4c]" />
+                <div className="bg-[#fdfbf7] p-4.5 rounded-2xl border border-[rgba(138,124,76,0.25)] shadow-xs flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-[#8a7c4c]">
+                      <span className="flex items-center space-x-1.5">
+                        <Wallet className="w-4 h-4" />
+                        <span>Saldo Kas Fisik</span>
+                      </span>
+                      <span className="text-[10px] bg-[#8a7c4c]/10 text-[#6f633a] font-bold px-2 py-0.5 rounded-full">
+                        Kas di Tangan
+                      </span>
+                    </div>
+                    <h3 className="text-xl font-black text-[#24211c] mt-2">{formatIDR(saldoSisa)}</h3>
+                    <p className="text-[11px] text-slate-600 mt-1">
+                      Pemasukan ({formatIDR(totalPemasukan)}) - Belanja ({formatIDR(totalPengeluaran)})
+                    </p>
                   </div>
-                  <h3 className="text-xl font-black text-[#24211c] mt-2">{formatIDR(saldoSisa)}</h3>
-                  <p className="text-[11px] text-slate-600 mt-1">
-                    Pemasukan ({formatIDR(totalPemasukan)}) - Belanja
-                  </p>
+
+                  <div className="pt-3 mt-2.5 border-t border-[rgba(138,124,76,0.15)] flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsAddPemasukanModalOpen(true)}
+                      className="flex-1 py-1.5 px-3 bg-[#8a7c4c] hover:bg-[#6f633a] text-white font-extrabold text-xs rounded-xl shadow-2xs transition flex items-center justify-center space-x-1.5 cursor-pointer active:scale-95"
+                      title="Tambah Saldo Kas Fisik / Penerimaan Dana"
+                    >
+                      <PlusCircle className="w-3.5 h-3.5" />
+                      <span>+ Tambah Saldo</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowPemasukanListModal(true)}
+                      className="py-1.5 px-2.5 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 transition flex items-center justify-center cursor-pointer"
+                      title="Lihat Riwayat Penerimaan Saldo Kas"
+                    >
+                      <Receipt className="w-3.5 h-3.5 text-[#8a7c4c]" />
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -1977,12 +2172,6 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                       <tbody className="divide-y divide-slate-100">
                         {categoryStats.map((catStat) => {
                           const isFiltered = categoryFilter === catStat.category;
-                          const posCount = rapbItems.filter(
-                            (i) => normalizeCategory(i.category) === catStat.category
-                          ).length;
-                          const trxCount = transactions.filter(
-                            (t) => t.type === 'pengeluaran' && normalizeCategory(t.category) === catStat.category
-                          ).length;
 
                           return (
                             <tr
@@ -2006,7 +2195,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                                   )}
                                 </div>
                                 <span className="text-[10.5px] text-slate-500 block mt-0.5">
-                                  {posCount} Pos Program • {trxCount} Transaksi Pengeluaran
+                                  {catStat.posCount} Pos Program • {catStat.trxCount} Transaksi Pengeluaran
                                 </span>
                               </td>
                               <td className="p-3 text-right font-black text-slate-900 bg-[#8a7c4c]/5 font-mono text-xs">
@@ -2117,9 +2306,6 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                     <h3 className="font-extrabold text-sm text-slate-900">
                       Tabel Monitoring Pagu & Sisa Anggaran Real-Time ({rapbStats.length} Program/Pos)
                     </h3>
-                    <p className="text-[11px] text-slate-500">
-                      Kolom Sisa Anggaran terhitung otomatis secara langsung setiap kali ada transaksi pengeluaran baru
-                    </p>
                   </div>
 
                   {isAdmin && (
@@ -3160,46 +3346,117 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
 
               {/* UNGGAH FOTO NOTA (BUKTI FISIK) */}
               {type === 'pengeluaran' && (
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">
-                    Unggah Foto Nota (Bukti Fisik Kwitansi)
-                  </label>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block font-bold text-slate-700 text-xs">
+                      Foto Nota / Kuitansi Fisik (Kamera HP / Berkas)
+                    </label>
+                    {isUploadingProof && (
+                      <span className="inline-flex items-center space-x-1 text-[10.5px] text-[#8a7c4c] font-bold animate-pulse">
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        <span>Mengompres foto...</span>
+                      </span>
+                    )}
+                  </div>
+
                   {proofPreviewUrl ? (
-                    <div className="relative rounded-2xl border border-[#8a7c4c]/30 bg-[#fdfbf7] p-2.5 flex items-center justify-between">
+                    <div className="relative rounded-2xl border border-emerald-300 bg-emerald-50/50 p-3 flex items-center justify-between shadow-2xs">
                       <div className="flex items-center space-x-3 min-w-0">
                         <img
                           src={proofPreviewUrl}
                           alt="Preview Nota"
-                          className="w-12 h-12 object-cover rounded-xl border border-slate-200 shrink-0"
+                          className="w-14 h-14 object-cover rounded-xl border border-emerald-200 shrink-0 shadow-xs"
                         />
                         <div className="truncate">
-                          <p className="font-bold text-slate-900 truncate">
+                          <p className="font-bold text-slate-900 text-xs truncate">
                             {proofFile ? proofFile.name : 'Foto Nota Terlampir'}
                           </p>
-                          <p className="text-[10px] text-emerald-700 font-semibold">
-                            Siap disimpan ke arsip lampiran LPJ
-                          </p>
+                          <span className="inline-flex items-center space-x-1 text-[10.5px] text-emerald-800 font-extrabold mt-0.5">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>Foto Aktif & Siap Disimpan</span>
+                          </span>
                         </div>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={handleRemoveProof}
-                        className="p-1.5 text-rose-600 hover:bg-rose-100 rounded-xl transition cursor-pointer"
-                        title="Hapus Foto"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center space-x-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const w = window.open('');
+                            if (w) w.document.write(`<img src="${proofPreviewUrl}" style="max-width:100%;height:auto;"/>`);
+                          }}
+                          className="p-2 text-slate-600 hover:text-slate-900 hover:bg-white rounded-xl transition cursor-pointer"
+                          title="Perbesar Foto"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleRemoveProof}
+                          className="p-2 text-rose-600 hover:bg-rose-100 rounded-xl transition cursor-pointer"
+                          title="Hapus / Ganti Foto"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   ) : (
-                    <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-300 hover:border-[#8a7c4c] bg-slate-50 hover:bg-[#8a7c4c]/5 rounded-2xl cursor-pointer transition text-center group">
-                      <Upload className="w-5 h-5 text-slate-400 group-hover:text-[#8a7c4c] mb-1" />
-                      <span className="font-bold text-slate-800">Klik untuk Pilih / Unggah Foto Nota Fisik</span>
-                      <span className="text-[10px] text-slate-400 mt-0.5">
-                        Format: JPG, PNG, WEBP (Otomatis tampil di tabel & lampiran LPJ PDF)
-                      </span>
-                      <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
-                    </label>
+                    <div className="space-y-2">
+                      {/* Hidden File Inputs controlled via explicit refs */}
+                      <input
+                        type="file"
+                        ref={cameraInputRef}
+                        accept="image/*"
+                        capture="environment"
+                        onChange={handleFileChange}
+                        className="hidden"
+                      />
+                      <input
+                        type="file"
+                        ref={galleryInputRef}
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="hidden"
+                      />
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {/* Tombol Kamera Langsung untuk HP */}
+                        <button
+                          type="button"
+                          onClick={() => cameraInputRef.current?.click()}
+                          className="flex items-center justify-center space-x-2 p-3 bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold rounded-xl text-xs shadow-2xs transition cursor-pointer active:scale-98"
+                        >
+                          <Camera className="w-4 h-4 text-emerald-200" />
+                          <span>Ambil Foto Kamera HP</span>
+                        </button>
+
+                        {/* Tombol Pilih dari Galeri */}
+                        <button
+                          type="button"
+                          onClick={() => galleryInputRef.current?.click()}
+                          className="flex items-center justify-center space-x-2 p-3 bg-white hover:bg-slate-50 text-slate-800 font-extrabold rounded-xl text-xs border border-slate-200 shadow-2xs transition cursor-pointer active:scale-98"
+                        >
+                          <Upload className="w-4 h-4 text-[#8a7c4c]" />
+                          <span>Pilih dari Galeri / File</span>
+                        </button>
+                      </div>
+
+                      {/* Atau Input Link / URL Bukti Foto */}
+                      <div className="pt-1">
+                        <input
+                          type="url"
+                          placeholder="Atau tempel link URL foto nota jika ada..."
+                          value={proofUrlInput}
+                          onChange={(e) => {
+                            setProofUrlInput(e.target.value);
+                            if (e.target.value.trim().startsWith('http') || e.target.value.trim().startsWith('data:')) {
+                              setProofPreviewUrl(e.target.value.trim());
+                            }
+                          }}
+                          className="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#8a7c4c]"
+                        />
+                      </div>
+                    </div>
                   )}
                 </div>
               )}
@@ -3250,6 +3507,314 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL: TAMBAH SALDO KAS FISIK (PENERIMAAN / TOP-UP KAS MILAD)
+          ========================================================================= */}
+      {isAddPemasukanModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl border border-[rgba(138,124,76,0.3)] overflow-hidden text-slate-800 my-auto animate-in fade-in zoom-in duration-200">
+            {/* Modal Header */}
+            <div className="bg-[#fcfbf9] px-6 py-4.5 border-b border-slate-200 flex items-center justify-between">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-9 h-9 rounded-xl bg-[#8a7c4c]/15 text-[#8a7c4c] flex items-center justify-center font-bold">
+                  <Wallet className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-base text-[#24211c]">Tambah Saldo Kas Fisik</h3>
+                  <p className="text-[11px] text-[#7c7b77]">
+                    Penerimaan dana kas tunai / dropping anggaran masuk
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAddPemasukanModalOpen(false)}
+                className="text-slate-400 hover:text-slate-700 p-1.5 rounded-xl hover:bg-slate-100 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Form */}
+            <form onSubmit={handleSavePemasukan} className="p-6 space-y-4 text-xs">
+              {/* Input Nominal Saldo */}
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Nominal Tambah Saldo (Rp) *
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-slate-500 font-mono">
+                    Rp
+                  </span>
+                  <input
+                    type="number"
+                    min="1"
+                    required
+                    placeholder="Contoh: 5000000"
+                    value={pemasukanAmount}
+                    onChange={(e) => setPemasukanAmount(e.target.value)}
+                    className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-base font-extrabold text-slate-900 font-mono focus:ring-2 focus:ring-[#8a7c4c]/50 focus:outline-none"
+                  />
+                </div>
+
+                {/* Quick Nominal Presets */}
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {[500000, 1000000, 2500000, 5000000, 10000000].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setPemasukanAmount(preset)}
+                      className={`px-2.5 py-1 rounded-lg text-[10.5px] font-bold border transition cursor-pointer ${
+                        Number(pemasukanAmount) === preset
+                          ? 'bg-[#8a7c4c] text-white border-[#8a7c4c]'
+                          : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                      }`}
+                    >
+                      {formatIDR(preset)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Tanggal Penerimaan */}
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Tanggal Masuk Kas *</label>
+                <input
+                  type="date"
+                  required
+                  value={pemasukanDate}
+                  onChange={(e) => setPemasukanDate(e.target.value)}
+                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-900 focus:ring-2 focus:ring-[#8a7c4c]/50 focus:outline-none"
+                />
+              </div>
+
+              {/* Sumber / Uraian Penerimaan */}
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Sumber / Uraian Penerimaan Dana *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Contoh: Dropping Kas Bendahara Milad"
+                  value={pemasukanSource}
+                  onChange={(e) => setPemasukanSource(e.target.value)}
+                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-bold focus:ring-2 focus:ring-[#8a7c4c]/50 focus:outline-none"
+                />
+
+                {/* Quick Source Chips */}
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {[
+                    'Dropping Kas Bendahara Milad',
+                    'Pencairan Anggaran Tahap 1',
+                    'Pencairan Anggaran Tahap 2',
+                    'Kas Awal Operasional Sie',
+                    'Infaq / Bantuan Tambahan',
+                  ].map((src) => (
+                    <button
+                      key={src}
+                      type="button"
+                      onClick={() => setPemasukanSource(src)}
+                      className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#8a7c4c]/10 text-[#6f633a] hover:bg-[#8a7c4c]/20 transition cursor-pointer"
+                    >
+                      + {src}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Penyetor / Sumber */}
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Diserahkan Oleh</label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: Bendahara Umum"
+                    value={pemasukanPenyetor}
+                    onChange={(e) => setPemasukanPenyetor(e.target.value)}
+                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-[#8a7c4c]/50 focus:outline-none"
+                  />
+                </div>
+
+                {/* Penerima Kas */}
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Diterima Oleh</label>
+                  <input
+                    type="text"
+                    placeholder="Nama Penerima"
+                    value={pemasukanPenerima}
+                    onChange={(e) => setPemasukanPenerima(e.target.value)}
+                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-[#8a7c4c]/50 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Catatan */}
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Catatan Tambahan (Opsional)</label>
+                <input
+                  type="text"
+                  placeholder="Keterangan peruntukan atau nomor kwitansi penerimaan..."
+                  value={pemasukanNotes}
+                  onChange={(e) => setPemasukanNotes(e.target.value)}
+                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-[#8a7c4c]/50 focus:outline-none"
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="pt-3 border-t border-slate-200 flex items-center justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAddPemasukanModalOpen(false)}
+                  disabled={isSavingPemasukan}
+                  className="px-4 py-2 border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-100 transition cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingPemasukan}
+                  className="px-5 py-2.5 bg-[#8a7c4c] hover:bg-[#6f633a] text-white font-extrabold rounded-xl shadow-xs transition flex items-center space-x-2 cursor-pointer disabled:opacity-50"
+                >
+                  {isSavingPemasukan ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Menyimpan ke Saldo...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" />
+                      <span>Simpan ke Saldo Fisik</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL: RIWAYAT PENERIMAAN SALDO KAS FISIK
+          ========================================================================= */}
+      {showPemasukanListModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden text-slate-800 my-auto animate-in fade-in zoom-in duration-200">
+            {/* Header */}
+            <div className="bg-[#fcfbf9] px-6 py-4.5 border-b border-slate-200 flex items-center justify-between">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
+                  <ArrowDownLeft className="w-5 h-5 text-emerald-700" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-base text-[#24211c]">
+                    Riwayat Penerimaan Saldo Kas
+                  </h3>
+                  <p className="text-[11px] text-[#7c7b77]">
+                    Total Penerimaan: <span className="font-bold text-emerald-700">{formatIDR(totalPemasukan)}</span>
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPemasukanListModal(false)}
+                className="text-slate-400 hover:text-slate-700 p-1.5 rounded-xl hover:bg-slate-100 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* List */}
+            <div className="p-4 sm:p-6 max-h-[60vh] overflow-y-auto space-y-2.5">
+              {transactions.filter((t) => t.type === 'pemasukan').length === 0 ? (
+                <div className="text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                  <Wallet className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                  <p className="font-bold text-slate-700 text-xs">Belum Ada Riwayat Penerimaan Saldo</p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Gunakan tombol "+ Tambah Saldo" untuk mencatat penerimaan kas pertama Anda.
+                  </p>
+                </div>
+              ) : (
+                transactions
+                  .filter((t) => t.type === 'pemasukan')
+                  .map((item) => (
+                    <div
+                      key={item.id}
+                      className="p-3.5 bg-slate-50 hover:bg-slate-100/80 rounded-2xl border border-slate-200 flex items-center justify-between gap-3 transition"
+                    >
+                      <div className="flex items-center space-x-3 min-w-0">
+                        <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-center font-bold shrink-0">
+                          <Plus className="w-4 h-4" />
+                        </div>
+                        <div className="truncate">
+                          <p className="font-bold text-slate-900 text-xs truncate">{item.title}</p>
+                          <div className="flex flex-wrap items-center gap-2 text-[10.5px] text-slate-500 mt-0.5">
+                            <span>{item.date}</span>
+                            {item.recipient && <span>• Penerima: {item.recipient}</span>}
+                            {item.notes && <span className="truncate">• {item.notes}</span>}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-3 shrink-0">
+                        <span className="font-black text-emerald-700 font-mono text-sm">
+                          +{formatIDR(item.amount)}
+                        </span>
+                        {isAdmin && (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (confirm(`Hapus pencatatan saldo "${item.title}" sebesar ${formatIDR(item.amount)}?`)) {
+                                try {
+                                  await deleteTransactionFromFirestore(item.id);
+                                  onDeleteTransaction(item.id);
+                                  setToast({
+                                    show: true,
+                                    message: 'Pencatatan penerimaan saldo berhasil dihapus.',
+                                    isError: false,
+                                  });
+                                } catch (e) {
+                                  console.error(e);
+                                }
+                              }
+                            }}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition cursor-pointer"
+                            title="Hapus Penerimaan Saldo"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="bg-[#fcfbf9] px-6 py-3.5 border-t border-slate-200 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPemasukanListModal(false);
+                  setIsAddPemasukanModalOpen(true);
+                }}
+                className="px-3.5 py-1.5 bg-[#8a7c4c] hover:bg-[#6f633a] text-white font-extrabold text-xs rounded-xl shadow-2xs transition flex items-center space-x-1.5 cursor-pointer"
+              >
+                <PlusCircle className="w-3.5 h-3.5" />
+                <span>+ Tambah Saldo Baru</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowPemasukanListModal(false)}
+                className="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer"
+              >
+                Tutup
+              </button>
+            </div>
           </div>
         </div>
       )}
