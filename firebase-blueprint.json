@@ -94,6 +94,25 @@
         "createdAt": { "type": "string" }
       },
       "required": ["name", "role", "username", "password", "category"]
+    },
+    "RapbItem": {
+      "title": "RAPB Item",
+      "description": "Rencana Anggaran Pendapatan dan Belanja item",
+      "type": "object",
+      "properties": {
+        "posCode": { "type": "string" },
+        "programName": { "type": "string" },
+        "qtm": { "type": "number" },
+        "qtmKet": { "type": "string" },
+        "vol": { "type": "number" },
+        "volKet": { "type": "string" },
+        "unitPrice": { "type": "number" },
+        "allocatedBudget": { "type": "number" },
+        "category": { "type": "string" },
+        "description": { "type": "string" },
+        "keywords": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["posCode", "programName", "allocatedBudget", "category"]
     }
   },
   "firestore": {
@@ -104,6 +123,10 @@
     "/transactions/{transactionId}": {
       "schema": { "$ref": "#/entities/Transaction" },
       "description": "Collection storing all financial income and expense transactions"
+    },
+    "/rapb_items/{rapbId}": {
+      "schema": { "$ref": "#/entities/RapbItem" },
+      "description": "Collection storing all RAPB budget quota items"
     },
     "/committee_tasks/{taskId}": {
       "schema": { "$ref": "#/entities/CommitteeTask" },

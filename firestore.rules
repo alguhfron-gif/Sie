@@ -13,6 +13,10 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    match /rapb_items/{rapbId} {
+      allow read, write: if true;
+    }
+
     match /committee_tasks/{taskId} {
       allow read, write: if true;
     }
