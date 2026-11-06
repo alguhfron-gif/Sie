@@ -36,6 +36,7 @@ import { OfficialDocument, RegulationRule, UserSession } from '../types';
 import { ContentHeader } from './ContentHeader';
 import { CollapsibleSection } from './CollapsibleSection';
 import { MiladLogo } from './MiladLogo';
+import { OFFICIAL_SIGNATORIES } from '../utils/signatories';
 
 export const stripHtml = (str: any) => {
   if (str === null || str === undefined) return '';
@@ -239,8 +240,8 @@ export const cleanImportedText = (rawContent: string): { cleanBody: string; poin
 export const exportOfficialDocToWord = (
   doc: OfficialDocument,
   ketua: string = 'H. Ahmad Arif Bahruddin',
-  sekretaris: string = 'Muhammad Sofyan Sauri',
-  mengetahui: string = 'NAWAWY SADOELLAH'
+  sekretaris: string = 'Abdul Majid',
+  mengetahui: string = 'Mas d.Nawawy Sadoellah'
 ) => {
   const contentHtml = `
     <div style="font-family: 'Times New Roman', serif; margin: 25px; color: #000;">
@@ -288,8 +289,8 @@ export const exportOfficialDocToWord = (
         </tr>
         <tr>
           <td colspan="2" style="padding-top: 25px; text-align: center;">
-            <p style="font-weight: bold; margin-bottom: 50px;">Mengetahui<br/>Sekjen Majelis Keluarga Pondok Pesantren Sidogiri</p>
-            <p style="font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #000; display: inline-block; padding: 0 15px;">d. ${mengetahui}</p>
+            <p style="font-weight: bold; margin-bottom: 50px;">Mengetahui<br/>Sekjen Majelis Keluarga / Koordinator</p>
+            <p style="font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #000; display: inline-block; padding: 0 15px;">${mengetahui.startsWith('Mas') || mengetahui.startsWith('d.') ? mengetahui : `d. ${mengetahui}`}</p>
           </td>
         </tr>
       </table>
@@ -599,8 +600,8 @@ export const OfficialLetterPaper: React.FC<OfficialLetterPaperProps> = ({
   showWatermark = true,
   showStamp = true,
   ketuaName = 'H. Ahmad Arif Bahruddin',
-  sekretarisName = 'Muhammad Sofyan Sauri',
-  mengetahuiName = 'd. NAWAWY SADOELLAH',
+  sekretarisName = 'Abdul Majid',
+  mengetahuiName = 'Mas d.Nawawy Sadoellah',
   showAngket = false,
 }) => {
   return (
@@ -726,14 +727,14 @@ export const OfficialLetterPaper: React.FC<OfficialLetterPaperProps> = ({
               </div>
             </div>
 
-            {/* Mengetahui Majelis Keluarga */}
+            {/* Mengetahui Majelis Keluarga / Koordinator */}
             <div className="text-center pt-2 space-y-8">
               <p className="font-bold text-slate-800">
                 Mengetahui<br/>
-                Sekjen Majelis Keluarga Pondok Pesantren Sidogiri
+                Sekjen Majelis Keluarga / Koordinator
               </p>
               <p className="font-extrabold text-slate-900 uppercase border-b border-slate-400 inline-block px-6">
-                d. {mengetahuiName || 'NAWAWY SADOELLAH'}
+                {mengetahuiName.startsWith('Mas') || mengetahuiName.startsWith('d.') ? mengetahuiName : `d. ${mengetahuiName}`}
               </p>
             </div>
           </div>
@@ -770,8 +771,8 @@ export const OfficialRegulationPaper: React.FC<{
   showWatermark = true,
   showStamp = true,
   ketuaName = 'H. Ahmad Arif Bahruddin',
-  sekretarisName = 'Muhammad Sofyan Sauri',
-  mengetahuiName = 'd. NAWAWY SADOELLAH',
+  sekretarisName = 'Abdul Majid',
+  mengetahuiName = 'Mas d.Nawawy Sadoellah',
 }) => {
   const permohonanText = `Segala puji hanya milik Allah جل جلاله, shalawat dan salam-Nya semoga tetap tercurahkan ke haribaan Nabi Muhammad صلى الله عليه وسلم. Amin.\n\nSehubungan dengan adanya rencana penganugerahan "Penghargaan Khidmah" oleh Pengasuh Pondok Pesantren Sidogiri di Malam Puncak Peringatan Milad Pondok Pesantren Sidogiri Ke-290 Tahun dan Ikhtibar Madrasah Miftahul Ulum Ke 91 Tahun, maka dengan ini kami berharap agar Bapak berkenan mengisi angket usulan nominator, dengan ketentuan sebagaimana terlampir.\n\nAngket usulan tersebut mohon disetorkan kepada panitia paling lambat pada hari Sabtu, tanggal 29 Jumadats Tsaniyah 1447 H | 20 Desember 2025 M.\n\nDemikian permohonan kami, atas perkenannya kami disampaikan terima kasih teriring doa jazakumullah ahsanal jaza.`;
 
@@ -858,8 +859,8 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
   const [showStamp, setShowStamp] = useState(true);
   const [showAngket, setShowAngket] = useState(true);
   const [ketuaName, setKetuaName] = useState('H. Ahmad Arif Bahruddin');
-  const [sekretarisName, setSekretarisName] = useState('Muhammad Sofyan Sauri');
-  const [mengetahuiName, setMengetahuiName] = useState('NAWAWY SADOELLAH');
+  const [sekretarisName, setSekretarisName] = useState('Abdul Majid');
+  const [mengetahuiName, setMengetahuiName] = useState('Mas d.Nawawy Sadoellah');
 
   // Import Preview Modal State
   const [importPreview, setImportPreview] = useState<{
@@ -1931,6 +1932,72 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
               </div>
             </div>
 
+            {/* TTD Official Signatory Bar */}
+            <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs print:hidden space-y-2">
+              <div className="flex items-center space-x-1.5 text-xs font-bold text-slate-800">
+                <UserCheck className="w-3.5 h-3.5 text-[#8a7c4c]" />
+                <span>Pengaturan Pejabat Penandatangan (TTD)</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">Ketua / Penandatangan 1</label>
+                  <select
+                    value={OFFICIAL_SIGNATORIES.find((s) => s.name === ketuaName)?.id || 'custom'}
+                    onChange={(e) => {
+                      const found = OFFICIAL_SIGNATORIES.find((s) => s.id === e.target.value);
+                      if (found) setKetuaName(found.name);
+                    }}
+                    className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 font-semibold focus:outline-none cursor-pointer"
+                  >
+                    <option value="custom">-- Pilih Jabatan Resmi --</option>
+                    {OFFICIAL_SIGNATORIES.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.role} : {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">Sekretaris / Admin Sie</label>
+                  <select
+                    value={OFFICIAL_SIGNATORIES.find((s) => s.name === sekretarisName)?.id || 'custom'}
+                    onChange={(e) => {
+                      const found = OFFICIAL_SIGNATORIES.find((s) => s.id === e.target.value);
+                      if (found) setSekretarisName(found.name);
+                    }}
+                    className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 font-semibold focus:outline-none cursor-pointer"
+                  >
+                    <option value="custom">-- Pilih Jabatan Resmi --</option>
+                    {OFFICIAL_SIGNATORIES.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.role} : {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">Mengetahui (Koordinator)</label>
+                  <select
+                    value={OFFICIAL_SIGNATORIES.find((s) => s.name === mengetahuiName)?.id || 'custom'}
+                    onChange={(e) => {
+                      const found = OFFICIAL_SIGNATORIES.find((s) => s.id === e.target.value);
+                      if (found) setMengetahuiName(found.name);
+                    }}
+                    className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 font-semibold focus:outline-none cursor-pointer"
+                  >
+                    <option value="custom">-- Pilih Jabatan Resmi --</option>
+                    {OFFICIAL_SIGNATORIES.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.role} : {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
             {/* Render Official Paper in Modal */}
             <OfficialLetterPaper
               docNumber={selectedDocForPreview.docNumber}
@@ -2065,6 +2132,72 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({
                 >
                   <X className="w-5 h-5" />
                 </button>
+              </div>
+            </div>
+
+            {/* TTD Official Signatory Bar */}
+            <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs print:hidden space-y-2">
+              <div className="flex items-center space-x-1.5 text-xs font-bold text-slate-800">
+                <UserCheck className="w-3.5 h-3.5 text-[#8a7c4c]" />
+                <span>Pengaturan Pejabat Penandatangan (TTD)</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">Ketua / Penandatangan 1</label>
+                  <select
+                    value={OFFICIAL_SIGNATORIES.find((s) => s.name === ketuaName)?.id || 'custom'}
+                    onChange={(e) => {
+                      const found = OFFICIAL_SIGNATORIES.find((s) => s.id === e.target.value);
+                      if (found) setKetuaName(found.name);
+                    }}
+                    className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 font-semibold focus:outline-none cursor-pointer"
+                  >
+                    <option value="custom">-- Pilih Jabatan Resmi --</option>
+                    {OFFICIAL_SIGNATORIES.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.role} : {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">Sekretaris / Admin Sie</label>
+                  <select
+                    value={OFFICIAL_SIGNATORIES.find((s) => s.name === sekretarisName)?.id || 'custom'}
+                    onChange={(e) => {
+                      const found = OFFICIAL_SIGNATORIES.find((s) => s.id === e.target.value);
+                      if (found) setSekretarisName(found.name);
+                    }}
+                    className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 font-semibold focus:outline-none cursor-pointer"
+                  >
+                    <option value="custom">-- Pilih Jabatan Resmi --</option>
+                    {OFFICIAL_SIGNATORIES.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.role} : {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">Mengetahui (Koordinator)</label>
+                  <select
+                    value={OFFICIAL_SIGNATORIES.find((s) => s.name === mengetahuiName)?.id || 'custom'}
+                    onChange={(e) => {
+                      const found = OFFICIAL_SIGNATORIES.find((s) => s.id === e.target.value);
+                      if (found) setMengetahuiName(found.name);
+                    }}
+                    className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 font-semibold focus:outline-none cursor-pointer"
+                  >
+                    <option value="custom">-- Pilih Jabatan Resmi --</option>
+                    {OFFICIAL_SIGNATORIES.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.role} : {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
 

@@ -883,25 +883,14 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
         activeTab="akun"
       />
 
-      {/* Top Banner Header Box with Unlimited Capacity Explanation & Action Buttons */}
-      <div className="bg-white border border-[rgba(36,33,28,0.12)] rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
+      {/* Top Banner Header Box */}
+      <div className="bg-white border border-[rgba(36,33,28,0.12)] rounded-2xl p-4 sm:p-5 shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="space-y-1.5 max-w-3xl">
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center space-x-1.5 text-[#8a7c4c]">
-                <ShieldCheck className="w-5 h-5 text-[#8a7c4c]" />
-                <h1 className="text-base font-extrabold text-[#24211c]">
-                  Kelola Akun Operator & Penilai
-                </h1>
-              </div>
-              <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[11px] font-black tracking-wide uppercase bg-emerald-100 text-emerald-800 border border-emerald-300">
-                <InfinityIcon className="w-3.5 h-3.5 mr-0.5 text-emerald-700" />
-                <span>Kapasitas Bebas Tanpa Batas (Unlimited)</span>
-              </span>
-            </div>
-            <p className="text-xs text-[#5c5a55] leading-relaxed">
-              Sistem berbasis Google Cloud Firestore realtime: <strong>Tidak ada batasan akun</strong> (siap menampung <strong>150+ akun</strong> panitia & petugas penilai lapangan). Setiap petugas dapat login secara bersamaan dari HP maupun laptop masing-masing tanpa konflik sesi.
-            </p>
+          <div className="flex items-center space-x-2 text-[#8a7c4c]">
+            <ShieldCheck className="w-5 h-5 text-[#8a7c4c]" />
+            <h1 className="text-base font-extrabold text-[#24211c]">
+              Kelola Akun Operator & Penilai
+            </h1>
           </div>
 
           {/* Action Buttons */}

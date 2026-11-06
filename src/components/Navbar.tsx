@@ -140,7 +140,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   const isPetugas = currentUser?.category === 'petugas' || (currentUser?.role ? currentUser.role.toUpperCase().includes('PETUGAS') : false);
-  const isAdmin = !isPetugas;
+  const isAdmin = Boolean(currentUser && (currentUser.category === 'admin' || (currentUser.role && currentUser.role.toUpperCase().includes('ADMIN'))));
 
   const allNavItems: { id: ActiveTab; label: string; icon: React.ReactNode }[] = [
     { id: 'dashboard', label: 'Dasbor', icon: <LayoutDashboard className="w-4 h-4" /> },
@@ -183,7 +183,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             {/* Logo */}
             <div className="flex items-center space-x-2.5">
-              {!isPetugas ? (
+              {isAdmin ? (
                 <button
                   type="button"
                   onClick={() => setLogoModalOpen(true)}
@@ -305,7 +305,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         </div>
                       </div>
 
-                      {!isPetugas && (
+                      {isAdmin && (
                         <button
                           type="button"
                           onClick={() => {
@@ -446,7 +446,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           <div className="pt-2 border-t border-[rgba(36,33,28,0.08)] space-y-1.5">
-            {!isPetugas && (
+            {isAdmin && (
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);

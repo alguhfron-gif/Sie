@@ -22,13 +22,8 @@ export const ContentHeader: React.FC<ContentHeaderProps> = ({ title, subtitle, a
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 pb-2.5 border-b border-[rgba(36,33,28,0.1)] gap-2">
       <div>
-        <h1 className="text-lg sm:text-xl font-extrabold text-[#24211c] tracking-tight flex items-center gap-2">
+        <h1 className="text-lg sm:text-xl font-extrabold text-[#24211c] tracking-tight">
           {title}
-          {subtitle && (
-            <small className="text-xs font-normal text-[#7c7b77] hidden sm:inline">
-              | {subtitle}
-            </small>
-          )}
         </h1>
       </div>
 

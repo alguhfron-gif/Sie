@@ -141,7 +141,7 @@ export const RapbImportModal: React.FC<RapbImportModalProps> = ({
       } else if (h === 'satuan' || h.includes('harga') || h.includes('tarif')) {
         unitPriceCol = idx;
         hasHeader = true;
-      } else if (h === 'jumlah' || h.includes('pagu') || h.includes('anggaran') || h.includes('total') || h.includes('nominal')) {
+      } else if (h === 'jumlah' || h.includes('pagu') || h.includes('realita') || h.includes('anggaran') || h.includes('total') || h.includes('nominal')) {
         budgetCol = idx;
         hasHeader = true;
       } else if (h.includes('kategori') || h.includes('jenis')) {
@@ -232,7 +232,7 @@ export const RapbImportModal: React.FC<RapbImportModalProps> = ({
         error: !isValid
           ? name.trim().length === 0
             ? 'Nama program kosong'
-            : 'Pagu anggaran 0 / tidak valid'
+            : 'Realita anggaran 0 / tidak valid'
           : undefined,
       };
     });
@@ -294,7 +294,7 @@ export const RapbImportModal: React.FC<RapbImportModalProps> = ({
       } else if (h === 'satuan' || h.includes('harga') || h.includes('tarif')) {
         unitPriceCol = idx;
         hasHeader = true;
-      } else if (h === 'jumlah' || h.includes('pagu') || h.includes('anggaran') || h.includes('total') || h.includes('nominal')) {
+      } else if (h === 'jumlah' || h.includes('pagu') || h.includes('realita') || h.includes('anggaran') || h.includes('total') || h.includes('nominal')) {
         budgetCol = idx;
         hasHeader = true;
       } else if (h.includes('kategori') || h.includes('jenis')) {
@@ -379,7 +379,7 @@ export const RapbImportModal: React.FC<RapbImportModalProps> = ({
           error: !isValid
             ? name.length === 0
               ? 'Nama program kosong'
-              : 'Pagu anggaran 0 / tidak valid'
+              : 'Realita anggaran 0 / tidak valid'
             : undefined,
         };
       });
@@ -561,7 +561,7 @@ export const RapbImportModal: React.FC<RapbImportModalProps> = ({
                 {selectedFile ? `Berkas Terpilih: ${selectedFile.name}` : 'Klik untuk Pilih atau Drag & Drop Berkas RAPB'}
               </span>
               <span className="text-[11px] text-slate-500 mt-1 max-w-md">
-                Mendukung berkas Microsoft Excel (<strong>.xlsx</strong>, <strong>.xls</strong>) atau <strong>.csv</strong>. Sistem otomatis membaca kolom Kode Pos, Program, Pagu Anggaran, dan Kategori.
+                Mendukung berkas Microsoft Excel (<strong>.xlsx</strong>, <strong>.xls</strong>) atau <strong>.csv</strong>. Sistem otomatis membaca kolom Kode Pos, Program, Realita Anggaran, dan Kategori.
               </span>
 
               <div className="mt-4 flex items-center space-x-2">
@@ -667,7 +667,7 @@ export const RapbImportModal: React.FC<RapbImportModalProps> = ({
                 </div>
 
                 <div className="text-right text-xs">
-                  <span className="text-slate-500">Total Pagu Terpilih: </span>
+                  <span className="text-slate-500">Total RAPB Terpilih: </span>
                   <strong className="text-emerald-700 text-sm font-black">
                     {formatIDR(totalSelectedBudget)}
                   </strong>

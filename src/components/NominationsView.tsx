@@ -2224,12 +2224,11 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
       {/* Ketentuan dan Syarat Penilaian Nominasi (Dinamis Sesuai Kategori yang Diizinkan) */}
       <CollapsibleSection
         sectionId="nomination_assessment_guidelines"
-        title="Ketentuan dan Syarat Penilaian Nominasi"
-        subtitle={isAdmin ? "Standar kualifikasi, syarat kelayakan, serta kriteria dan bobot penilaian resmi untuk 6 kategori penganugerahan" : `Standar kualifikasi dan syarat resmi untuk ${visibleAwardRubrics.length} kategori yang ditugaskan`}
+        title="Ketentuan & Syarat Penilaian Nominasi"
         icon={<Scale className="w-4 h-4 text-[#8a7c4c]" />}
         badge={
           <span className="text-[10px] font-extrabold bg-[#f2eee3] text-[#675c37] border border-[#c3b68b]/40 px-2.5 py-0.5 rounded-full">
-            {visibleAwardRubrics.length} Kategori Ditampilkan
+            {visibleAwardRubrics.length} Kategori
           </span>
         }
       >
@@ -2550,10 +2549,9 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
         <CollapsibleSection
           sectionId="nomination_list_section"
           title="Daftar Peserta Nominasi & Penganugerahan"
-          subtitle="Kelola data pendaftaran calon penerima, verifikasi kelayakan, rekap skor penjurian, dan penetapan pemenang resmi Milad Sidogiri"
-        icon={<Trophy className="w-4 h-4 text-[#8a7c4c]" />}
-        defaultOpen={true}
-        badge={
+          icon={<Trophy className="w-4 h-4 text-[#8a7c4c]" />}
+          defaultOpen={true}
+          badge={
           <div className="flex items-center space-x-2">
             <span className="text-[10px] font-extrabold bg-[#f2eee3] text-[#675c37] border border-[#c3b68b]/40 px-2.5 py-0.5 rounded-full flex items-center space-x-1 shadow-2xs">
               <span className="w-1.5 h-1.5 rounded-full bg-[#8a7c4c] animate-pulse"></span>
@@ -3148,45 +3146,6 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                                   </span>
                                 )}
                               </div>
-                              {nom.guruIdentitas && nom.guruIdentitas.some((g) => g.nama?.trim()) ? (
-                                <div className="mt-1 space-y-1">
-                                  {nom.guruIdentitas
-                                    .filter((g) => g.nama?.trim())
-                                    .map((g, gIdx) => (
-                                      <div key={gIdx} className="text-[11px] font-bold text-slate-800 bg-[#faf8f4] px-2 py-0.5 rounded border border-[#e8e4da] flex items-center space-x-1.5">
-                                        <span className="text-[10px] text-[#8a7c4c] font-black">{gIdx + 1}.</span>
-                                        <span className="font-extrabold text-[#24211c]">{g.nama}</span>
-                                        {g.idPersonalia && <span className="text-[9.5px] font-mono text-slate-500">({g.idPersonalia})</span>}
-                                      </div>
-                                    ))}
-                                </div>
-                              ) : nom.guruIdentitas && nom.guruIdentitas.some((g) => g.nama || g.idPersonalia) ? (
-                                <div className="text-[9.5px] font-extrabold text-[#675c37] bg-[#ede9df] px-1.5 py-0.2 rounded border border-[#c3b68b]/30 w-fit mt-0.5 flex items-center space-x-1">
-                                  <Users className="w-3 h-3 text-[#8a7c4c]" />
-                                  <span>5 Guru Terdaftar</span>
-                                </div>
-                              ) : null}
-                              {nom.santriMuridIdentitas && nom.santriMuridIdentitas.some((s) => s.nama?.trim()) ? (
-                                <div className="mt-1 space-y-1">
-                                  {nom.santriMuridIdentitas
-                                    .filter((s) => s.nama?.trim())
-                                    .map((s, sIdx) => (
-                                      <div key={sIdx} className="text-[11px] font-bold text-slate-800 bg-[#faf8f4] px-2 py-0.5 rounded border border-[#e8e4da] flex items-center space-x-1.5">
-                                        <span className="text-[10px] text-[#8a7c4c] font-black">{sIdx + 1}.</span>
-                                        <span className="font-extrabold text-[#24211c]">{s.nama}</span>
-                                        {s.idPersonalia && <span className="text-[9.5px] font-mono text-slate-500">({s.idPersonalia})</span>}
-                                      </div>
-                                    ))}
-                                </div>
-                              ) : nom.santriMuridIdentitas && nom.santriMuridIdentitas.some((s) => s.nama || s.idPersonalia) ? (
-                                <div className="text-[9.5px] font-extrabold text-[#675c37] bg-[#ede9df] px-1.5 py-0.2 rounded border border-[#c3b68b]/30 w-fit mt-0.5 flex items-center space-x-1">
-                                  <GraduationCap className="w-3 h-3 text-[#8a7c4c]" />
-                                  <span>2 Santri/Murid Terdaftar</span>
-                                </div>
-                              ) : null}
-                              {nom.phone && (
-                                <div className="text-[10px] text-[#8a7c4c] font-mono mt-0.5">📱 {nom.phone}</div>
-                              )}
                             </td>
                             <td className="px-4 py-3.5 whitespace-nowrap">
                               <span className="text-[10px] font-bold bg-[#ede9df] text-[#675c37] px-2 py-0.5 rounded-md mr-1.5 border border-[#c3b68b]/30">

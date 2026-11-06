@@ -123,9 +123,6 @@ export const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
               </div>
               {badge && <div>{badge}</div>}
             </div>
-            {subtitle && (
-              <p className="text-xs text-slate-500 font-medium truncate mt-0.5">{subtitle}</p>
-            )}
           </div>
         </div>
 

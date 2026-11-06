@@ -98,11 +98,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <h2 className="text-lg sm:text-xl font-extrabold text-[#24211c] tracking-tight">
                 {isPetugas ? 'Sistem Input & Verifikasi Calon Penerima' : 'Portal Operasional Sie Penganugerahan'}
               </h2>
-              <p className="text-xs text-[#7c7b77] mt-0.5 max-w-xl">
-                {isPetugas
-                  ? 'Input berkas, periksa kelengkapan administrasi santri/asatidz, dan laporkan verifikasi.'
-                  : 'Satu arah dalam penataan nominasi, sertifikat digital, arsip SK, serta keterbukaan kas operasional.'}
-              </p>
             </div>
           </div>
 

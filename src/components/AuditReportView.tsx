@@ -566,9 +566,6 @@ export const AuditReportView: React.FC<AuditReportViewProps> = ({
                 {filteredAuditList.length} Akun
               </span>
             </h3>
-            <p className="text-xs text-[#7c7b77] mt-0.5">
-              Rincian status pengisian usulan calon penerima anugerah berdasarkan akun masing-masing petugas.
-            </p>
           </div>
 
           {/* Quick Info */}

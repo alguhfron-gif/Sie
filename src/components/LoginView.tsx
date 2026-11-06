@@ -9,12 +9,10 @@ import {
   Eye,
   EyeOff,
   ShieldAlert,
-  Image as ImageIcon,
 } from 'lucide-react';
 import { UserSession, CommitteeAccount } from '../types';
 import { INITIAL_ACCOUNTS } from '../data/initialData';
 import { MiladLogo } from './MiladLogo';
-import { LogoManagerModal } from './LogoManagerModal';
 import { getRoleOptionById } from '../utils/accountRoles';
 
 interface LoginViewProps {
@@ -29,7 +27,6 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [isLogoModalOpen, setIsLogoModalOpen] = useState(false);
 
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,17 +98,9 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
           {/* Header Brand */}
           <div className="text-center space-y-3">
             <div className="flex justify-center">
-              <button
-                type="button"
-                onClick={() => setIsLogoModalOpen(true)}
-                title="Ganti atau Sesuaikan Logo Milad Sidogiri"
-                className="group relative cursor-pointer focus:outline-none p-1 rounded-2xl hover:bg-white/60 transition"
-              >
-                <MiladLogo size="xl" className="w-20 h-20 drop-shadow-md transition-transform group-hover:scale-105" />
-                <span className="absolute bottom-0 right-0 bg-[#8a7c4c] text-white p-1 rounded-full text-[8px] font-bold shadow-xs">
-                  <ImageIcon className="w-2.5 h-2.5" />
-                </span>
-              </button>
+              <div className="p-1">
+                <MiladLogo size="xl" className="w-20 h-20 drop-shadow-md" />
+              </div>
             </div>
 
             <div>
@@ -231,12 +220,6 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
         <span className="bg-[#e5e2da]"></span>
         <span className="bg-[#8a7c4c]"></span>
       </div>
-
-      {/* Modal Logo */}
-      <LogoManagerModal
-        isOpen={isLogoModalOpen}
-        onClose={() => setIsLogoModalOpen(false)}
-      />
     </div>
   );
 };

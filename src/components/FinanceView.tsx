@@ -391,7 +391,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
       let statusText = 'Aman';
       let statusColor = 'text-emerald-700 bg-emerald-50 border-emerald-200';
       if (remaining < 0) {
-        statusText = 'Defisit (Over Pagu)';
+        statusText = 'Defisit (Over Realita)';
         statusColor = 'text-rose-700 bg-rose-50 border-rose-200';
       } else if (remaining === 0) {
         statusText = 'Habis';
@@ -1265,7 +1265,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
       } else {
         await clearAllRapbItemsFromFirestore();
       }
-      setBulkSuccessNotice('Seluruh data pagu RAPB berhasil dikosongkan dari Cloud Firebase.');
+      setBulkSuccessNotice('Seluruh data realita RAPB berhasil dikosongkan dari Cloud Firebase.');
     } catch (err) {
       console.error('Gagal mengosongkan pos di Firestore:', err);
     }
@@ -1470,7 +1470,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
     }
 
     if (rowsToProcess.length === 0) {
-      setBulkSuccessNotice('Mohon isi minimal satu baris program RAPB dengan nama kegiatan dan pagu anggaran.');
+      setBulkSuccessNotice('Mohon isi minimal satu baris program RAPB dengan nama kegiatan dan realita anggaran.');
       setTimeout(() => setBulkSuccessNotice(null), 3000);
       return;
     }
@@ -1503,7 +1503,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
     await saveRapbItems(updated, mode);
     setBulkSuccessNotice(
       mode === 'replace'
-        ? `Berhasil memperbarui seluruh data pagu (${newItems.length} pos) di Cloud Firebase!`
+        ? `Berhasil memperbarui seluruh data realita (${newItems.length} pos) di Cloud Firebase!`
         : `Berhasil mengimpor ${newItems.length} pos RAPB ke Cloud Firebase!`
     );
     setTimeout(() => setBulkSuccessNotice(null), 4500);
@@ -1575,7 +1575,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
           {/* Ringkasan Kas & Anggaran */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs print:bg-slate-50">
             <div>
-              <p className="text-slate-500 font-medium">Total Pagu RAPB:</p>
+              <p className="text-slate-500 font-medium">Total RAPB:</p>
               <p className="text-sm font-black text-slate-900">{formatIDR(totalPaguRapb)}</p>
             </div>
             <div>
@@ -1596,7 +1596,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
           <div className="space-y-2">
             <h3 className="font-extrabold text-xs sm:text-sm text-slate-900 uppercase tracking-wide flex items-center space-x-2">
               <span className="w-2 h-2 rounded-full bg-[#8a7c4c]" />
-              <span>I. Rekapitulasi Realisasi Pagu Anggaran (RAPB) per Program</span>
+              <span>I. Rekapitulasi Realisasi Realita Anggaran (RAPB) per Program</span>
             </h3>
             <div className="overflow-x-auto">
               <table className="w-full text-[10.5px] text-left border-collapse border border-slate-300 print:text-[10px]">
@@ -1706,7 +1706,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
           <div className="space-y-2 pt-2">
             <h3 className="font-extrabold text-xs sm:text-sm text-slate-900 uppercase tracking-wide flex items-center space-x-2">
               <span className="w-2 h-2 rounded-full bg-[#8a7c4c]" />
-              <span>II. Rekapitulasi Realisasi Pagu per Kategori Akun (5 Pos Induk)</span>
+              <span>II. Rekapitulasi Realisasi Realita per Kategori Akun (5 Pos Induk)</span>
             </h3>
             <div className="overflow-x-auto border border-slate-300">
               <table className="w-full text-[11px] text-left border-collapse border border-slate-300">
@@ -1715,7 +1715,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                     <th className="p-2 border border-slate-300 w-8">No</th>
                     <th className="p-2 border border-slate-300 text-left">Kategori Akun Induk</th>
                     <th className="p-2 border border-slate-300 text-right w-36 bg-[#8a7c4c]/5">
-                      Jumlah Keuangan (Pagu)
+                      Jumlah Keuangan (Realita)
                     </th>
                     <th className="p-2 border border-slate-300 text-right w-36 text-rose-700">
                       Pengeluaran (Realisasi)
@@ -1869,13 +1869,13 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
             <div>
               <p className="text-slate-500">Pasuruan, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
               <p className="font-bold mt-1 mb-16">Mengetahui,<br />Ketua Sie Penganugerahan</p>
-              <p className="font-black text-slate-900 underline text-sm">H. Ahmad Arif Bahruddin</p>
+              <p className="font-black text-slate-900 underline text-sm">Birril Walid</p>
               <p className="text-[10px] text-slate-500">NIP: PAN-MLD-2026-004</p>
             </div>
             <div>
               <p className="text-slate-500">Sie Penganugerahan Milad Sidogiri</p>
               <p className="font-bold mt-1 mb-16">Disusun & Dipertanggungjawabkan Oleh,<br />Bendahara Sie Penganugerahan</p>
-              <p className="font-black text-slate-900 underline text-sm">Muhammad Sofyan Sauri</p>
+              <p className="font-black text-slate-900 underline text-sm">Moh Ali Ghufron</p>
               <p className="text-[10px] text-slate-500">NIP: PAN-MLD-2026-018</p>
             </div>
           </div>
@@ -2043,14 +2043,13 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
               ========================================================================= */}
           <CollapsibleSection
             sectionId="finance_rapb_monitoring"
-            title="Monitoring Pagu Anggaran (RAPB) & Sisa Dana Real-Time"
-            subtitle="Perbandingan transparan antara pagu anggaran RAPB dengan total pengeluaran aktual dan sisa dana spesifik per program"
+            title="Monitoring Realita Anggaran (RAPB) & Sisa Dana"
             icon={<Building2 className="w-4 h-4 text-[#8a7c4c]" />}
             badge={
               <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border ${
                 totalSisaRapb < 0 ? 'bg-rose-100 text-rose-900 border-rose-200' : 'bg-emerald-100 text-emerald-900 border-emerald-200'
               }`}>
-                Sisa Pagu RAPB: {formatIDR(totalSisaRapb)}
+                Sisa Anggaran: {formatIDR(totalSisaRapb)}
               </span>
             }
           >
@@ -2059,16 +2058,15 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-white p-4.5 rounded-2xl border border-[rgba(36,33,28,0.12)] shadow-xs">
                   <div className="flex items-center justify-between text-xs text-slate-500 font-bold uppercase tracking-wider">
-                    <span>Total Pagu RAPB</span>
+                    <span>Total RAPB</span>
                     <Layers className="w-4 h-4 text-[#8a7c4c]" />
                   </div>
                   <h3 className="text-xl font-black text-slate-900 mt-2">{formatIDR(totalPaguRapb)}</h3>
-                  <p className="text-[11px] text-slate-500 mt-1">10 Pos Kegiatan Penganugerahan</p>
                 </div>
 
                 <div className="bg-white p-4.5 rounded-2xl border border-[rgba(36,33,28,0.12)] shadow-xs">
                   <div className="flex items-center justify-between text-xs text-slate-500 font-bold uppercase tracking-wider">
-                    <span>Realisasi Belanja</span>
+                    <span>Total Anggaran</span>
                     <TrendingDown className="w-4 h-4 text-rose-600" />
                   </div>
                   <h3 className="text-xl font-black text-rose-700 mt-2">{formatIDR(totalPengeluaran)}</h3>
@@ -2082,15 +2080,12 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                   totalSisaRapb < 0 ? 'bg-rose-50/70 border-rose-200 text-rose-900' : 'bg-emerald-50/70 border-emerald-200 text-emerald-950'
                 }`}>
                   <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider">
-                    <span>Sisa Pagu Anggaran</span>
+                    <span>Sisa Anggaran</span>
                     <DollarSign className="w-4 h-4 text-emerald-700" />
                   </div>
                   <h3 className={`text-xl font-black mt-2 ${totalSisaRapb < 0 ? 'text-rose-700' : 'text-emerald-800'}`}>
                     {formatIDR(totalSisaRapb)}
                   </h3>
-                  <p className="text-[11px] text-slate-600 mt-1">
-                    {totalSisaRapb < 0 ? 'Peringatan: Melebihi plafon pagu' : 'Tersedia untuk sisa kebutuhan acara'}
-                  </p>
                 </div>
 
                 <div className="bg-[#fdfbf7] p-4.5 rounded-2xl border border-[rgba(138,124,76,0.25)] shadow-xs flex flex-col justify-between">
@@ -2100,14 +2095,8 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                         <Wallet className="w-4 h-4" />
                         <span>Saldo Kas Fisik</span>
                       </span>
-                      <span className="text-[10px] bg-[#8a7c4c]/10 text-[#6f633a] font-bold px-2 py-0.5 rounded-full">
-                        Kas di Tangan
-                      </span>
                     </div>
                     <h3 className="text-xl font-black text-[#24211c] mt-2">{formatIDR(saldoSisa)}</h3>
-                    <p className="text-[11px] text-slate-600 mt-1">
-                      Pemasukan ({formatIDR(totalPemasukan)}) - Belanja ({formatIDR(totalPengeluaran)})
-                    </p>
                   </div>
 
                   <div className="pt-3 mt-2.5 border-t border-[rgba(138,124,76,0.15)] flex items-center gap-2">
@@ -2115,7 +2104,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                       type="button"
                       onClick={() => setIsAddPemasukanModalOpen(true)}
                       className="flex-1 py-1.5 px-3 bg-[#8a7c4c] hover:bg-[#6f633a] text-white font-extrabold text-xs rounded-xl shadow-2xs transition flex items-center justify-center space-x-1.5 cursor-pointer active:scale-95"
-                      title="Tambah Saldo Kas Fisik / Penerimaan Dana"
+                      title="Tambah Saldo Kas Fisik"
                     >
                       <PlusCircle className="w-3.5 h-3.5" />
                       <span>+ Tambah Saldo</span>
@@ -2165,7 +2154,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                     <div>
                       <div className="flex items-center space-x-2 flex-wrap gap-y-1">
                         <h3 className="font-extrabold text-sm text-slate-900 group-hover:text-[#8a7c4c] transition">
-                          Rekapitulasi Anggaran & Realisasi Kas per Kategori (5 Pos Induk)
+                          Rekapitulasi Anggaran & Realisasi per Kategori
                         </h3>
                         {!showCategoryRecap && (
                           <span className="text-[10px] font-bold text-slate-500 bg-slate-200/80 px-2 py-0.5 rounded-md">
@@ -2173,11 +2162,6 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                           </span>
                         )}
                       </div>
-                      <p className="text-[11px] text-slate-500 mt-0.5">
-                        {showCategoryRecap
-                          ? 'Total pagu alokasi RAPB, realisasi belanja kas, dan saldo sisa dana terpantau real-time'
-                          : `Ringkasan 5 Kategori: Pagu ${formatIDR(totalCategoryPagu)} • Belanja ${formatIDR(totalCategorySpent)} • Sisa ${formatIDR(totalCategoryRemaining)}`}
-                      </p>
                     </div>
                   </div>
 
@@ -2222,18 +2206,18 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                       <thead className="bg-[#f7f6f2] text-slate-700 uppercase tracking-wider font-extrabold border-b border-slate-200">
                         <tr>
                           <th className="p-3 text-center w-10">No</th>
-                          <th className="p-3 min-w-[240px]">Kategori Anggaran Induk</th>
+                          <th className="p-3 min-w-[240px]">Kategori Anggaran</th>
                           <th className="p-3 text-right w-36 bg-[#8a7c4c]/5 font-black text-slate-900">
-                            Jumlah Keuangan (Pagu)
+                            Realita Anggaran
                           </th>
                           <th className="p-3 text-right w-36 font-bold text-rose-700">
-                            Pengeluaran (Realisasi)
+                            Realisasi Belanja
                           </th>
                           <th className="p-3 text-right w-40 font-black">
-                            Sisa Anggaran (Dana)
+                            Sisa Anggaran
                           </th>
                           <th className="p-3 text-center w-36">
-                            Tingkat Serapan & Status
+                            Serapan & Status
                           </th>
                           <th className="p-3 text-center w-28">
                             Aksi
@@ -2265,9 +2249,6 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                                     </span>
                                   )}
                                 </div>
-                                <span className="text-[10.5px] text-slate-500 block mt-0.5">
-                                  {catStat.posCount} Pos Program • {catStat.trxCount} Transaksi Pengeluaran
-                                </span>
                               </td>
                               <td className="p-3 text-right font-black text-slate-900 bg-[#8a7c4c]/5 font-mono text-xs">
                                 {formatIDR(catStat.pagu)}
@@ -2375,7 +2356,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                 <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <h3 className="font-extrabold text-sm text-slate-900">
-                      Tabel Monitoring Pagu & Sisa Anggaran Real-Time ({rapbStats.length} Program/Pos)
+                      Tabel Monitoring Realita & Sisa Anggaran
                     </h3>
                   </div>
 
@@ -2425,10 +2406,10 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                         <button
                           onClick={handleClearAllRapb}
                           className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer"
-                          title="Kosongkan Semua Pos Pagu RAPB"
+                          title="Kosongkan Semua Pos Realita RAPB"
                         >
                           <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-                          <span>Hapus Semua Pagu</span>
+                          <span>Hapus Semua Realita</span>
                         </button>
                       )}
                     </div>
@@ -2449,16 +2430,16 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                       <tr>
                         <th className="p-3 text-center w-10">No</th>
                         <th className="p-3 w-20">POS</th>
-                        <th className="p-3 min-w-[220px] whitespace-normal">URAIAN</th>
-                        <th className="p-3 text-center w-12">QTM</th>
-                        <th className="p-3 text-center w-16">KET</th>
+                        <th className="p-3 min-w-[220px]">URAIAN KEGIATAN</th>
+                        <th className="p-3 text-center w-12">QTY</th>
+                        <th className="p-3 text-center w-16">SATUAN</th>
                         <th className="p-3 text-center w-12">VOL</th>
-                        <th className="p-3 text-center w-16">KET</th>
-                        <th className="p-3 text-right w-24">SATUAN</th>
-                        <th className="p-3 text-right w-28 bg-[#8a7c4c]/5 font-black text-slate-900">JUMLAH (PAGU)</th>
+                        <th className="p-3 text-center w-16">JENIS</th>
+                        <th className="p-3 text-right w-28">HARGA SATUAN</th>
+                        <th className="p-3 text-right w-28 bg-[#8a7c4c]/5 font-black text-slate-900">REALITA ANGGARAN</th>
                         <th className="p-3 text-right w-28 font-bold text-rose-700">REALISASI</th>
                         <th className="p-3 text-right w-32 font-black">SISA ANGGARAN</th>
-                        <th className="p-3 text-center w-28">STATUS / %</th>
+                        <th className="p-3 text-center w-28">STATUS</th>
                         <th className="p-3 text-center w-28">AKSI</th>
                       </tr>
                     </thead>
@@ -2467,9 +2448,9 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                         <tr>
                           <td colSpan={13} className="p-8 text-center text-slate-500 bg-[#fcfbf9]/60">
                             <Building2 className="w-10 h-10 mx-auto text-[#8a7c4c]/40 mb-2" />
-                            <p className="font-extrabold text-sm text-slate-700">Data Pagu RAPB Kosong</p>
+                            <p className="font-extrabold text-sm text-slate-700">Data Realita RAPB Kosong</p>
                             <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto whitespace-normal">
-                              Seluruh pos pagu RAPB telah dikosongkan. Anda dapat mengimpor berkas Excel / CSV atau menambahkan pos baru secara manual.
+                              Seluruh pos realita RAPB telah dikosongkan. Anda dapat mengimpor berkas Excel / CSV atau menambahkan pos baru secara manual.
                             </p>
                             <div className="flex flex-wrap items-center justify-center gap-2 mt-4">
                               <button
@@ -2524,16 +2505,8 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                                 {item.posCode}
                               </span>
                             </td>
-                            <td className="p-3 whitespace-normal">
-                              <div className="font-extrabold text-slate-900">{item.programName}</div>
-                              <div className="flex items-center space-x-2 mt-0.5">
-                                <span className="bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded text-[10px] font-semibold">
-                                  {item.category}
-                                </span>
-                                {item.description && (
-                                  <span className="text-[10px] text-slate-500 line-clamp-1">{item.description}</span>
-                                )}
-                              </div>
+                            <td className="p-3">
+                              <div className="font-extrabold text-slate-900 text-xs">{item.programName}</div>
                             </td>
                             <td className="p-3 text-center font-bold text-slate-800">
                               {qtmVal}
@@ -2591,7 +2564,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                                   type="button"
                                   onClick={() => handleOpenEditRapb(item)}
                                   className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition cursor-pointer"
-                                  title="Edit Pos Pagu RAPB"
+                                  title="Edit Pos Realita RAPB"
                                 >
                                   <Pencil className="w-3.5 h-3.5" />
                                 </button>
@@ -2599,7 +2572,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                                   type="button"
                                   onClick={() => handleDeleteRapb(item.id)}
                                   className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition cursor-pointer"
-                                  title="Hapus Pos Pagu RAPB Ini"
+                                  title="Hapus Pos Realita RAPB Ini"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
@@ -2621,11 +2594,10 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
           <CollapsibleSection
             sectionId="finance_transactions_list"
             title="Riwayat Transaksi & Bukti Nota Fisik"
-            subtitle="Pencarian, filter per kode pos / kategori, pratinjau thumbnail nota transaksi langsung, dan manajemen data kas"
             icon={<Receipt className="w-4 h-4 text-[#8a7c4c]" />}
             badge={
               <span className="text-[10px] font-extrabold bg-[#8a7c4c]/15 text-[#6f633a] border border-[#8a7c4c]/30 px-2.5 py-0.5 rounded-full">
-                {filteredTransactions.length} Transaksi Terdata
+                {filteredTransactions.length} Transaksi
               </span>
             }
           >
@@ -2697,11 +2669,8 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
               <div className="bg-white rounded-2xl border border-[rgba(36,33,28,0.12)] shadow-xs overflow-hidden">
                 <div className="p-4 border-b border-slate-100 flex items-center justify-between">
                   <h3 className="font-extrabold text-slate-900 text-sm">
-                    Daftar Transaksi Kas & Thumbnail Bukti Nota ({filteredTransactions.length})
+                    Daftar Transaksi Kas ({filteredTransactions.length})
                   </h3>
-                  <span className="text-[11px] text-slate-500 font-medium">
-                    Klik foto thumbnail untuk memperbesar bukti nota
-                  </span>
                 </div>
 
                 {/* Mobile View: Cards */}
@@ -2817,10 +2786,10 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                       <tr>
                         <th className="p-3.5 w-28">Tanggal & Bukti</th>
                         <th className="p-3.5 w-20">Kode Pos</th>
-                        <th className="p-3.5">Kegiatan / Program RAPB</th>
-                        <th className="p-3.5">Penerima / Rekanan</th>
+                        <th className="p-3.5">Kegiatan / Program</th>
+                        <th className="p-3.5">Penerima</th>
                         <th className="p-3.5 text-center w-24">Qty & Satuan</th>
-                        <th className="p-3.5 text-center w-28">Thumbnail Nota</th>
+                        <th className="p-3.5 text-center w-28">Bukti Nota</th>
                         <th className="p-3.5 text-right w-32">Nominal (Rp)</th>
                         <th className="p-3.5 text-center w-20">Aksi</th>
                       </tr>
@@ -2846,18 +2815,11 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                           </td>
 
                           <td className="p-3.5">
-                            <div className="font-extrabold text-slate-900">{t.title}</div>
-                            {t.programName && t.programName !== t.title && (
-                              <div className="text-[10px] text-slate-500 font-semibold">{t.programName}</div>
-                            )}
-                            {t.notes && <div className="text-[10px] text-slate-600 italic mt-0.5">{t.notes}</div>}
+                            <div className="font-extrabold text-slate-900 text-xs">{t.title}</div>
                           </td>
 
                           <td className="p-3.5">
                             <div className="font-semibold text-slate-800">{t.recipient || '-'}</div>
-                            <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded inline-block mt-0.5">
-                              {getEffectiveCategory(t)}
-                            </span>
                           </td>
 
                           <td className="p-3.5 text-center font-medium">
@@ -3071,11 +3033,8 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                 </div>
                 <div>
                   <h3 className="font-extrabold text-sm sm:text-base text-slate-900">
-                    {editingTransaction ? 'Edit Transaksi Keuangan' : 'Input Transaksi Pintar & Realisasi RAPB'}
+                    {editingTransaction ? 'Edit Transaksi' : 'Input Transaksi Keuangan'}
                   </h3>
-                  <p className="text-[11px] text-slate-500">
-                    Ketik nama kegiatan untuk mencocokkan kode pos dan memantau sisa anggaran secara real-time
-                  </p>
                 </div>
               </div>
               <button
@@ -3178,7 +3137,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                               <span className="font-bold text-slate-900 text-xs">{item.programName}</span>
                             </div>
                             <span className="text-[10px] text-slate-500 block mt-0.5">
-                              Pagu RAPB: {formatIDR(item.allocatedBudget)} • {item.category}
+                              Realita RAPB: {formatIDR(item.allocatedBudget)} • {item.category}
                             </span>
                           </div>
                           <span className="text-[10px] text-[#8a7c4c] font-bold shrink-0">Pilih Pos</span>
@@ -3192,7 +3151,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                     <div className="mt-2.5 p-3 rounded-2xl bg-[#fdfbf7] border border-[#8a7c4c]/25 space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-[11px] font-extrabold text-[#6f633a]">
-                          Monitoring Pagu Pos {selectedProgramStat.posCode}
+                          Monitoring Realita Pos {selectedProgramStat.posCode}
                         </span>
                         <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${selectedProgramStat.statusColor}`}>
                           {selectedProgramStat.statusText}
@@ -3201,7 +3160,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
 
                       <div className="grid grid-cols-3 gap-2 text-[11px] pt-1">
                         <div>
-                          <span className="text-slate-400 block text-[10px]">Pagu RAPB:</span>
+                          <span className="text-slate-400 block text-[10px]">Realita RAPB:</span>
                           <strong className="text-slate-800">{formatIDR(selectedProgramStat.allocatedBudget)}</strong>
                         </div>
                         <div>
@@ -3225,7 +3184,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                         <div className="flex items-center space-x-1.5 text-[10px] font-bold text-rose-700 bg-rose-50 p-2 rounded-xl border border-rose-200">
                           <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
                           <span>
-                            Nominal ini melebihi sisa plafon pagu (Defisit{' '}
+                            Nominal ini melebihi sisa plafon realita (Defisit{' '}
                             {formatIDR(Math.abs(selectedProgramStat.remaining - amount))}).
                           </span>
                         </div>
@@ -3235,21 +3194,16 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                 </div>
               )}
 
-              {/* Kategori Akun Induk (5 Pos Induk Resmi - Sinkron ke Rekap Anggaran) */}
+              {/* Kategori Akun Induk */}
               <div className="p-3 bg-amber-50/40 border border-[#8a7c4c]/30 rounded-2xl space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="font-extrabold text-slate-800 text-xs flex items-center space-x-1.5">
-                    <Layers className="w-3.5 h-3.5 text-[#8a7c4c]" />
-                    <span>Kategori Akun Induk (5 Pos Induk) *</span>
-                  </label>
-                  <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-bold border border-emerald-200">
-                    Sinkron ke Rekapitulasi Anggaran
-                  </span>
-                </div>
+                <label className="font-extrabold text-slate-800 text-xs flex items-center space-x-1.5">
+                  <Layers className="w-3.5 h-3.5 text-[#8a7c4c]" />
+                  <span>Kategori Anggaran *</span>
+                </label>
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value as TransactionCategory)}
-                  className="w-full px-3 py-2 bg-white border border-[#8a7c4c]/40 text-slate-900 rounded-xl font-black text-xs focus:ring-2 focus:ring-[#8a7c4c]/50 focus:outline-none"
+                  className="w-full px-3 py-2 bg-white border border-[#8a7c4c]/40 text-slate-900 rounded-xl font-bold text-xs focus:ring-2 focus:ring-[#8a7c4c]/50 focus:outline-none"
                 >
                   {categoriesList.map((cat, idx) => (
                     <option key={cat} value={cat}>
@@ -3257,10 +3211,6 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                     </option>
                   ))}
                 </select>
-                <div className="flex items-center justify-between text-[10px] text-slate-500 pt-0.5">
-                  <span>Realisasi pengeluaran ini langsung masuk ke rekapitulasi:</span>
-                  <strong className="text-[#8a7c4c] font-black">{category}</strong>
-                </div>
               </div>
 
               {/* Kode Pos & Judul / Uraian Transaksi */}
@@ -3595,9 +3545,9 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                 </div>
               )}
 
-              {/* Keterangan Catatan Tambahan */}
+              {/* Catatan Tambahan */}
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Uraian / Keterangan Tambahan</label>
+                <label className="block font-bold text-slate-700 mb-1">Catatan Tambahan (Opsional)</label>
                 <input
                   type="text"
                   placeholder="Catatan pelunasan, nomor invoice, atau kontak vendor..."
@@ -3792,7 +3742,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                 <label className="block font-bold text-slate-700 mb-1">Catatan Tambahan (Opsional)</label>
                 <input
                   type="text"
-                  placeholder="Keterangan peruntukan atau nomor kwitansi penerimaan..."
+                  placeholder="Catatan tambahan jika ada..."
                   value={pemasukanNotes}
                   onChange={(e) => setPemasukanNotes(e.target.value)}
                   className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-[#8a7c4c]/50 focus:outline-none"
@@ -3868,9 +3818,6 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                 <div className="text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
                   <Wallet className="w-8 h-8 text-slate-300 mx-auto mb-2" />
                   <p className="font-bold text-slate-700 text-xs">Belum Ada Riwayat Penerimaan Saldo</p>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    Gunakan tombol "+ Tambah Saldo" untuk mencatat penerimaan kas pertama Anda.
-                  </p>
                 </div>
               ) : (
                 transactions
@@ -4043,7 +3990,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
               <div className="bg-[#fcfbf9] p-3.5 rounded-2xl border border-slate-200 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="font-extrabold text-[11px] text-slate-700 uppercase tracking-wide">
-                    Rincian Perhitungan Pagu Anggaran
+                    Rincian Perhitungan Realita Anggaran
                   </span>
                   <span className="text-[10px] text-slate-500 font-medium">
                     Rumus: QTM × VOL × SATUAN = JUMLAH
@@ -4118,7 +4065,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                   </div>
 
                   <div>
-                    <label className="block font-bold text-[#8a7c4c] mb-1 text-[11px]">JUMLAH (Total Pagu RAPB Rp) *</label>
+                    <label className="block font-bold text-[#8a7c4c] mb-1 text-[11px]">JUMLAH (Total RAPB Rp) *</label>
                     <input
                       type="number"
                       required
@@ -4292,7 +4239,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                             <th className="p-2.5 w-24">Kode Pos *</th>
                             <th className="p-2.5 min-w-[200px]">Nama Program / Kegiatan *</th>
                             <th className="p-2.5 min-w-[140px]">Kategori Pos *</th>
-                            <th className="p-2.5 w-36 text-right">Pagu RAPB (Rp) *</th>
+                            <th className="p-2.5 w-36 text-right">Realita RAPB (Rp) *</th>
                             <th className="p-2.5 min-w-[160px]">Keterangan</th>
                             <th className="p-2.5 text-center w-12">Hapus</th>
                           </tr>
@@ -4339,7 +4286,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                                   step="50000"
                                   value={row.allocatedBudget}
                                   onChange={(e) => updateBulkRow(row.id, 'allocatedBudget', e.target.value)}
-                                  placeholder="Pagu Rp"
+                                  placeholder="Realita Rp"
                                   className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-right font-bold text-slate-900 text-xs focus:ring-1 focus:ring-[#8a7c4c]/50 focus:outline-none"
                                 />
                               </td>
@@ -4386,7 +4333,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                         {bulkRows.filter((r) => r.programName.trim().length > 0 && Number(r.allocatedBudget) > 0).length} Pos
                       </strong>
                       <span className="mx-2">•</span>
-                      <span>Total Pagu Tambahan: </span>
+                      <span>Total RAPB Tambahan: </span>
                       <strong className="text-emerald-700">
                         {formatIDR(
                           bulkRows
@@ -4410,7 +4357,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                       Anda bisa langsung menyalin beberapa baris kolom dari <strong>Microsoft Excel</strong>, <strong>Google Sheets</strong>, atau menulis baris teks dengan pemisah pipa (<code>|</code>), tab, atau titik koma (<code>;</code>).
                     </p>
                     <p className="font-mono text-[10px] text-[#8a7c4c]">
-                      Format: Kode Pos | Nama Program / Kegiatan | Pagu Anggaran (Rp) | Kategori | Keterangan
+                      Format: Kode Pos | Nama Program / Kegiatan | Realita Anggaran (Rp) | Kategori | Keterangan
                     </p>
                   </div>
 
@@ -4435,7 +4382,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                           Hasil Deteksi Parsing ({parsedPasteRows.filter((r) => r.isValid).length} Valid dari {parsedPasteRows.length} Baris):
                         </span>
                         <span className="text-emerald-700">
-                          Total Pagu: {formatIDR(parsedPasteRows.filter((r) => r.isValid).reduce((sum, r) => sum + r.allocatedBudget, 0))}
+                          Total RAPB: {formatIDR(parsedPasteRows.filter((r) => r.isValid).reduce((sum, r) => sum + r.allocatedBudget, 0))}
                         </span>
                       </div>
 
@@ -4447,7 +4394,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                               <th className="p-2 w-20">Kode Pos</th>
                               <th className="p-2">Nama Program</th>
                               <th className="p-2">Kategori</th>
-                              <th className="p-2 text-right">Pagu RAPB</th>
+                              <th className="p-2 text-right">Realita RAPB</th>
                               <th className="p-2 text-center w-20">Status</th>
                             </tr>
                           </thead>
@@ -4493,7 +4440,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                       {uploadedRapbFileName ? `Berkas Terpilih: ${uploadedRapbFileName}` : 'Pilih Berkas RAPB (.csv, .txt, .tsv, .json)'}
                     </span>
                     <span className="text-[11px] text-slate-500 mt-1 max-w-md">
-                      Unggah berkas spreadsheet/tabel Anda. Sistem akan langsung mengekstrak pos belanja dan pagu anggaran secara otomatis.
+                      Unggah berkas spreadsheet/tabel Anda. Sistem akan langsung mengekstrak pos belanja dan realita anggaran secara otomatis.
                     </span>
                     <label className="mt-4 inline-flex items-center space-x-2 px-4 py-2 bg-[#8a7c4c] hover:bg-[#6f633a] text-white font-extrabold rounded-xl text-xs transition shadow-2xs cursor-pointer">
                       <FileUp className="w-4 h-4" />
@@ -4515,7 +4462,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                           Hasil Ekstraksi ({parsedPasteRows.filter((r) => r.isValid).length} Pos Terdeteksi Siap Simpan):
                         </span>
                         <span className="text-emerald-700">
-                          Total Pagu Tambahan: {formatIDR(parsedPasteRows.filter((r) => r.isValid).reduce((sum, r) => sum + r.allocatedBudget, 0))}
+                          Total RAPB Tambahan: {formatIDR(parsedPasteRows.filter((r) => r.isValid).reduce((sum, r) => sum + r.allocatedBudget, 0))}
                         </span>
                       </div>
 
@@ -4527,7 +4474,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                               <th className="p-2 w-20">Kode Pos</th>
                               <th className="p-2">Nama Program</th>
                               <th className="p-2">Kategori</th>
-                              <th className="p-2 text-right">Pagu RAPB</th>
+                              <th className="p-2 text-right">Realita RAPB</th>
                               <th className="p-2 text-center w-20">Status</th>
                             </tr>
                           </thead>
@@ -4624,7 +4571,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
             <p className="text-xs text-slate-600 mt-2">
               Apakah Anda yakin ingin menghapus pos anggaran{' '}
               <strong className="text-slate-900 font-mono font-bold">{rapbToDelete.posCode}</strong> (
-              <span className="font-bold text-slate-800">{rapbToDelete.programName}</span>) dengan pagu{' '}
+              <span className="font-bold text-slate-800">{rapbToDelete.programName}</span>) dengan realita{' '}
               <strong className="text-[#8a7c4c] font-black">{formatIDR(rapbToDelete.allocatedBudget)}</strong>?
             </p>
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-2.5 mt-3 text-[11px] text-amber-800 text-left">
@@ -4662,10 +4609,10 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
             </div>
             <h3 className="text-base font-extrabold text-slate-900">Kosongkan Semua Pos RAPB?</h3>
             <p className="text-xs text-slate-600 mt-2">
-              Tindakan ini akan menghapus seluruh <strong className="text-slate-900">{rapbItems.length} pos anggaran</strong> yang saat ini terdaftar di tabel pagu.
+              Tindakan ini akan menghapus seluruh <strong className="text-slate-900">{rapbItems.length} pos anggaran</strong> yang saat ini terdaftar di tabel realita.
             </p>
             <div className="bg-rose-50 border border-rose-200 rounded-xl p-2.5 mt-3 text-[11px] text-rose-800 text-left">
-              ⚠️ <strong>Peringatan:</strong> Data pagu akan dikosongkan. Anda dapat mengimpor kembali melalui berkas Excel/CSV atau menambah pos baru kapan saja.
+              ⚠️ <strong>Peringatan:</strong> Data realita akan dikosongkan. Anda dapat mengimpor kembali melalui berkas Excel/CSV atau menambah pos baru kapan saja.
             </div>
             <div className="flex items-center justify-center space-x-3 mt-5">
               <button

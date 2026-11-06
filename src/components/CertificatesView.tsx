@@ -7,6 +7,7 @@ import { ContentHeader } from './ContentHeader';
 import { CollapsibleSection } from './CollapsibleSection';
 import { MiladLogo } from './MiladLogo';
 import { LogoManagerModal } from './LogoManagerModal';
+import { OFFICIAL_SIGNATORIES } from '../utils/signatories';
 
 export const AWARD_LETTER_OPTIONS = [
   'Penghargaan Khidmah (Ranting)',
@@ -39,9 +40,9 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
   const [issueDate, setIssueDate] = useState<string>('22 Juli 2026');
   const [certNumber, setCertNumber] = useState<string>('084/SIE-ANUGERAH/2026');
   const [signatory1, setSignatory1] = useState<string>('H. Ahmad Arif Bahruddin');
-  const [signatory1Role, setSignatory1Role] = useState<string>('Ketua');
-  const [signatory2, setSignatory2] = useState<string>('Muhammad Sofyan Sauri');
-  const [signatory2Role, setSignatory2Role] = useState<string>('Sekretaris');
+  const [signatory1Role, setSignatory1Role] = useState<string>('Ketua Milad');
+  const [signatory2, setSignatory2] = useState<string>('Abdul Majid');
+  const [signatory2Role, setSignatory2Role] = useState<string>('Admin Sie Penganugerahan');
 
   // Display toggles
   const [showKopHeader, setShowKopHeader] = useState<boolean>(true);
@@ -327,23 +328,79 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ nominations,
           </div>
 
           <div>
-            <label className="block font-bold text-slate-700 mb-1">Penandatangan 1 (Ketua)</label>
-            <input
-              type="text"
-              value={signatory1}
-              onChange={(e) => setSignatory1(e.target.value)}
-              className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none"
-            />
+            <label className="block font-bold text-slate-700 mb-1">Penandatangan 1</label>
+            <select
+              value={OFFICIAL_SIGNATORIES.find((s) => s.name === signatory1)?.id || 'custom'}
+              onChange={(e) => {
+                const found = OFFICIAL_SIGNATORIES.find((s) => s.id === e.target.value);
+                if (found) {
+                  setSignatory1(found.name);
+                  setSignatory1Role(found.role);
+                }
+              }}
+              className="w-full mb-1.5 px-3 py-1.5 bg-white border border-slate-300 rounded-xl text-slate-900 text-xs font-semibold focus:outline-none cursor-pointer"
+            >
+              <option value="custom">-- Pilih Jabatan / Nama Resmi --</option>
+              {OFFICIAL_SIGNATORIES.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.role} : {s.name}
+                </option>
+              ))}
+            </select>
+            <div className="grid grid-cols-2 gap-1.5">
+              <input
+                type="text"
+                placeholder="Jabatan"
+                value={signatory1Role}
+                onChange={(e) => setSignatory1Role(e.target.value)}
+                className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-medium focus:outline-none"
+              />
+              <input
+                type="text"
+                placeholder="Nama Lengkap"
+                value={signatory1}
+                onChange={(e) => setSignatory1(e.target.value)}
+                className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-bold focus:outline-none"
+              />
+            </div>
           </div>
 
           <div>
-            <label className="block font-bold text-slate-700 mb-1">Penandatangan 2 (Sekretaris)</label>
-            <input
-              type="text"
-              value={signatory2}
-              onChange={(e) => setSignatory2(e.target.value)}
-              className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none"
-            />
+            <label className="block font-bold text-slate-700 mb-1">Penandatangan 2</label>
+            <select
+              value={OFFICIAL_SIGNATORIES.find((s) => s.name === signatory2)?.id || 'custom'}
+              onChange={(e) => {
+                const found = OFFICIAL_SIGNATORIES.find((s) => s.id === e.target.value);
+                if (found) {
+                  setSignatory2(found.name);
+                  setSignatory2Role(found.role);
+                }
+              }}
+              className="w-full mb-1.5 px-3 py-1.5 bg-white border border-slate-300 rounded-xl text-slate-900 text-xs font-semibold focus:outline-none cursor-pointer"
+            >
+              <option value="custom">-- Pilih Jabatan / Nama Resmi --</option>
+              {OFFICIAL_SIGNATORIES.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.role} : {s.name}
+                </option>
+              ))}
+            </select>
+            <div className="grid grid-cols-2 gap-1.5">
+              <input
+                type="text"
+                placeholder="Jabatan"
+                value={signatory2Role}
+                onChange={(e) => setSignatory2Role(e.target.value)}
+                className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-medium focus:outline-none"
+              />
+              <input
+                type="text"
+                placeholder="Nama Lengkap"
+                value={signatory2}
+                onChange={(e) => setSignatory2(e.target.value)}
+                className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-bold focus:outline-none"
+              />
+            </div>
           </div>
         </div>
       </div>
