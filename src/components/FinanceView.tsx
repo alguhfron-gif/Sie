@@ -69,6 +69,7 @@ import ExcelJS from 'exceljs';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { MiladLogo } from './MiladLogo';
+import { useModalBackHandler } from '../utils/useModalBackHandler';
 
 interface FinanceViewProps {
   transactions: Transaction[];
@@ -215,6 +216,11 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
   const [selectedProofTrx, setSelectedProofTrx] = useState<Transaction | null>(null);
   const [isFormPhotoPreviewOpen, setIsFormPhotoPreviewOpen] = useState(false);
 
+  // LPJ View Mobile Display Modes ('cards' for optimized mobile card view, 'table' for horizontally scrollable table)
+  const [lpjKasMobileMode, setLpjKasMobileMode] = useState<'cards' | 'table'>('cards');
+  const [lpjCatMobileMode, setLpjCatMobileMode] = useState<'cards' | 'table'>('cards');
+  const [lpjPencairanMobileMode, setLpjPencairanMobileMode] = useState<'cards' | 'table'>('cards');
+
   // Anti-double-submit locks
   const isSubmittingRef = useRef(false);
   const isSavingPemasukanRef = useRef(false);
@@ -301,7 +307,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
     }
   }, [isLiveCameraOpen, cameraStream]);
 
-  // Saldo Kas Fisik (Penerimaan / Top-Up Kas) State
+  // Saldo Anggaran (Penerimaan / Top-Up Kas) State
   const [isAddPemasukanModalOpen, setIsAddPemasukanModalOpen] = useState(false);
   const [showPemasukanListModal, setShowPemasukanListModal] = useState(false);
   const [pemasukanAmount, setPemasukanAmount] = useState<number | string>(1000000);
@@ -345,71 +351,20 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [bulkSuccessNotice, setBulkSuccessNotice] = useState<string | null>(null);
 
-  // Mobile Back-Gesture Handler (Swipe-from-edge & Tombol Back HP)
-  // Menjaga agar gesture kembali di HP menutup modal aktif, BUKAN menutup/keluar dari aplikasi!
-  useEffect(() => {
-    const isAnyModalOpen =
-      isFormPhotoPreviewOpen ||
-      Boolean(selectedProofTrx) ||
-      isModalOpen ||
-      isAddPemasukanModalOpen ||
-      showPemasukanListModal ||
-      isImportModalOpen ||
-      isBulkRapbModalOpen ||
-      isRapbModalOpen ||
-      Boolean(trxToDelete) ||
-      Boolean(rapbToDelete) ||
-      showClearAllConfirm;
-
-    if (!isAnyModalOpen) return;
-
-    // Push checkpoint ke browser history
-    window.history.pushState({ sieModalActive: true }, '');
-
-    const handlePopState = () => {
-      // Prioritas penutupan bertingkat saat user swipe kembali di tepi layar HP
-      if (isFormPhotoPreviewOpen) {
-        setIsFormPhotoPreviewOpen(false);
-      } else if (selectedProofTrx) {
-        setSelectedProofTrx(null);
-      } else if (showClearAllConfirm) {
-        setShowClearAllConfirm(false);
-      } else if (trxToDelete) {
-        setTrxToDelete(null);
-      } else if (rapbToDelete) {
-        setRapbToDelete(null);
-      } else if (showPemasukanListModal) {
-        setShowPemasukanListModal(false);
-      } else if (isAddPemasukanModalOpen) {
-        setIsAddPemasukanModalOpen(false);
-      } else if (isImportModalOpen) {
-        setIsImportModalOpen(false);
-      } else if (isBulkRapbModalOpen) {
-        setIsBulkRapbModalOpen(false);
-      } else if (isRapbModalOpen) {
-        setIsRapbModalOpen(false);
-      } else if (isModalOpen) {
-        closeModal();
-      }
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-    };
-  }, [
-    isFormPhotoPreviewOpen,
-    selectedProofTrx,
-    isModalOpen,
-    isAddPemasukanModalOpen,
-    showPemasukanListModal,
-    isImportModalOpen,
-    isBulkRapbModalOpen,
-    isRapbModalOpen,
-    trxToDelete,
-    rapbToDelete,
-    showClearAllConfirm,
-  ]);
+  // Mobile Back-Gesture & Hardware Back Button handlers (Swipe-from-edge)
+  // Menjamin swipe-kembali di tepi layar HP menutup modal/pratinjau aktif dan TIDAK menutup aplikasi!
+  useModalBackHandler(showPrintReport, () => setShowPrintReport(false), 'lpj-preview');
+  useModalBackHandler(isFormPhotoPreviewOpen, () => setIsFormPhotoPreviewOpen(false), 'form-photo-modal');
+  useModalBackHandler(Boolean(selectedProofTrx), () => setSelectedProofTrx(null), 'proof-modal');
+  useModalBackHandler(isModalOpen, () => closeModal(), 'transaction-modal');
+  useModalBackHandler(isAddPemasukanModalOpen, () => setIsAddPemasukanModalOpen(false), 'add-pemasukan-modal');
+  useModalBackHandler(showPemasukanListModal, () => setShowPemasukanListModal(false), 'pemasukan-list-modal');
+  useModalBackHandler(isImportModalOpen, () => setIsImportModalOpen(false), 'import-rapb-modal');
+  useModalBackHandler(isBulkRapbModalOpen, () => setIsBulkRapbModalOpen(false), 'bulk-rapb-modal');
+  useModalBackHandler(isRapbModalOpen, () => setIsRapbModalOpen(false), 'rapb-form-modal');
+  useModalBackHandler(Boolean(trxToDelete), () => setTrxToDelete(null), 'delete-trx-modal');
+  useModalBackHandler(Boolean(rapbToDelete), () => setRapbToDelete(null), 'delete-rapb-modal');
+  useModalBackHandler(showClearAllConfirm, () => setShowClearAllConfirm(false), 'clear-all-rapb-modal');
 
   // Format Rupiah
   const formatIDR = (val: number) => {
@@ -664,7 +619,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
     if (galleryInputRef.current) galleryInputRef.current.value = '';
   };
 
-  // Simpan Penambahan Saldo Kas Fisik (Penerimaan / Top-Up Kas) langsung ke Firestore
+  // Simpan Penambahan Saldo Anggaran (Penerimaan / Top-Up Kas) langsung ke Firestore
   const handleSavePemasukan = async (e: React.FormEvent) => {
     e.preventDefault();
     const numAmount = typeof pemasukanAmount === 'number' ? pemasukanAmount : parseFloat(pemasukanAmount) || 0;
@@ -690,7 +645,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
         date: pemasukanDate || new Date().toISOString().split('T')[0],
         recipient: pemasukanPenerima.trim() || currentUser?.name || 'Bendahara Sie Penganugerahan',
         notes: `Penyetor: ${pemasukanPenyetor.trim() || 'Bendahara Umum'}${pemasukanNotes ? ` • ${pemasukanNotes.trim()}` : ''}`,
-        programName: 'Penerimaan Saldo Kas Fisik',
+        programName: 'Penerimaan Saldo Anggaran',
         receiptNumber: `KAS-IN-${Date.now().toString().slice(-4)}`,
         proofUrl: '',
       };
@@ -1221,10 +1176,10 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
       autoTable(doc, {
         startY: currentY,
         margin: { left: 14, right: 14 },
-        head: [['RINGKASAN METRIK ANGGARAN & KAS FISIK', '', '', '']],
+        head: [['RINGKASAN METRIK ANGGARAN & SALDO', '', '', '']],
         body: [
-          ['Total RAPB', formatIDR(totalPaguRapb), 'Total Penerimaan Kas', formatIDR(totalPemasukan)],
-          ['Total Penggunaan Anggaran', formatIDR(totalPengeluaran), 'Sisa Kas Fisik', formatIDR(saldoSisa)],
+          ['Total RAPB', formatIDR(totalPaguRapb), 'Total Penerimaan Anggaran', formatIDR(totalPemasukan)],
+          ['Total Penggunaan Anggaran', formatIDR(totalPengeluaran), 'Sisa Anggaran', formatIDR(saldoSisa)],
           ['Sisa Anggaran Pembelanjaan', formatIDR(totalSisaRapb), 'Persentase Serapan', `${totalRapbPenyerapan.toFixed(1)}%`],
         ],
         theme: 'grid',
@@ -1375,11 +1330,75 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
         currentY = 16;
       }
 
-      // 6. BAGIAN III: RINCIAN BUKU KAS PENGELUARAN
+      // 6. BAGIAN III: REKAPITULASI RIWAYAT PENAMBAHAN SALDO (PENCAIRAN ANGGARAN)
       doc.setFontSize(9.5);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(36, 33, 28);
-      doc.text('III. Rincian Buku Kas Transaksi Pengeluaran & Pembelanjaan', 14, currentY);
+      doc.text('III. Rekapitulasi Riwayat Penambahan Saldo (Pencairan Anggaran)', 14, currentY);
+      currentY += 3;
+
+      const pencairanList = transactions
+        .filter((t) => t.type === 'pemasukan')
+        .slice()
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+      const pencairanRows: any[] = pencairanList.length === 0
+        ? [['-', '-', '-', 'Belum ada data pencairan anggaran', '-', formatIDR(0)]]
+        : pencairanList.map((t, idx) => [
+            `Pencairan #${idx + 1}`,
+            t.date,
+            t.receiptNumber || '-',
+            t.title,
+            t.recipient || '-',
+            formatIDR(t.amount),
+          ]);
+
+      pencairanRows.push([
+        '',
+        '',
+        '',
+        'TOTAL PENERIMAAN ANGGARAN',
+        '',
+        formatIDR(totalPemasukan),
+      ]);
+
+      autoTable(doc, {
+        startY: currentY,
+        margin: { left: 14, right: 14 },
+        head: [['No. Pencairan', 'Tanggal / Waktu', 'No. Bukti', 'Sumber / Uraian Pencairan', 'Penyetor / Penerima', 'Nominal Pencairan (Rp)']],
+        body: pencairanRows,
+        theme: 'grid',
+        styles: { fontSize: 7, cellPadding: 1.5, textColor: [36, 33, 28] },
+        headStyles: { fillColor: [16, 110, 75], textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' },
+        columnStyles: {
+          0: { halign: 'center', cellWidth: 24, fontStyle: 'bold' },
+          1: { halign: 'center', cellWidth: 22 },
+          2: { halign: 'center', cellWidth: 22 },
+          3: { cellWidth: 54 },
+          4: { cellWidth: 32 },
+          5: { halign: 'right', cellWidth: 28, fontStyle: 'bold' },
+        },
+        didParseCell: (data) => {
+          if (data.row.index === pencairanRows.length - 1) {
+            data.cell.styles.fontStyle = 'bold';
+            data.cell.styles.fillColor = [236, 253, 245];
+          }
+        },
+      });
+
+      currentY = (doc as any).lastAutoTable.finalY + 8;
+
+      // Check if need new page
+      if (currentY > pageHeight - 65) {
+        doc.addPage();
+        currentY = 16;
+      }
+
+      // 7. BAGIAN IV: RINCIAN BUKU KAS PENGELUARAN
+      doc.setFontSize(9.5);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(36, 33, 28);
+      doc.text('IV. Rincian Buku Kas Transaksi Pengeluaran & Pembelanjaan', 14, currentY);
       currentY += 3;
 
       const pengeluaranList = transactions.filter((t) => t.type === 'pengeluaran');
@@ -1700,14 +1719,14 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
       sheet1.addRow([]);
 
       // Ringkasan Metrics
-      const rowMetricsTitle = sheet1.addRow(['RINGKASAN ANGGARAN & KAS FISIK']);
+      const rowMetricsTitle = sheet1.addRow(['RINGKASAN ANGGARAN & SALDO']);
       rowMetricsTitle.getCell(1).font = { bold: true, size: 11, color: { argb: 'FF8A7C4C' } };
 
-      const r1 = sheet1.addRow(['Total RAPB', totalPaguRapb, '', 'Total Penerimaan Kas', totalPemasukan]);
+      const r1 = sheet1.addRow(['Total RAPB', totalPaguRapb, '', 'Total Penerimaan Anggaran', totalPemasukan]);
       r1.getCell(2).numFmt = '#,##0';
       r1.getCell(5).numFmt = '#,##0';
 
-      const r2 = sheet1.addRow(['Total Penggunaan Anggaran', totalPengeluaran, '', 'Sisa Kas Fisik', saldoSisa]);
+      const r2 = sheet1.addRow(['Total Penggunaan Anggaran', totalPengeluaran, '', 'Sisa Anggaran', saldoSisa]);
       r2.getCell(2).numFmt = '#,##0';
       r2.getCell(5).numFmt = '#,##0';
 
@@ -1960,22 +1979,23 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
       });
 
       // ==========================================
-      // SHEET 3: BUKU KAS PENERIMAAN
+      // SHEET 3: BUKU KAS PENERIMAAN / RIWAYAT PENAMBAHAN SALDO
       // ==========================================
-      const sheet3 = workbook.addWorksheet('Buku Kas Penerimaan', {
+      const sheet3 = workbook.addWorksheet('Riwayat Pencairan Anggaran', {
         views: [{ showGridLines: true }],
       });
 
-      sheet3.addRow(['BUKU KAS PENERIMAAN / SALDO MASUK']).getCell(1).font = { bold: true, size: 12 };
+      sheet3.addRow(['BUKU KAS PENERIMAAN / RIWAYAT PENAMBAHAN SALDO ANGGARAN']).getCell(1).font = { bold: true, size: 12 };
       sheet3.addRow([]);
 
       const inHeaderRow = sheet3.addRow([
         'NO',
+        'URUTAN PENCAIRAN',
         'TANGGAL',
         'NO. BUKTI',
-        'SUMBER DANA / URAIAN',
+        'SUMBER DANA / URAIAN PENCAIRAN',
         'PENYETOR / PENERIMA',
-        'NOMINAL DITERIMA (Rp)',
+        'NOMINAL PENCAIRAN (Rp)',
         'CATATAN',
       ]);
       inHeaderRow.eachCell((cell) => {
@@ -1994,10 +2014,15 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
         };
       });
 
-      const pemasukanList = transactions.filter((t) => t.type === 'pemasukan');
+      const pemasukanList = transactions
+        .filter((t) => t.type === 'pemasukan')
+        .slice()
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
       pemasukanList.forEach((t, idx) => {
         const row = sheet3.addRow([
           idx + 1,
+          `Pencairan #${idx + 1}`,
           t.date,
           t.receiptNumber || '-',
           t.title,
@@ -2009,7 +2034,8 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
         row.getCell(1).alignment = { horizontal: 'center' };
         row.getCell(2).alignment = { horizontal: 'center' };
         row.getCell(3).alignment = { horizontal: 'center' };
-        row.getCell(6).numFmt = '#,##0';
+        row.getCell(4).alignment = { horizontal: 'center' };
+        row.getCell(7).numFmt = '#,##0';
 
         row.eachCell((cell) => {
           cell.border = {
@@ -2025,7 +2051,8 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
         '',
         '',
         '',
-        'TOTAL PENERIMAAN KAS',
+        '',
+        'TOTAL PENERIMAAN ANGGARAN',
         '',
         totalPemasukan,
         '',
@@ -2035,10 +2062,10 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
         cell.fill = {
           type: 'pattern',
           pattern: 'solid',
-          fgColor: { argb: 'FFF3F4F6' },
+          fgColor: { argb: 'FFE6F4EA' },
         };
       });
-      totalInRow.getCell(6).numFmt = '#,##0';
+      totalInRow.getCell(7).numFmt = '#,##0';
 
       sheet3.columns.forEach((column) => {
         let maxLen = 12;
@@ -2602,17 +2629,29 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
       {showPrintReport ? (
         <div className="bg-white rounded-3xl border border-[rgba(36,33,28,0.15)] p-6 sm:p-10 shadow-sm text-slate-800 space-y-8 max-w-5xl mx-auto print:m-0 print:p-0 print:border-none print:shadow-none print:max-w-none">
           {/* Action Bar (Hidden when printing) */}
-          <div className="flex items-center justify-between border-b pb-4 border-slate-200 print:hidden">
-            <div className="flex items-center space-x-2">
-              <span className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-xs font-bold text-slate-600">Mode Pratinjau Laporan Pertanggungjawaban (LPJ) Resmi</span>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4 border-slate-200 print:hidden">
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setShowPrintReport(false)}
+                className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 font-bold rounded-xl text-xs transition cursor-pointer flex items-center space-x-1.5 border border-slate-300 shadow-2xs"
+                title="Kembali ke tampilan aplikasi (atau geser layar ke kanan)"
+              >
+                <ArrowLeft className="w-4 h-4 text-[#8a7c4c]" />
+                <span>Kembali ke Aplikasi</span>
+              </button>
+              <div className="flex sm:hidden items-center space-x-1.5 text-[11px] font-bold text-slate-500">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Pratinjau LPJ</span>
+              </div>
             </div>
+
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={handleDownloadLpjPdf}
                 disabled={isGeneratingPdf}
-                className="px-4 py-2 bg-rose-700 hover:bg-rose-800 disabled:opacity-50 active:scale-95 text-white font-extrabold rounded-xl text-xs flex items-center space-x-2 shadow-xs transition cursor-pointer"
+                className="flex-1 sm:flex-initial px-3.5 py-2 bg-rose-700 hover:bg-rose-800 disabled:opacity-50 active:scale-95 text-white font-extrabold rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow-xs transition cursor-pointer"
                 title="Unduh langsung berkas file PDF (.pdf) resmi ke HP / komputer"
               >
                 {isGeneratingPdf ? (
@@ -2626,7 +2665,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
               <button
                 type="button"
                 onClick={handlePrintLpjAction}
-                className="px-4 py-2 bg-[#8a7c4c] hover:bg-[#6f633a] active:scale-95 text-white font-extrabold rounded-xl text-xs flex items-center space-x-2 shadow-xs transition cursor-pointer"
+                className="flex-1 sm:flex-initial px-3.5 py-2 bg-[#8a7c4c] hover:bg-[#6f633a] active:scale-95 text-white font-extrabold rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow-xs transition cursor-pointer"
                 title="Buka dialog cetak browser atau simpan PDF melalui printer virtual"
               >
                 <Printer className="w-4 h-4" />
@@ -2637,7 +2676,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                 type="button"
                 onClick={handleExportLpjExcel}
                 disabled={isExportingLpjExcel}
-                className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 active:scale-95 text-white font-extrabold rounded-xl text-xs flex items-center space-x-2 shadow-xs transition cursor-pointer"
+                className="flex-1 sm:flex-initial px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 active:scale-95 text-white font-extrabold rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow-xs transition cursor-pointer"
                 title="Unduh seluruh data LPJ dalam format file Excel (.xlsx)"
               >
                 {isExportingLpjExcel ? (
@@ -2646,15 +2685,6 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                   <FileSpreadsheet className="w-4 h-4" />
                 )}
                 <span>Unduh Versi Excel (.xlsx)</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setShowPrintReport(false)}
-                className="px-4 py-2 border border-slate-300 text-slate-700 font-bold rounded-xl text-xs hover:bg-slate-100 transition cursor-pointer flex items-center space-x-1.5"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Kembali ke Aplikasi</span>
               </button>
             </div>
           </div>
@@ -2693,7 +2723,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
               <p className="text-sm font-black text-slate-900">{formatIDR(totalPaguRapb)}</p>
             </div>
             <div>
-              <p className="text-slate-500 font-medium">Total Penerimaan Kas:</p>
+              <p className="text-slate-500 font-medium">Total Penerimaan Anggaran:</p>
               <p className="text-sm font-black text-emerald-700">{formatIDR(totalPemasukan)}</p>
             </div>
             <div>
@@ -2701,19 +2731,24 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
               <p className="text-sm font-black text-rose-700">{formatIDR(totalPengeluaran)}</p>
             </div>
             <div>
-              <p className="text-slate-500 font-medium">Sisa Kas Fisik:</p>
+              <p className="text-slate-500 font-medium">Sisa Anggaran:</p>
               <p className="text-sm font-black text-[#8a7c4c]">{formatIDR(saldoSisa)}</p>
             </div>
           </div>
 
           {/* BAGIAN 1: TABEL REKAPITULASI MONITORING RAPB */}
           <div className="space-y-2">
-            <h3 className="font-extrabold text-xs sm:text-sm text-slate-900 uppercase tracking-wide flex items-center space-x-2">
-              <span className="w-2 h-2 rounded-full bg-[#8a7c4c]" />
-              <span>I. Rekapitulasi Realisasi Realita Anggaran (RAPB) per Program</span>
-            </h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-[10.5px] text-left border-collapse border border-slate-300 print:text-[10px]">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+              <h3 className="font-extrabold text-xs sm:text-sm text-slate-900 uppercase tracking-wide flex items-center space-x-2">
+                <span className="w-2 h-2 rounded-full bg-[#8a7c4c]" />
+                <span>I. Rekapitulasi Realisasi Realita Anggaran (RAPB) per Program</span>
+              </h3>
+              <span className="text-[10px] text-slate-500 sm:hidden italic">
+                👉 Geser tabel ke samping untuk melihat seluruh rincian
+              </span>
+            </div>
+            <div className="overflow-x-auto border border-slate-300 rounded-xl shadow-2xs">
+              <table className="w-full min-w-[840px] text-[10.5px] text-left border-collapse border border-slate-300 print:text-[10px]">
                 <thead>
                   <tr className="bg-slate-100 text-slate-900 font-black border-b border-slate-300 text-center">
                     <th className="p-2 border border-slate-300 w-8">No</th>
@@ -2817,13 +2852,110 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
           </div>
 
           {/* BAGIAN 2: TABEL REKAPITULASI REALISASI PER KATEGORI AKUN INDUK */}
-          <div className="space-y-2 pt-2">
-            <h3 className="font-extrabold text-xs sm:text-sm text-slate-900 uppercase tracking-wide flex items-center space-x-2">
-              <span className="w-2 h-2 rounded-full bg-[#8a7c4c]" />
-              <span>II. Rekapitulasi Realisasi Realita per Kategori Akun (5 Pos Induk)</span>
-            </h3>
-            <div className="overflow-x-auto border border-slate-300">
-              <table className="w-full text-[11px] text-left border-collapse border border-slate-300">
+          <div className="space-y-3 pt-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <h3 className="font-extrabold text-xs sm:text-sm text-slate-900 uppercase tracking-wide flex items-center space-x-2">
+                <span className="w-2 h-2 rounded-full bg-[#8a7c4c]" />
+                <span>II. Rekapitulasi Realisasi Realita per Kategori Akun (5 Pos Induk)</span>
+              </h3>
+              {/* Mobile View Toggle */}
+              <div className="flex sm:hidden items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 self-start text-[11px] font-bold">
+                <button
+                  type="button"
+                  onClick={() => setLpjCatMobileMode('cards')}
+                  className={`px-2.5 py-1 rounded-md transition ${
+                    lpjCatMobileMode === 'cards'
+                      ? 'bg-white text-slate-900 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-900'
+                  }`}
+                >
+                  Kartu HP
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLpjCatMobileMode('table')}
+                  className={`px-2.5 py-1 rounded-md transition ${
+                    lpjCatMobileMode === 'table'
+                      ? 'bg-white text-slate-900 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-900'
+                  }`}
+                >
+                  Tabel Geser
+                </button>
+              </div>
+            </div>
+
+            {/* A. MOBILE CARDS (Khusus Layar HP) */}
+            <div className={`sm:hidden space-y-2.5 print:hidden ${lpjCatMobileMode === 'cards' ? 'block' : 'hidden'}`}>
+              {categoryStats.map((catStat) => (
+                <div key={catStat.category} className="bg-white border border-slate-300 rounded-2xl p-3.5 shadow-2xs space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center space-x-2">
+                      <span className="w-5 h-5 rounded-full bg-[#8a7c4c]/15 text-[#8a7c4c] font-black text-[10px] flex items-center justify-center">
+                        {catStat.number}
+                      </span>
+                      <h4 className="font-extrabold text-xs text-slate-900">{catStat.category}</h4>
+                    </div>
+                    <span
+                      className={`inline-block px-2 py-0.5 rounded text-[9.5px] font-bold shrink-0 ${
+                        catStat.remaining < 0
+                          ? 'text-rose-700 bg-rose-50 border border-rose-200'
+                          : catStat.percentageUsed >= 85
+                          ? 'text-amber-700 bg-amber-50 border border-amber-200'
+                          : 'text-emerald-700 bg-emerald-50 border border-emerald-200'
+                      }`}
+                    >
+                      {catStat.statusText}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-1.5 text-center text-[10px] bg-slate-50 p-2 rounded-xl">
+                    <div>
+                      <span className="text-slate-400 block text-[9px] uppercase">Realita</span>
+                      <span className="font-bold text-slate-800">{formatIDR(catStat.pagu)}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[9px] uppercase">Realisasi</span>
+                      <span className="font-black text-rose-700">{formatIDR(catStat.spent)}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[9px] uppercase">Sisa Dana</span>
+                      <span className={`font-black ${catStat.remaining < 0 ? 'text-rose-600' : 'text-emerald-700'}`}>
+                        {formatIDR(catStat.remaining)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Serapan Progress Bar */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[10px] text-slate-600 font-semibold">
+                      <span>Serapan Anggaran</span>
+                      <span>{catStat.percentageUsed.toFixed(1)}%</span>
+                    </div>
+                    <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${
+                          catStat.percentageUsed > 100
+                            ? 'bg-rose-600'
+                            : catStat.percentageUsed >= 85
+                            ? 'bg-amber-500'
+                            : 'bg-[#8a7c4c]'
+                        }`}
+                        style={{ width: `${Math.min(100, Math.max(0, catStat.percentageUsed))}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* B. FORMAL TABLE VIEW (Desktop, Print & Mobile saat mode 'table') */}
+            <div
+              className={`overflow-x-auto border border-slate-300 rounded-xl shadow-2xs ${
+                lpjCatMobileMode === 'table' ? 'block' : 'hidden sm:block'
+              } print:block`}
+            >
+              <table className="w-full min-w-[650px] text-[11px] text-left border-collapse border border-slate-300">
                 <thead>
                   <tr className="bg-slate-100 text-slate-900 font-black border-b border-slate-300 text-center">
                     <th className="p-2 border border-slate-300 w-8">No</th>
@@ -2914,68 +3046,342 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
             </div>
           </div>
 
-          {/* BAGIAN 3: TABEL RINCIAN TRANSAKSI PENGELUARAN KAS */}
-          <div className="space-y-2 pt-2">
-            <h3 className="font-extrabold text-xs sm:text-sm text-slate-900 uppercase tracking-wide flex items-center space-x-2">
-              <span className="w-2 h-2 rounded-full bg-[#8a7c4c]" />
-              <span>III. Rincian Buku Kas Transaksi Pengeluaran & Pembelanjaan</span>
-            </h3>
-            <table className="w-full text-[11px] text-left border-collapse border border-slate-300">
-              <thead>
-                <tr className="bg-slate-100 text-slate-900 font-black border-b border-slate-300 text-center">
-                  <th className="p-2 border border-slate-300 w-8">No</th>
-                  <th className="p-2 border border-slate-300 w-20">Tanggal</th>
-                  <th className="p-2 border border-slate-300 w-20">No. Nota</th>
-                  <th className="p-2 border border-slate-300 w-16">Pos</th>
-                  <th className="p-2 border border-slate-300 text-left">Uraian / Kegiatan</th>
-                  <th className="p-2 border border-slate-300 text-left">Penerima / Toko</th>
-                  <th className="p-2 border border-slate-300 text-center w-20">Qty & Satuan</th>
-                  <th className="p-2 border border-slate-300 text-right w-24">Jumlah (Rp)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {transactions
-                  .filter((t) => t.type === 'pengeluaran')
-                  .map((t, idx) => (
-                    <tr key={t.id} className="border-b border-slate-200">
-                      <td className="p-2 border border-slate-300 text-center">{idx + 1}</td>
-                      <td className="p-2 border border-slate-300 text-center font-mono text-[10px]">{t.date}</td>
-                      <td className="p-2 border border-slate-300 text-center font-mono font-bold text-[#8a7c4c]">
-                        {t.receiptNumber || '-'}
-                      </td>
-                      <td className="p-2 border border-slate-300 text-center font-bold text-slate-700">
-                        {t.posCode || '-'}
-                      </td>
-                      <td className="p-2 border border-slate-300 font-medium">
-                        <span className="font-bold text-slate-900">{t.title}</span>
-                        {t.programName && t.programName !== t.title && (
-                          <span className="block text-[10px] text-slate-500 italic">{t.programName}</span>
-                        )}
-                        {t.notes && <span className="block text-[10px] text-slate-600">Ket: {t.notes}</span>}
-                      </td>
-                      <td className="p-2 border border-slate-300 text-slate-800 font-medium">
-                        {t.recipient || '-'}
-                      </td>
-                      <td className="p-2 border border-slate-300 text-center text-slate-700">
-                        {t.qty !== undefined ? `${t.qty} ${t.unit || ''}` : '-'}
-                      </td>
-                      <td className="p-2 border border-slate-300 text-right font-black text-rose-700">
-                        {formatIDR(t.amount)}
+          {/* BAGIAN III: REKAPITULASI RIWAYAT PENAMBAHAN SALDO & PENCAIRAN ANGGARAN */}
+          <div className="space-y-3 pt-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <h3 className="font-extrabold text-xs sm:text-sm text-slate-900 uppercase tracking-wide flex items-center space-x-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-600" />
+                <span>III. Riwayat Penambahan Saldo & Pencairan Anggaran</span>
+              </h3>
+              {/* Mobile View Toggle */}
+              <div className="flex sm:hidden items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 self-start text-[11px] font-bold">
+                <button
+                  type="button"
+                  onClick={() => setLpjPencairanMobileMode('cards')}
+                  className={`px-2.5 py-1 rounded-md transition ${
+                    lpjPencairanMobileMode === 'cards'
+                      ? 'bg-white text-slate-900 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-900'
+                  }`}
+                >
+                  Kartu HP (Rapi)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLpjPencairanMobileMode('table')}
+                  className={`px-2.5 py-1 rounded-md transition ${
+                    lpjPencairanMobileMode === 'table'
+                      ? 'bg-white text-slate-900 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-900'
+                  }`}
+                >
+                  Tabel Geser
+                </button>
+              </div>
+            </div>
+
+            {/* A. MOBILE CARDS VIEW (Khusus Layar HP saat mode 'cards') */}
+            <div
+              className={`space-y-2.5 ${
+                lpjPencairanMobileMode === 'cards' ? 'block sm:hidden' : 'hidden'
+              } print:hidden`}
+            >
+              {transactions.filter((t) => t.type === 'pemasukan').length === 0 ? (
+                <div className="p-4 text-center text-xs text-slate-500 bg-slate-50 rounded-xl border border-dashed border-slate-300">
+                  Belum ada riwayat penambahan saldo / pencairan anggaran
+                </div>
+              ) : (
+                transactions
+                  .filter((t) => t.type === 'pemasukan')
+                  .slice()
+                  .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                  .map((trx, idx) => (
+                    <div
+                      key={trx.id}
+                      className="bg-white p-3.5 rounded-xl border border-emerald-200 shadow-2xs space-y-2"
+                    >
+                      <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                        <div className="flex items-center space-x-1.5">
+                          <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[10.5px] font-black">
+                            Pencairan #{idx + 1}
+                          </span>
+                          <span className="text-[11px] font-medium text-slate-500">
+                            {trx.date}
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-mono font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
+                          {trx.receiptNumber || '-'}
+                        </span>
+                      </div>
+
+                      <div className="space-y-1">
+                        <p className="font-bold text-xs text-slate-900">{trx.title}</p>
+                        <div className="text-[11px] text-slate-600 flex flex-wrap gap-x-3 gap-y-0.5">
+                          <span>
+                            <strong className="text-slate-700">Penyetor/Penerima:</strong>{' '}
+                            {trx.recipient || trx.notes || '-'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1 border-t border-dashed border-slate-200">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                          Nominal Pencairan
+                        </span>
+                        <span className="text-xs font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 font-mono">
+                          +{formatIDR(trx.amount)}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+              )}
+
+              {/* Card Ringkasan Total Penerimaan Anggaran di HP */}
+              <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-300 flex items-center justify-between text-xs font-black text-emerald-950">
+                <span>TOTAL PENERIMAAN ANGGARAN</span>
+                <span className="text-sm font-mono text-emerald-800">{formatIDR(totalPemasukan)}</span>
+              </div>
+            </div>
+
+            {/* B. FORMAL TABLE VIEW (Desktop, Print & Mobile saat mode 'table') */}
+            <div
+              className={`overflow-x-auto border border-slate-300 rounded-xl shadow-2xs ${
+                lpjPencairanMobileMode === 'table' ? 'block' : 'hidden sm:block'
+              } print:block`}
+            >
+              <table className="w-full min-w-[700px] text-[10.5px] text-left border-collapse border border-slate-300">
+                <thead>
+                  <tr className="bg-emerald-800 text-white font-black border-b border-slate-300 text-center">
+                    <th className="p-2 border border-slate-300 w-28">No. Pencairan</th>
+                    <th className="p-2 border border-slate-300 w-24">Tanggal / Waktu</th>
+                    <th className="p-2 border border-slate-300 w-24">No. Bukti</th>
+                    <th className="p-2 border border-slate-300 text-left">Sumber Dana / Uraian Pencairan</th>
+                    <th className="p-2 border border-slate-300 text-left w-48">Penyetor / Penerima</th>
+                    <th className="p-2 border border-slate-300 text-right w-36">Nominal Pencairan (Rp)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {transactions.filter((t) => t.type === 'pemasukan').length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="p-4 text-center text-slate-500 italic border border-slate-300">
+                        Belum ada riwayat penambahan saldo / pencairan anggaran
                       </td>
                     </tr>
-                  ))}
-              </tbody>
-              <tfoot>
-                <tr className="bg-slate-100 font-black text-slate-900 border-t-2 border-slate-300">
-                  <td colSpan={7} className="p-2.5 text-right uppercase border border-slate-300">
+                  ) : (
+                    transactions
+                      .filter((t) => t.type === 'pemasukan')
+                      .slice()
+                      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                      .map((trx, idx) => (
+                        <tr key={trx.id} className="border-b border-slate-200 hover:bg-slate-50/80 transition">
+                          <td className="p-2 border border-slate-300 text-center font-bold text-emerald-900 bg-emerald-50/50">
+                            Pencairan #{idx + 1}
+                          </td>
+                          <td className="p-2 border border-slate-300 text-center whitespace-nowrap">
+                            {trx.date}
+                          </td>
+                          <td className="p-2 border border-slate-300 text-center font-mono text-[10px]">
+                            {trx.receiptNumber || '-'}
+                          </td>
+                          <td className="p-2 border border-slate-300 font-bold text-slate-900">
+                            {trx.title}
+                          </td>
+                          <td className="p-2 border border-slate-300 text-slate-700">
+                            {trx.recipient || trx.notes || '-'}
+                          </td>
+                          <td className="p-2 border border-slate-300 text-right font-black text-emerald-800 bg-emerald-50/30">
+                            +{formatIDR(trx.amount)}
+                          </td>
+                        </tr>
+                      ))
+                  )}
+                </tbody>
+                <tfoot>
+                  <tr className="bg-emerald-50/80 font-black text-emerald-950 border-t-2 border-emerald-300">
+                    <td colSpan={5} className="p-2.5 text-center uppercase border border-slate-300 tracking-wider">
+                      Total Penerimaan Anggaran
+                    </td>
+                    <td className="p-2.5 text-right border border-slate-300 font-mono text-xs text-emerald-800">
+                      {formatIDR(totalPemasukan)}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
+          {/* BAGIAN IV: TABEL RINCIAN TRANSAKSI PENGELUARAN KAS */}
+          <div className="space-y-3 pt-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <h3 className="font-extrabold text-xs sm:text-sm text-slate-900 uppercase tracking-wide flex items-center space-x-2">
+                <span className="w-2 h-2 rounded-full bg-[#8a7c4c]" />
+                <span>IV. Rincian Buku Kas Transaksi Pengeluaran & Pembelanjaan</span>
+              </h3>
+              {/* Mobile View Toggle */}
+              <div className="flex sm:hidden items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 self-start text-[11px] font-bold">
+                <button
+                  type="button"
+                  onClick={() => setLpjKasMobileMode('cards')}
+                  className={`px-2.5 py-1 rounded-md transition ${
+                    lpjKasMobileMode === 'cards'
+                      ? 'bg-white text-slate-900 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-900'
+                  }`}
+                >
+                  Kartu HP (Rapi)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLpjKasMobileMode('table')}
+                  className={`px-2.5 py-1 rounded-md transition ${
+                    lpjKasMobileMode === 'table'
+                      ? 'bg-white text-slate-900 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-900'
+                  }`}
+                >
+                  Tabel Geser
+                </button>
+              </div>
+            </div>
+
+            {/* A. MOBILE CARDS VIEW (Khusus Layar HP saat mode 'cards') */}
+            <div className={`sm:hidden space-y-3 print:hidden ${lpjKasMobileMode === 'cards' ? 'block' : 'hidden'}`}>
+              {transactions
+                .filter((t) => t.type === 'pengeluaran')
+                .map((t, idx) => (
+                  <div
+                    key={t.id}
+                    className="bg-white border border-slate-300 rounded-2xl p-3.5 shadow-2xs space-y-2.5"
+                  >
+                    <div className="flex items-start justify-between gap-2 pb-2 border-b border-slate-200">
+                      <div className="flex items-center space-x-1.5 flex-wrap gap-1">
+                        <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-700 font-black text-[10px] flex items-center justify-center">
+                          {idx + 1}
+                        </span>
+                        <span className="font-mono text-[10px] font-bold text-slate-500">
+                          {t.date}
+                        </span>
+                        {t.receiptNumber && (
+                          <span className="font-mono text-[10px] font-extrabold text-[#8a7c4c] bg-[#8a7c4c]/10 px-1.5 py-0.5 rounded border border-[#8a7c4c]/20">
+                            {t.receiptNumber}
+                          </span>
+                        )}
+                        {t.posCode && (
+                          <span className="font-mono text-[10px] font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">
+                            Pos {t.posCode}
+                          </span>
+                        )}
+                      </div>
+                      <span className="font-black text-rose-700 text-xs sm:text-sm shrink-0">
+                        {formatIDR(t.amount)}
+                      </span>
+                    </div>
+
+                    <div>
+                      <h4 className="font-extrabold text-slate-900 text-xs leading-snug">{t.title}</h4>
+                      {t.programName && t.programName !== t.title && (
+                        <p className="text-[10px] text-slate-500 italic mt-0.5">{t.programName}</p>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-[10px] bg-slate-50 p-2 rounded-xl">
+                      <div>
+                        <span className="text-slate-400 block text-[9px] uppercase font-semibold">Penerima / Rekanan:</span>
+                        <span className="font-bold text-slate-800">{t.recipient || '-'}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[9px] uppercase font-semibold">Qty & Satuan:</span>
+                        <span className="font-bold text-slate-800">
+                          {t.qty !== undefined ? `${t.qty} ${t.unit || ''}` : '-'}
+                        </span>
+                      </div>
+                      {t.notes && (
+                        <div className="col-span-2 text-slate-600 border-t border-slate-200/60 pt-1 mt-0.5">
+                          <span className="text-slate-400 font-semibold">Ket: </span>
+                          <span>{t.notes}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+              {/* Total Card on Mobile */}
+              <div className="bg-rose-50 border border-rose-200 rounded-2xl p-3.5 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-bold text-rose-800 uppercase tracking-wide block">
                     Total Pengeluaran Kas
-                  </td>
-                  <td className="p-2.5 text-right border border-slate-300 text-rose-700">
-                    {formatIDR(totalPengeluaran)}
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
+                  </span>
+                  <span className="text-[11px] text-rose-600 font-medium">
+                    {transactions.filter((t) => t.type === 'pengeluaran').length} Transaksi Tercatat
+                  </span>
+                </div>
+                <span className="text-sm font-black text-rose-700">{formatIDR(totalPengeluaran)}</span>
+              </div>
+            </div>
+
+            {/* B. FORMAL TABLE VIEW (Desktop, Print, & Mobile saat mode 'table') */}
+            <div
+              className={`overflow-x-auto border border-slate-300 rounded-xl shadow-2xs ${
+                lpjKasMobileMode === 'table' ? 'block' : 'hidden sm:block'
+              } print:block`}
+            >
+              <table className="w-full min-w-[720px] text-[11px] text-left border-collapse border border-slate-300">
+                <thead>
+                  <tr className="bg-slate-100 text-slate-900 font-black border-b border-slate-300 text-center">
+                    <th className="p-2 border border-slate-300 w-8">No</th>
+                    <th className="p-2 border border-slate-300 w-20">Tanggal</th>
+                    <th className="p-2 border border-slate-300 w-20">No. Nota</th>
+                    <th className="p-2 border border-slate-300 w-16">Pos</th>
+                    <th className="p-2 border border-slate-300 text-left">Uraian / Kegiatan</th>
+                    <th className="p-2 border border-slate-300 text-left">Penerima / Toko</th>
+                    <th className="p-2 border border-slate-300 text-center w-20">Qty & Satuan</th>
+                    <th className="p-2 border border-slate-300 text-right w-24">Jumlah (Rp)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {transactions
+                    .filter((t) => t.type === 'pengeluaran')
+                    .map((t, idx) => (
+                      <tr key={t.id} className="border-b border-slate-200">
+                        <td className="p-2 border border-slate-300 text-center">{idx + 1}</td>
+                        <td className="p-2 border border-slate-300 text-center font-mono text-[10px]">{t.date}</td>
+                        <td className="p-2 border border-slate-300 text-center font-mono font-bold text-[#8a7c4c]">
+                          {t.receiptNumber || '-'}
+                        </td>
+                        <td className="p-2 border border-slate-300 text-center font-bold text-slate-700">
+                          {t.posCode || '-'}
+                        </td>
+                        <td className="p-2 border border-slate-300 font-medium">
+                          <span className="font-bold text-slate-900">{t.title}</span>
+                          {t.programName && t.programName !== t.title && (
+                            <span className="block text-[10px] text-slate-500 italic">{t.programName}</span>
+                          )}
+                          {t.notes && <span className="block text-[10px] text-slate-600">Ket: {t.notes}</span>}
+                        </td>
+                        <td className="p-2 border border-slate-300 text-slate-800 font-medium">
+                          {t.recipient || '-'}
+                        </td>
+                        <td className="p-2 border border-slate-300 text-center text-slate-700">
+                          {t.qty !== undefined ? `${t.qty} ${t.unit || ''}` : '-'}
+                        </td>
+                        <td className="p-2 border border-slate-300 text-right font-black text-rose-700">
+                          {formatIDR(t.amount)}
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+                <tfoot>
+                  <tr className="bg-slate-100 font-black text-slate-900 border-t-2 border-slate-300">
+                    <td colSpan={7} className="p-2.5 text-right uppercase border border-slate-300">
+                      Total Pengeluaran Kas
+                    </td>
+                    <td className="p-2.5 text-right border border-slate-300 text-rose-700">
+                      {formatIDR(totalPengeluaran)}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           </div>
 
           {/* Tanda Tangan Pengesahan Panitia */}
@@ -3238,7 +3644,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                     <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-[#8a7c4c]">
                       <span className="flex items-center space-x-1.5">
                         <Wallet className="w-4 h-4" />
-                        <span>Saldo Kas Fisik</span>
+                        <span>Saldo Anggaran</span>
                       </span>
                     </div>
                     <h3 className="text-xl font-black text-[#24211c] mt-2">{formatIDR(saldoSisa)}</h3>
@@ -3249,7 +3655,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                       type="button"
                       onClick={() => setIsAddPemasukanModalOpen(true)}
                       className="flex-1 py-1.5 px-3 bg-[#8a7c4c] hover:bg-[#6f633a] text-white font-extrabold text-xs rounded-xl shadow-2xs transition flex items-center justify-center space-x-1.5 cursor-pointer active:scale-95"
-                      title="Tambah Saldo Kas Fisik"
+                      title="Tambah Saldo Anggaran"
                     >
                       <PlusCircle className="w-3.5 h-3.5" />
                       <span>+ Tambah Saldo</span>
@@ -4817,7 +5223,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                   <Wallet className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-base text-[#24211c]">Tambah Saldo Kas Fisik</h3>
+                  <h3 className="font-extrabold text-base text-[#24211c]">Tambah Saldo Anggaran</h3>
                   <p className="text-[11px] text-[#7c7b77]">
                     Penerimaan dana kas tunai / dropping anggaran masuk
                   </p>
@@ -4981,7 +5387,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                   ) : (
                     <>
                       <Check className="w-4 h-4" />
-                      <span>Simpan ke Saldo Fisik</span>
+                      <span>Simpan ke Saldo Anggaran</span>
                     </>
                   )}
                 </button>
@@ -4992,7 +5398,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
       )}
 
       {/* =========================================================================
-          MODAL: RIWAYAT PENERIMAAN SALDO KAS FISIK
+          MODAL: RIWAYAT PENAMBAHAN SALDO ANGGARAN
           ========================================================================= */}
       {showPemasukanListModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
@@ -5005,10 +5411,10 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                 </div>
                 <div>
                   <h3 className="font-extrabold text-base text-[#24211c]">
-                    Riwayat Penerimaan Saldo Kas
+                    Riwayat Penambahan Saldo Anggaran
                   </h3>
                   <p className="text-[11px] text-[#7c7b77]">
-                    Total Penerimaan: <span className="font-bold text-emerald-700">{formatIDR(totalPemasukan)}</span>
+                    Total Penerimaan Anggaran: <span className="font-bold text-emerald-700">{formatIDR(totalPemasukan)}</span>
                   </p>
                 </div>
               </div>

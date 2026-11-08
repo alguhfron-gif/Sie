@@ -82,6 +82,7 @@ import {
   sanitizeRegulation,
 } from './services/errorRecoveryService';
 import { ShieldCheck, CheckCircle, Menu, RefreshCw } from 'lucide-react';
+import { useModalBackHandler } from './utils/useModalBackHandler';
 
 export default function App() {
   // Self-Healing toast message state for non-intrusive recovery notice
@@ -95,7 +96,8 @@ export default function App() {
     });
   }, []);
 
-  // Safe initialization of activeTab from localStorage (Petugas defaults to 'nominasi')
+  // Permintaan pengguna: saat buka aplikasi pertama kali selalu langsung menampilkan dasbor ('dashboard')
+  // (Kecuali petugas nominasi yang dibatasi khusus ke 'nominasi')
   const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
     try {
       const savedUserStr = localStorage.getItem('sie_user_session') || sessionStorage.getItem('sie_user_session');
@@ -104,24 +106,23 @@ export default function App() {
         const isPetugasUser = parsed && (parsed.category === 'petugas' || (parsed.role && parsed.role.toUpperCase().includes('PETUGAS')));
         if (isPetugasUser) return 'nominasi';
       }
-      const savedTab = localStorage.getItem('sie_active_tab');
-      if (savedTab && ['dashboard', 'nominasi', 'keuangan', 'koordinasi', 'sertifikat', 'laporan', 'akun'].includes(savedTab)) {
-        return savedTab as ActiveTab;
-      }
     } catch (e) {
-      console.warn('Failed to parse active tab from storage:', e);
+      console.warn('Failed to parse user session for initial tab:', e);
     }
     return 'dashboard';
   });
 
-  // Save activeTab to localStorage on changes
-  useEffect(() => {
+  // Navigasi Tab dengan dukungan riwayat peramban & gesture swipe kembali (edge-swipe back)
+  const handleTabChange = (newTab: ActiveTab) => {
+    if (newTab === activeTab) return;
     try {
-      localStorage.setItem('sie_active_tab', activeTab);
+      window.history.pushState({ tab: newTab, timestamp: Date.now() }, '');
     } catch (e) {
-      console.warn('Failed to save active tab to storage:', e);
+      console.warn('History push failed:', e);
     }
-  }, [activeTab]);
+    setActiveTab(newTab);
+  };
+
 
   // User Authentication Session State - Hanya me-restore sesi jika pengguna telah login sebelumnya
   const [currentUser, setCurrentUser] = useState<UserSession | null>(() => {
@@ -233,6 +234,29 @@ export default function App() {
       setActiveTab('nominasi');
     }
   }, [isPetugas, activeTab]);
+
+  // Listener Popstate untuk navigasi tombol kembali fisik dan gesture tepi layar HP
+  useEffect(() => {
+    const initialTab = isPetugas ? 'nominasi' : 'dashboard';
+    try {
+      window.history.replaceState({ tab: initialTab }, '');
+    } catch (e) {}
+
+    const handlePopState = (e: PopStateEvent) => {
+      // Jika event pop ditujukan untuk modal, handler modal yang akan mengeksekusinya
+      if (e.state && e.state.modalId) return;
+
+      if (e.state && e.state.tab) {
+        setActiveTab(e.state.tab as ActiveTab);
+      } else if (!e.state || (!e.state.modalId && !e.state.sieModalActive)) {
+        // Kembali ke halaman awal aplikasi (Dasbor)
+        setActiveTab(isPetugas ? 'nominasi' : 'dashboard');
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [isPetugas]);
 
   // Automatic real-time presence heartbeat when user is logged in
   useEffect(() => {
@@ -914,6 +938,7 @@ export default function App() {
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  useModalBackHandler(isMobileSidebarOpen, () => setIsMobileSidebarOpen(false), 'mobile-sidebar');
 
   // If user is not logged in, render Login Screen
   if (!currentUser) {
@@ -979,7 +1004,7 @@ export default function App() {
       <div className="w-full mx-auto flex flex-1 min-h-screen">
         <Sidebar
           activeTab={activeTab}
-          setActiveTab={setActiveTab}
+          setActiveTab={handleTabChange}
           currentUser={currentUser}
           onLogout={handleLogout}
           onRefreshData={() => window.location.reload()}
@@ -1003,18 +1028,18 @@ export default function App() {
             {activeTab === 'dashboard' && !isPetugas && (
               <ViewErrorBoundary viewName="Dasbor Utama">
                 <DashboardView
-                  setActiveTab={setActiveTab}
+                  setActiveTab={handleTabChange}
                   transactions={transactions}
                   nominations={userVisibleNominations}
                   categories={userVisibleCategories}
                   tasks={tasks}
                   currentUser={currentUser}
                   onOpenAddNomination={() => {
-                    setActiveTab('nominasi');
+                    handleTabChange('nominasi');
                     setOpenAddNominationDirectly(true);
                   }}
                   onOpenAddTransaction={() => {
-                    setActiveTab('keuangan');
+                    handleTabChange('keuangan');
                     setOpenAddTransactionDirectly(true);
                   }}
                 />
@@ -1085,7 +1110,7 @@ export default function App() {
                   nominations={nominations}
                   categories={categories}
                   currentUser={currentUser}
-                  setActiveTab={setActiveTab}
+                  setActiveTab={handleTabChange}
                 />
               </ViewErrorBoundary>
             )}
@@ -1143,7 +1168,7 @@ export default function App() {
       </div>
 
       {/* Mobile Bottom Navigation Bar */}
-      <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} currentUser={currentUser} />
+      <BottomNav activeTab={activeTab} setActiveTab={handleTabChange} currentUser={currentUser} />
     </div>
   );
 }

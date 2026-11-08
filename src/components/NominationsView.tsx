@@ -7,6 +7,7 @@ import { exportToCSV } from '../services/webhookService';
 import { ContentHeader } from './ContentHeader';
 import { CollapsibleSection } from './CollapsibleSection';
 import { getAllowedCategoryIdsForUser, getRoleOptionById } from '../utils/accountRoles';
+import { useModalBackHandler } from '../utils/useModalBackHandler';
 
 export interface AssessmentRubric {
   number: number;
@@ -440,6 +441,13 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [isModalOpen, setIsModalOpen] = useState(isAddModalOpenOpenDirectly);
   const [editingNomination, setEditingNomination] = useState<Nomination | null>(null);
+
+  // Mobile Back-Gesture & Hardware Back Button handler
+  useModalBackHandler(isModalOpen, () => {
+    setIsModalOpen(false);
+    setEditingNomination(null);
+    if (onCloseAddModalDirectly) onCloseAddModalDirectly();
+  }, 'nomination-modal');
 
   // 2-Step Confirmation Notif State (Sesuai Permintaan User: Notif 1 Validitas, Notif 2 Konfirmasi Final)
   const [nominationConfirmStep, setNominationConfirmStep] = useState<null | 1 | 2>(null);
