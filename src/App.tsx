@@ -942,7 +942,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#efede7] text-[#24211c] font-sans flex flex-col antialiased selection:bg-[#8a7c4c] selection:text-white relative overflow-x-hidden">
       {/* Mobile Top Header (Hanya di layar ponsel/tablet kecil untuk buka drawer menu) */}
-      <div className="md:hidden sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[rgba(36,33,28,0.12)] px-3 py-2 flex items-center justify-between shadow-2xs">
+      <div className="md:hidden sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[rgba(36,33,28,0.12)] px-3 py-2 flex items-center justify-between shadow-2xs print:hidden">
         <div className="flex items-center space-x-2">
           <button
             onClick={() => setIsMobileSidebarOpen(true)}
@@ -1136,7 +1136,7 @@ export default function App() {
       </footer>
 
       {/* Signature Milad Sidogiri Bottom Decorative Bar */}
-      <div aria-hidden="true" className="grid grid-cols-[8%_1fr_26%] h-2 w-full shrink-0">
+      <div aria-hidden="true" className="grid grid-cols-[8%_1fr_26%] h-2 w-full shrink-0 print:hidden">
         <span className="bg-[#7c7b77]"></span>
         <span className="bg-[#e5e2da]"></span>
         <span className="bg-[#8a7c4c]"></span>

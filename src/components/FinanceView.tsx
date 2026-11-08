@@ -32,6 +32,7 @@ import {
   Hash,
   ShoppingBag,
   ArrowRight,
+  ArrowLeft,
   Sparkles,
   ListPlus,
   ClipboardPaste,
@@ -64,6 +65,10 @@ import {
 import { ContentHeader } from './ContentHeader';
 import { CollapsibleSection } from './CollapsibleSection';
 import { RapbImportModal } from './RapbImportModal';
+import ExcelJS from 'exceljs';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { MiladLogo } from './MiladLogo';
 
 interface FinanceViewProps {
   transactions: Transaction[];
@@ -202,10 +207,17 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(isAddModalOpenDirectly);
   const [showPrintReport, setShowPrintReport] = useState(false);
+  const [isExportingLpjExcel, setIsExportingLpjExcel] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
   // Proof Image Preview Modal State
   const [selectedProofTrx, setSelectedProofTrx] = useState<Transaction | null>(null);
+  const [isFormPhotoPreviewOpen, setIsFormPhotoPreviewOpen] = useState(false);
+
+  // Anti-double-submit locks
+  const isSubmittingRef = useRef(false);
+  const isSavingPemasukanRef = useRef(false);
 
   // Modal Form State (Smart Input Form)
   const [title, setTitle] = useState('');
@@ -332,6 +344,72 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
   const [uploadedRapbFileName, setUploadedRapbFileName] = useState<string | null>(null);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [bulkSuccessNotice, setBulkSuccessNotice] = useState<string | null>(null);
+
+  // Mobile Back-Gesture Handler (Swipe-from-edge & Tombol Back HP)
+  // Menjaga agar gesture kembali di HP menutup modal aktif, BUKAN menutup/keluar dari aplikasi!
+  useEffect(() => {
+    const isAnyModalOpen =
+      isFormPhotoPreviewOpen ||
+      Boolean(selectedProofTrx) ||
+      isModalOpen ||
+      isAddPemasukanModalOpen ||
+      showPemasukanListModal ||
+      isImportModalOpen ||
+      isBulkRapbModalOpen ||
+      isRapbModalOpen ||
+      Boolean(trxToDelete) ||
+      Boolean(rapbToDelete) ||
+      showClearAllConfirm;
+
+    if (!isAnyModalOpen) return;
+
+    // Push checkpoint ke browser history
+    window.history.pushState({ sieModalActive: true }, '');
+
+    const handlePopState = () => {
+      // Prioritas penutupan bertingkat saat user swipe kembali di tepi layar HP
+      if (isFormPhotoPreviewOpen) {
+        setIsFormPhotoPreviewOpen(false);
+      } else if (selectedProofTrx) {
+        setSelectedProofTrx(null);
+      } else if (showClearAllConfirm) {
+        setShowClearAllConfirm(false);
+      } else if (trxToDelete) {
+        setTrxToDelete(null);
+      } else if (rapbToDelete) {
+        setRapbToDelete(null);
+      } else if (showPemasukanListModal) {
+        setShowPemasukanListModal(false);
+      } else if (isAddPemasukanModalOpen) {
+        setIsAddPemasukanModalOpen(false);
+      } else if (isImportModalOpen) {
+        setIsImportModalOpen(false);
+      } else if (isBulkRapbModalOpen) {
+        setIsBulkRapbModalOpen(false);
+      } else if (isRapbModalOpen) {
+        setIsRapbModalOpen(false);
+      } else if (isModalOpen) {
+        closeModal();
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [
+    isFormPhotoPreviewOpen,
+    selectedProofTrx,
+    isModalOpen,
+    isAddPemasukanModalOpen,
+    showPemasukanListModal,
+    isImportModalOpen,
+    isBulkRapbModalOpen,
+    isRapbModalOpen,
+    trxToDelete,
+    rapbToDelete,
+    showClearAllConfirm,
+  ]);
 
   // Format Rupiah
   const formatIDR = (val: number) => {
@@ -599,7 +677,10 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
       return;
     }
 
+    if (isSavingPemasukanRef.current || isSavingPemasukan) return;
+    isSavingPemasukanRef.current = true;
     setIsSavingPemasukan(true);
+
     try {
       const payload: Omit<Transaction, 'id'> = {
         title: pemasukanSource.trim() || 'Penerimaan Kas Panitia',
@@ -614,9 +695,11 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
         proofUrl: '',
       };
 
-      const created = await addTransactionToFirestore(payload);
+      // Simpan 1 kali saja secara bersih
       if (onAddTransaction) {
-        await onAddTransaction(created);
+        await onAddTransaction(payload);
+      } else {
+        await addTransactionToFirestore(payload);
       }
 
       setToast({
@@ -637,6 +720,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
       });
     } finally {
       setIsSavingPemasukan(false);
+      isSavingPemasukanRef.current = false;
     }
   };
 
@@ -840,10 +924,12 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
     return normalizeCategory(t.category);
   };
 
-  // Handle Form Submit: langsung simpan ke koleksi 'transactions' di Firebase Firestore menggunakan addDoc
+  // Handle Form Submit: langsung simpan ke koleksi 'transactions' di Firebase Firestore menggunakan addDoc (Single Execution)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmittingRef.current || isSubmittingTransaction) return;
     if (!title.trim() || amount <= 0) return;
+    isSubmittingRef.current = true;
 
     let uploadedProofUrl: string | undefined = editingTransaction?.proofUrl;
 
@@ -920,24 +1006,28 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
     setIsSubmittingTransaction(true);
 
     try {
-      if (editingTransaction && onUpdateTransaction) {
-        // Mode Edit: update data di Firestore
+      if (editingTransaction) {
+        // Mode Edit: update data di Firestore 1 kali saja
         const updatedObj: Transaction = {
           ...editingTransaction,
           ...trxPayload,
         };
-        await updateTransactionInFirestore(updatedObj);
-        await onUpdateTransaction(updatedObj);
+        if (onUpdateTransaction) {
+          await onUpdateTransaction(updatedObj);
+        } else {
+          await updateTransactionInFirestore(updatedObj);
+        }
         setToast({
           type: 'success',
           title: 'Perubahan Berhasil Disimpan',
           message: `Transaksi "${title}" telah diperbarui di Firebase Firestore.`,
         });
       } else {
-        // Mode Tambah: langsung simpan ke koleksi 'transactions' via addDoc
-        const created = await addTransactionToFirestore(trxPayload);
+        // Mode Tambah: langsung simpan 1 kali saja via onAddTransaction atau addTransactionToFirestore
         if (onAddTransaction) {
-          await onAddTransaction(created);
+          await onAddTransaction(trxPayload);
+        } else {
+          await addTransactionToFirestore(trxPayload);
         }
         setToast({
           type: 'success',
@@ -956,6 +1046,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
       });
     } finally {
       setIsSubmittingTransaction(false);
+      isSubmittingRef.current = false;
     }
   };
 
@@ -994,6 +1085,1000 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
     ]);
 
     exportToCSV('Laporan_Keuangan_RAPB_Sie_Penganugerahan.csv', headers, rows);
+  };
+
+  // Buka Pratinjau Dokumen LPJ Resmi
+  const handleOpenLpjPreview = () => {
+    setShowPrintReport(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Cetak Dokumen LPJ via Browser Print Dialog
+  const handlePrintLpjAction = () => {
+    try {
+      window.focus();
+      window.print();
+    } catch (err) {
+      console.error('Print trigger error:', err);
+    }
+  };
+
+  // Helper to load and prepare images for jsPDF inclusion
+  const loadImageForPdf = (
+    url: string
+  ): Promise<{ dataUrl: string; width: number; height: number; format: 'JPEG' | 'PNG' } | null> => {
+    return new Promise((resolve) => {
+      if (!url || typeof url !== 'string' || !url.trim()) return resolve(null);
+      const trimmed = url.trim();
+
+      if (
+        trimmed.startsWith('data:image/jpeg') ||
+        trimmed.startsWith('data:image/jpg') ||
+        trimmed.startsWith('data:image/png')
+      ) {
+        const isPng = trimmed.startsWith('data:image/png');
+        const img = new Image();
+        img.onload = () => {
+          resolve({
+            dataUrl: trimmed,
+            width: img.naturalWidth || 600,
+            height: img.naturalHeight || 400,
+            format: isPng ? 'PNG' : 'JPEG',
+          });
+        };
+        img.onerror = () => resolve(null);
+        img.src = trimmed;
+        return;
+      }
+
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          const nw = img.naturalWidth || 600;
+          const nh = img.naturalHeight || 400;
+          const maxDim = 1200;
+          let scale = 1;
+          if (nw > maxDim || nh > maxDim) {
+            scale = Math.min(maxDim / nw, maxDim / nh);
+          }
+          canvas.width = Math.max(1, Math.round(nw * scale));
+          canvas.height = Math.max(1, Math.round(nh * scale));
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return resolve(null);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          resolve({
+            dataUrl,
+            width: canvas.width,
+            height: canvas.height,
+            format: 'JPEG',
+          });
+        } catch {
+          resolve(null);
+        }
+      };
+      img.onerror = () => resolve(null);
+      img.src = trimmed;
+    });
+  };
+
+  // Unduh Berkas Dokumen PDF Resmi (.pdf) secara langsung tanpa ketergantungan DOM / Canvas
+  const handleDownloadLpjPdf = async () => {
+    try {
+      setIsGeneratingPdf(true);
+      setToast({
+        type: 'info',
+        title: 'Menyiapkan File PDF...',
+        message: 'Sedang menyusun berkas PDF resmi & memuat lampiran foto nota. Mohon tunggu...',
+      });
+
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      let currentY = 14;
+
+      // 1. KOP RESMI
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
+      doc.setTextColor(36, 33, 28); // #24211C
+      doc.text('PONDOK PESANTREN SIDOGIRI', pageWidth / 2, currentY, { align: 'center' });
+      currentY += 5;
+
+      doc.setFontSize(9.5);
+      doc.setTextColor(138, 124, 76); // #8A7C4C
+      doc.text('PANITIA MILAD SIDOGIRI & IKHTIBAR MADRASAH MIFTAHUL ULUM', pageWidth / 2, currentY, { align: 'center' });
+      currentY += 4.5;
+
+      doc.setFontSize(9.5);
+      doc.setTextColor(36, 33, 28);
+      doc.text('SEKSI PENGANUGERAHAN', pageWidth / 2, currentY, { align: 'center' });
+      currentY += 4;
+
+      // Double line separator
+      doc.setDrawColor(36, 33, 28);
+      doc.setLineWidth(0.8);
+      doc.line(14, currentY, pageWidth - 14, currentY);
+      currentY += 1.2;
+      doc.setLineWidth(0.3);
+      doc.line(14, currentY, pageWidth - 14, currentY);
+      currentY += 7;
+
+      // 2. JUDUL DOKUMEN
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text('LAPORAN PERTANGGUNGJAWABAN (LPJ) REALITA & PENGELUARAN SIE PENGANUGRAHAN', pageWidth / 2, currentY, { align: 'center' });
+      currentY += 6;
+
+      // 3. RINGKASAN METRIK KEUANGAN (Summary Box)
+      autoTable(doc, {
+        startY: currentY,
+        margin: { left: 14, right: 14 },
+        head: [['RINGKASAN METRIK ANGGARAN & KAS FISIK', '', '', '']],
+        body: [
+          ['Total RAPB', formatIDR(totalPaguRapb), 'Total Penerimaan Kas', formatIDR(totalPemasukan)],
+          ['Total Penggunaan Anggaran', formatIDR(totalPengeluaran), 'Sisa Kas Fisik', formatIDR(saldoSisa)],
+          ['Sisa Anggaran Pembelanjaan', formatIDR(totalSisaRapb), 'Persentase Serapan', `${totalRapbPenyerapan.toFixed(1)}%`],
+        ],
+        theme: 'grid',
+        styles: { fontSize: 8, cellPadding: 2, textColor: [36, 33, 28] },
+        headStyles: { fillColor: [138, 124, 76], textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' },
+        columnStyles: {
+          0: { fontStyle: 'bold', cellWidth: 50 },
+          1: { halign: 'right', fontStyle: 'bold' },
+          2: { fontStyle: 'bold', cellWidth: 50 },
+          3: { halign: 'right', fontStyle: 'bold' },
+        },
+      });
+
+      currentY = (doc as any).lastAutoTable.finalY + 7;
+
+      // 4. BAGIAN I: TABEL REKAPITULASI RAPB
+      doc.setFontSize(9.5);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(36, 33, 28);
+      doc.text('I. Rekapitulasi Realisasi Realita Anggaran (RAPB) per Program', 14, currentY);
+      currentY += 3;
+
+      const rapbRows: any[] = rapbStats.map((item, idx) => {
+        const qtmVal = item.qtm ?? 1;
+        const volVal = item.vol ?? 1;
+        const unitPriceVal = item.unitPrice ?? Math.round(item.allocatedBudget / Math.max(1, qtmVal * volVal));
+        return [
+          idx + 1,
+          item.posCode || '-',
+          item.programName,
+          `${qtmVal} ${item.qtmKet || ''}`.trim(),
+          `${volVal} ${item.volKet || ''}`.trim(),
+          formatIDR(unitPriceVal),
+          formatIDR(item.allocatedBudget),
+          formatIDR(item.spent),
+          formatIDR(item.remaining),
+          `${item.rawPercentage.toFixed(1)}%`,
+        ];
+      });
+
+      // Baris Total RAPB
+      rapbRows.push([
+        '',
+        '',
+        'TOTAL KESELURUHAN RAPB',
+        '',
+        '',
+        '',
+        formatIDR(totalPaguRapb),
+        formatIDR(totalPengeluaran),
+        formatIDR(totalSisaRapb),
+        `${totalRapbPenyerapan.toFixed(1)}%`,
+      ]);
+
+      autoTable(doc, {
+        startY: currentY,
+        margin: { left: 14, right: 14 },
+        head: [['No', 'Pos', 'Uraian Program', 'Qtm', 'Vol', 'Satuan (Rp)', 'RAPB (Rp)', 'Realisasi (Rp)', 'Sisa (Rp)', '%']],
+        body: rapbRows,
+        theme: 'grid',
+        styles: { fontSize: 7, cellPadding: 1.5, textColor: [36, 33, 28] },
+        headStyles: { fillColor: [36, 33, 28], textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' },
+        columnStyles: {
+          0: { halign: 'center', cellWidth: 8 },
+          1: { halign: 'center', cellWidth: 14 },
+          2: { cellWidth: 46 },
+          3: { halign: 'center', cellWidth: 12 },
+          4: { halign: 'center', cellWidth: 12 },
+          5: { halign: 'right', cellWidth: 20 },
+          6: { halign: 'right', cellWidth: 20 },
+          7: { halign: 'right', cellWidth: 20 },
+          8: { halign: 'right', cellWidth: 20 },
+          9: { halign: 'center', cellWidth: 10 },
+        },
+        didParseCell: (data) => {
+          if (data.row.index === rapbRows.length - 1) {
+            data.cell.styles.fontStyle = 'bold';
+            data.cell.styles.fillColor = [243, 244, 246];
+          }
+        },
+      });
+
+      currentY = (doc as any).lastAutoTable.finalY + 8;
+
+      // Check if need new page
+      if (currentY > pageHeight - 60) {
+        doc.addPage();
+        currentY = 16;
+      }
+
+      // 5. BAGIAN II: REKAPITULASI 5 KATEGORI AKUN INDUK
+      doc.setFontSize(9.5);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(36, 33, 28);
+      doc.text('II. Rekapitulasi Realisasi per Kategori Akun (5 Pos Induk)', 14, currentY);
+      currentY += 3;
+
+      const catRows: any[] = categoryStats.map((cat) => [
+        cat.number,
+        cat.category,
+        formatIDR(cat.pagu),
+        formatIDR(cat.spent),
+        formatIDR(cat.remaining),
+        `${cat.percentageUsed.toFixed(1)}%`,
+        cat.statusText,
+      ]);
+
+      catRows.push([
+        '',
+        'TOTAL REKAPITULASI 5 KATEGORI',
+        formatIDR(totalCategoryPagu),
+        formatIDR(totalCategorySpent),
+        formatIDR(totalCategoryRemaining),
+        `${totalCategorySerap.toFixed(1)}%`,
+        '-',
+      ]);
+
+      autoTable(doc, {
+        startY: currentY,
+        margin: { left: 14, right: 14 },
+        head: [['No', 'Kategori Akun Induk', 'Realita (Rp)', 'Realisasi (Rp)', 'Sisa Anggaran (Rp)', '% Serap', 'Status']],
+        body: catRows,
+        theme: 'grid',
+        styles: { fontSize: 7.5, cellPadding: 1.8, textColor: [36, 33, 28] },
+        headStyles: { fillColor: [138, 124, 76], textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' },
+        columnStyles: {
+          0: { halign: 'center', cellWidth: 10 },
+          1: { cellWidth: 60, fontStyle: 'bold' },
+          2: { halign: 'right', cellWidth: 26 },
+          3: { halign: 'right', cellWidth: 26 },
+          4: { halign: 'right', cellWidth: 26 },
+          5: { halign: 'center', cellWidth: 16 },
+          6: { halign: 'center', cellWidth: 18 },
+        },
+        didParseCell: (data) => {
+          if (data.row.index === catRows.length - 1) {
+            data.cell.styles.fontStyle = 'bold';
+            data.cell.styles.fillColor = [243, 244, 246];
+          }
+        },
+      });
+
+      currentY = (doc as any).lastAutoTable.finalY + 8;
+
+      // Check if need new page
+      if (currentY > pageHeight - 65) {
+        doc.addPage();
+        currentY = 16;
+      }
+
+      // 6. BAGIAN III: RINCIAN BUKU KAS PENGELUARAN
+      doc.setFontSize(9.5);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(36, 33, 28);
+      doc.text('III. Rincian Buku Kas Transaksi Pengeluaran & Pembelanjaan', 14, currentY);
+      currentY += 3;
+
+      const pengeluaranList = transactions.filter((t) => t.type === 'pengeluaran');
+      const pengeluaranRows: any[] = pengeluaranList.map((t, idx) => [
+        idx + 1,
+        t.date,
+        t.receiptNumber || '-',
+        t.posCode || '-',
+        t.title,
+        t.recipient || '-',
+        t.qty !== undefined ? `${t.qty} ${t.unit || ''}`.trim() : '-',
+        formatIDR(t.amount),
+      ]);
+
+      pengeluaranRows.push([
+        '',
+        '',
+        '',
+        '',
+        'TOTAL PENGELUARAN KAS',
+        '',
+        '',
+        formatIDR(totalPengeluaran),
+      ]);
+
+      autoTable(doc, {
+        startY: currentY,
+        margin: { left: 14, right: 14 },
+        head: [['No', 'Tanggal', 'No. Nota', 'Pos', 'Uraian / Transaksi', 'Penerima / Toko', 'Qty', 'Jumlah (Rp)']],
+        body: pengeluaranRows,
+        theme: 'grid',
+        styles: { fontSize: 7, cellPadding: 1.5, textColor: [36, 33, 28] },
+        headStyles: { fillColor: [36, 33, 28], textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' },
+        columnStyles: {
+          0: { halign: 'center', cellWidth: 8 },
+          1: { halign: 'center', cellWidth: 18 },
+          2: { halign: 'center', cellWidth: 20 },
+          3: { halign: 'center', cellWidth: 14 },
+          4: { cellWidth: 52 },
+          5: { cellWidth: 34 },
+          6: { halign: 'center', cellWidth: 14 },
+          7: { halign: 'right', cellWidth: 22 },
+        },
+        didParseCell: (data) => {
+          if (data.row.index === pengeluaranRows.length - 1) {
+            data.cell.styles.fontStyle = 'bold';
+            data.cell.styles.fillColor = [243, 244, 246];
+          }
+        },
+      });
+
+      currentY = (doc as any).lastAutoTable.finalY + 12;
+
+      // Check if need new page for signatures
+      if (currentY > pageHeight - 45) {
+        doc.addPage();
+        currentY = 20;
+      }
+
+      // 7. TANDA TANGAN PENGESAHAN PANITIA
+      const leftColX = 35;
+      const rightColX = pageWidth - 65;
+      const todayStr = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Pasuruan, ${todayStr}`, leftColX, currentY, { align: 'center' });
+      doc.text('Sie Penganugerahan Milad Sidogiri', rightColX, currentY, { align: 'center' });
+      currentY += 4;
+
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(36, 33, 28);
+      doc.text('Mengetahui,', leftColX, currentY, { align: 'center' });
+      doc.text('Disusun & Dipertanggungjawabkan Oleh,', rightColX, currentY, { align: 'center' });
+      currentY += 3.5;
+
+      doc.text('Ketua Sie Penganugerahan', leftColX, currentY, { align: 'center' });
+      doc.text('Bendahara Sie Penganugerahan', rightColX, currentY, { align: 'center' });
+      currentY += 20;
+
+      // Nama Pejabat
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.text('Birril Walid', leftColX, currentY, { align: 'center' });
+      doc.text('Moh Ali Ghufron', rightColX, currentY, { align: 'center' });
+      currentY += 3.5;
+
+      // NIP
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
+      doc.setTextColor(120, 120, 120);
+      doc.text('NIP: PAN-MLD-2026-004', leftColX, currentY, { align: 'center' });
+      doc.text('NIP: PAN-MLD-2026-018', rightColX, currentY, { align: 'center' });
+
+      // 8. BAGIAN IV: HALAMAN LAMPIRAN BUKTI FISIK NOTA & KUITANSI PENGELUARAN
+      const receiptTrxList = transactions.filter(
+        (t) => t.type === 'pengeluaran' && t.proofUrl && t.proofUrl.trim() !== ''
+      );
+      if (receiptTrxList.length > 0) {
+        doc.addPage();
+        let lampiranY = 16;
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(36, 33, 28);
+        doc.text('LAMPIRAN: BUKTI FISIK NOTA & KUITANSI PENGELUARAN', pageWidth / 2, lampiranY, { align: 'center' });
+        lampiranY += 4.5;
+
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100, 100, 100);
+        doc.text(
+          'Dokumentasi Asli Kwitansi Pembelanjaan Logistik & Operasional Sie Penganugerahan',
+          pageWidth / 2,
+          lampiranY,
+          { align: 'center' }
+        );
+        lampiranY += 4;
+
+        doc.setDrawColor(200, 200, 200);
+        doc.setLineWidth(0.4);
+        doc.line(14, lampiranY, pageWidth - 14, lampiranY);
+        lampiranY += 6;
+
+        const cardWidth = 182;
+        const cardHeight = 115;
+        const gap = 8;
+        let cardCountOnPage = 0;
+
+        for (let i = 0; i < receiptTrxList.length; i++) {
+          const trx = receiptTrxList[i];
+          if (cardCountOnPage >= 2) {
+            doc.addPage();
+            lampiranY = 16;
+            cardCountOnPage = 0;
+          }
+          const cardX = 14;
+          const cardY = lampiranY;
+
+          // Outer card border
+          doc.setDrawColor(203, 213, 225);
+          doc.setFillColor(255, 255, 255);
+          doc.roundedRect(cardX, cardY, cardWidth, cardHeight, 2, 2, 'FD');
+
+          // Header strip inside card
+          doc.setFillColor(248, 250, 252);
+          doc.roundedRect(cardX, cardY, cardWidth, 14, 2, 2, 'F');
+          doc.setDrawColor(226, 232, 240);
+          doc.line(cardX, cardY + 14, cardX + cardWidth, cardY + 14);
+
+          // Card header text
+          doc.setFontSize(8.5);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(138, 124, 76);
+          doc.text(`Lampiran #${i + 1} • ${trx.receiptNumber || 'NOTA'}`, cardX + 4, cardY + 5.5);
+
+          doc.setFontSize(9);
+          doc.setTextColor(190, 18, 60);
+          doc.text(formatIDR(trx.amount), cardX + cardWidth - 4, cardY + 5.5, { align: 'right' });
+
+          doc.setFontSize(7.5);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(51, 65, 85);
+          const subInfo = `Uraian: ${trx.title}  |  Tanggal: ${trx.date}  |  Pos: ${trx.posCode || '-'}  |  Penerima: ${trx.recipient || '-'}`;
+          doc.text(subInfo, cardX + 4, cardY + 10.5);
+
+          // Image area
+          const maxImgW = cardWidth - 8;
+          const maxImgH = cardHeight - 19;
+          const imgAreaX = cardX + 4;
+          const imgAreaY = cardY + 16;
+
+          const loadedImg = await loadImageForPdf(trx.proofUrl || '');
+          if (loadedImg) {
+            try {
+              const imgRatio = loadedImg.width / loadedImg.height;
+              let renderW = maxImgW;
+              let renderH = renderW / imgRatio;
+              if (renderH > maxImgH) {
+                renderH = maxImgH;
+                renderW = renderH * imgRatio;
+              }
+              const renderX = imgAreaX + (maxImgW - renderW) / 2;
+              const renderY = imgAreaY + (maxImgH - renderH) / 2;
+              doc.addImage(
+                loadedImg.dataUrl,
+                loadedImg.format || 'JPEG',
+                renderX,
+                renderY,
+                renderW,
+                renderH,
+                undefined,
+                'FAST'
+              );
+            } catch (imgErr) {
+              console.warn('Failed to add receipt image to PDF:', imgErr);
+              doc.setFillColor(248, 250, 252);
+              doc.roundedRect(imgAreaX, imgAreaY, maxImgW, maxImgH, 1, 1, 'F');
+              doc.setFontSize(8);
+              doc.setFont('helvetica', 'bold');
+              doc.setTextColor(100, 116, 139);
+              doc.text(
+                `[ BUKTI FISIK NOTA TERLAMPIR: ${trx.receiptNumber || 'KWITANSI'} ]`,
+                cardX + cardWidth / 2,
+                cardY + 55,
+                { align: 'center' }
+              );
+              doc.setFont('helvetica', 'normal');
+              doc.setFontSize(7.5);
+              doc.setTextColor(148, 163, 184);
+              doc.text(
+                `Uraian: ${trx.title} • Nominal: ${formatIDR(trx.amount)}`,
+                cardX + cardWidth / 2,
+                cardY + 62,
+                { align: 'center' }
+              );
+            }
+          } else {
+            doc.setFillColor(248, 250, 252);
+            doc.roundedRect(imgAreaX, imgAreaY, maxImgW, maxImgH, 1, 1, 'F');
+            doc.setFontSize(8);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(100, 116, 139);
+            doc.text(
+              `[ BUKTI FISIK NOTA TERLAMPIR: ${trx.receiptNumber || 'KWITANSI'} ]`,
+              cardX + cardWidth / 2,
+              cardY + 55,
+              { align: 'center' }
+            );
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(7.5);
+            doc.setTextColor(148, 163, 184);
+            doc.text(
+              `Uraian: ${trx.title} • Nominal: ${formatIDR(trx.amount)}`,
+              cardX + cardWidth / 2,
+              cardY + 62,
+              { align: 'center' }
+            );
+          }
+
+          lampiranY += cardHeight + gap;
+          cardCountOnPage++;
+        }
+      }
+
+      // 9. PAGE FOOTER ON EVERY PAGE
+      const totalPages = doc.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(140, 140, 140);
+        doc.text(
+          `Laporan Pertanggungjawaban (LPJ) Sie Penganugerahan Milad Sidogiri • Halaman ${i} dari ${totalPages}`,
+          pageWidth / 2,
+          pageHeight - 6,
+          { align: 'center' }
+        );
+      }
+
+      // 10. SAVE & TRIGGER DOWNLOAD
+      const dateStr = new Date().toISOString().split('T')[0];
+      doc.save(`LPJ_Realita_dan_Pengeluaran_Sie_Penganugerahan_${dateStr}.pdf`);
+
+      setToast({
+        type: 'success',
+        title: 'PDF Berhasil Diunduh!',
+        message: 'File PDF LPJ resmi berhasil dibuat dan diunduh ke perangkat Anda.',
+      });
+    } catch (err: any) {
+      console.error('Gagal membuat PDF:', err);
+      setToast({
+        type: 'error',
+        title: 'Gagal Mengunduh PDF',
+        message: err?.message || 'Terjadi kesalahan saat membuat file PDF.',
+      });
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
+
+  // Unduh Seluruh Data LPJ Lengkap dalam Format Excel (.xlsx) Resmi
+  const handleExportLpjExcel = async () => {
+    try {
+      setIsExportingLpjExcel(true);
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = 'Panitia Milad Sidogiri - Sie Penganugerahan';
+      workbook.created = new Date();
+
+      // ==========================================
+      // SHEET 1: REKAPITULASI RAPB & KATEGORI (LPJ)
+      // ==========================================
+      const sheet1 = workbook.addWorksheet('Rekapitulasi RAPB & LPJ', {
+        views: [{ showGridLines: true }],
+      });
+
+      // Judul Kop Resmi
+      sheet1.mergeCells('A1:M1');
+      sheet1.getCell('A1').value = 'PONDOK PESANTREN SIDOGIRI';
+      sheet1.getCell('A1').font = { bold: true, size: 14, color: { argb: 'FF24211C' } };
+      sheet1.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
+
+      sheet1.mergeCells('A2:M2');
+      sheet1.getCell('A2').value = 'PANITIA MILAD SIDOGIRI & IKHTIBAR MADRASAH MIFTAHUL ULUM';
+      sheet1.getCell('A2').font = { bold: true, size: 11, color: { argb: 'FF8A7C4C' } };
+      sheet1.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
+
+      sheet1.mergeCells('A3:M3');
+      sheet1.getCell('A3').value = 'SEKSI PENGANUGERAHAN';
+      sheet1.getCell('A3').font = { bold: true, size: 11, color: { argb: 'FF24211C' } };
+      sheet1.getCell('A3').alignment = { horizontal: 'center', vertical: 'middle' };
+
+      sheet1.mergeCells('A4:M4');
+      sheet1.getCell('A4').value = 'LAPORAN PERTANGGUNGJAWABAN (LPJ) REALITA & PENGELUARAN SIE PENGANUGRAHAN';
+      sheet1.getCell('A4').font = { bold: true, size: 12, underline: true, color: { argb: 'FF000000' } };
+      sheet1.getCell('A4').alignment = { horizontal: 'center', vertical: 'middle' };
+
+      sheet1.addRow([]);
+
+      // Ringkasan Metrics
+      const rowMetricsTitle = sheet1.addRow(['RINGKASAN ANGGARAN & KAS FISIK']);
+      rowMetricsTitle.getCell(1).font = { bold: true, size: 11, color: { argb: 'FF8A7C4C' } };
+
+      const r1 = sheet1.addRow(['Total RAPB', totalPaguRapb, '', 'Total Penerimaan Kas', totalPemasukan]);
+      r1.getCell(2).numFmt = '#,##0';
+      r1.getCell(5).numFmt = '#,##0';
+
+      const r2 = sheet1.addRow(['Total Penggunaan Anggaran', totalPengeluaran, '', 'Sisa Kas Fisik', saldoSisa]);
+      r2.getCell(2).numFmt = '#,##0';
+      r2.getCell(5).numFmt = '#,##0';
+
+      const r3 = sheet1.addRow(['Sisa Anggaran Pembelanjaan', totalSisaRapb, '', 'Persentase Serapan', `${totalRapbPenyerapan.toFixed(1)}%`]);
+      r3.getCell(2).numFmt = '#,##0';
+
+      sheet1.addRow([]);
+
+      // Bagian I: Rekapitulasi RAPB
+      const rowRapbTitle = sheet1.addRow(['I. TABEL MONITORING REALITA & SISA ANGGARAN (RAPB)']);
+      rowRapbTitle.getCell(1).font = { bold: true, size: 11, color: { argb: 'FF24211C' } };
+
+      const rapbHeaderRow = sheet1.addRow([
+        'NO',
+        'POS',
+        'URAIAN PROGRAM',
+        'KATEGORI',
+        'QTM',
+        'KET QTM',
+        'VOL',
+        'KET VOL',
+        'HARGA SATUAN (Rp)',
+        'JUMLAH RAPB (Rp)',
+        'REALISASI (Rp)',
+        'SISA ANGGARAN (Rp)',
+        '% SERAP',
+      ]);
+      rapbHeaderRow.eachCell((cell) => {
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FF24211C' },
+        };
+        cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.border = {
+          top: { style: 'thin' },
+          bottom: { style: 'thin' },
+          left: { style: 'thin' },
+          right: { style: 'thin' },
+        };
+      });
+
+      rapbStats.forEach((item, index) => {
+        const qtmVal = item.qtm ?? 1;
+        const volVal = item.vol ?? 1;
+        const unitPriceVal = item.unitPrice ?? Math.round(item.allocatedBudget / Math.max(1, qtmVal * volVal));
+        const row = sheet1.addRow([
+          index + 1,
+          item.posCode,
+          item.programName,
+          item.category,
+          qtmVal,
+          item.qtmKet || '-',
+          volVal,
+          item.volKet || '-',
+          unitPriceVal,
+          item.allocatedBudget,
+          item.spent,
+          item.remaining,
+          `${item.rawPercentage.toFixed(1)}%`,
+        ]);
+
+        row.getCell(1).alignment = { horizontal: 'center' };
+        row.getCell(2).alignment = { horizontal: 'center' };
+        row.getCell(5).alignment = { horizontal: 'center' };
+        row.getCell(6).alignment = { horizontal: 'center' };
+        row.getCell(7).alignment = { horizontal: 'center' };
+        row.getCell(8).alignment = { horizontal: 'center' };
+        row.getCell(9).numFmt = '#,##0';
+        row.getCell(10).numFmt = '#,##0';
+        row.getCell(11).numFmt = '#,##0';
+        row.getCell(12).numFmt = '#,##0';
+        row.getCell(13).alignment = { horizontal: 'center' };
+
+        row.eachCell((cell) => {
+          cell.border = {
+            top: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+            bottom: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+            left: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+            right: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+          };
+        });
+      });
+
+      // Total RAPB Row
+      const totalRapbRow = sheet1.addRow([
+        '',
+        '',
+        'TOTAL KESELURUHAN RAPB',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        totalPaguRapb,
+        totalPengeluaran,
+        totalSisaRapb,
+        `${totalRapbPenyerapan.toFixed(1)}%`,
+      ]);
+      totalRapbRow.eachCell((cell) => {
+        cell.font = { bold: true };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFF3F4F6' },
+        };
+        cell.border = {
+          top: { style: 'medium' },
+          bottom: { style: 'medium' },
+          left: { style: 'thin' },
+          right: { style: 'thin' },
+        };
+      });
+      totalRapbRow.getCell(10).numFmt = '#,##0';
+      totalRapbRow.getCell(11).numFmt = '#,##0';
+      totalRapbRow.getCell(12).numFmt = '#,##0';
+
+      // Auto width sheet 1
+      sheet1.columns.forEach((column) => {
+        let maxLen = 12;
+        column.eachCell?.({ includeEmpty: true }, (cell) => {
+          const val = cell.value ? cell.value.toString() : '';
+          if (val.length > maxLen && val.length < 50) {
+            maxLen = val.length;
+          }
+        });
+        column.width = Math.min(Math.max(maxLen + 3, 10), 40);
+      });
+
+      // ==========================================
+      // SHEET 2: BUKU KAS PENGELUARAN
+      // ==========================================
+      const sheet2 = workbook.addWorksheet('Buku Kas Pengeluaran', {
+        views: [{ showGridLines: true }],
+      });
+
+      sheet2.addRow(['BUKU KAS PENGELUARAN & PEMBELANJAAN SIE PENGANUGERAHAN']).getCell(1).font = { bold: true, size: 12 };
+      sheet2.addRow([]);
+
+      const trxHeaderRow = sheet2.addRow([
+        'NO',
+        'TANGGAL',
+        'NO. NOTA / BUKTI',
+        'KODE POS',
+        'URAIAN / TRANSAKSI',
+        'PROGRAM RAPB',
+        'KATEGORI AKUN',
+        'PENERIMA / TOKO',
+        'QTY',
+        'SATUAN',
+        'HARGA SATUAN (Rp)',
+        'TOTAL PENGELUARAN (Rp)',
+        'KETERANGAN / CATATAN',
+      ]);
+      trxHeaderRow.eachCell((cell) => {
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FF8A7C4C' },
+        };
+        cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.border = {
+          top: { style: 'thin' },
+          bottom: { style: 'thin' },
+          left: { style: 'thin' },
+          right: { style: 'thin' },
+        };
+      });
+
+      const pengeluaranList = transactions.filter((t) => t.type === 'pengeluaran');
+      pengeluaranList.forEach((t, idx) => {
+        const row = sheet2.addRow([
+          idx + 1,
+          t.date,
+          t.receiptNumber || '-',
+          t.posCode || '-',
+          t.title,
+          t.programName || '-',
+          t.category,
+          t.recipient || '-',
+          t.qty ?? '-',
+          t.unit ?? '-',
+          t.unitPrice ?? Math.round(t.amount / Math.max(1, Number(t.qty) || 1)),
+          t.amount,
+          t.notes || '-',
+        ]);
+
+        row.getCell(1).alignment = { horizontal: 'center' };
+        row.getCell(2).alignment = { horizontal: 'center' };
+        row.getCell(3).alignment = { horizontal: 'center' };
+        row.getCell(4).alignment = { horizontal: 'center' };
+        row.getCell(9).alignment = { horizontal: 'center' };
+        row.getCell(10).alignment = { horizontal: 'center' };
+        row.getCell(11).numFmt = '#,##0';
+        row.getCell(12).numFmt = '#,##0';
+
+        row.eachCell((cell) => {
+          cell.border = {
+            top: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+            bottom: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+            left: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+            right: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+          };
+        });
+      });
+
+      const totalTrxRow = sheet2.addRow([
+        '',
+        '',
+        '',
+        '',
+        'TOTAL PENGELUARAN KAS',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        totalPengeluaran,
+        '',
+      ]);
+      totalTrxRow.eachCell((cell) => {
+        cell.font = { bold: true };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFF3F4F6' },
+        };
+        cell.border = {
+          top: { style: 'medium' },
+          bottom: { style: 'medium' },
+          left: { style: 'thin' },
+          right: { style: 'thin' },
+        };
+      });
+      totalTrxRow.getCell(12).numFmt = '#,##0';
+
+      sheet2.columns.forEach((column) => {
+        let maxLen = 12;
+        column.eachCell?.({ includeEmpty: true }, (cell) => {
+          const val = cell.value ? cell.value.toString() : '';
+          if (val.length > maxLen && val.length < 50) {
+            maxLen = val.length;
+          }
+        });
+        column.width = Math.min(Math.max(maxLen + 3, 10), 40);
+      });
+
+      // ==========================================
+      // SHEET 3: BUKU KAS PENERIMAAN
+      // ==========================================
+      const sheet3 = workbook.addWorksheet('Buku Kas Penerimaan', {
+        views: [{ showGridLines: true }],
+      });
+
+      sheet3.addRow(['BUKU KAS PENERIMAAN / SALDO MASUK']).getCell(1).font = { bold: true, size: 12 };
+      sheet3.addRow([]);
+
+      const inHeaderRow = sheet3.addRow([
+        'NO',
+        'TANGGAL',
+        'NO. BUKTI',
+        'SUMBER DANA / URAIAN',
+        'PENYETOR / PENERIMA',
+        'NOMINAL DITERIMA (Rp)',
+        'CATATAN',
+      ]);
+      inHeaderRow.eachCell((cell) => {
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FF10B981' },
+        };
+        cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.border = {
+          top: { style: 'thin' },
+          bottom: { style: 'thin' },
+          left: { style: 'thin' },
+          right: { style: 'thin' },
+        };
+      });
+
+      const pemasukanList = transactions.filter((t) => t.type === 'pemasukan');
+      pemasukanList.forEach((t, idx) => {
+        const row = sheet3.addRow([
+          idx + 1,
+          t.date,
+          t.receiptNumber || '-',
+          t.title,
+          t.recipient || '-',
+          t.amount,
+          t.notes || '-',
+        ]);
+
+        row.getCell(1).alignment = { horizontal: 'center' };
+        row.getCell(2).alignment = { horizontal: 'center' };
+        row.getCell(3).alignment = { horizontal: 'center' };
+        row.getCell(6).numFmt = '#,##0';
+
+        row.eachCell((cell) => {
+          cell.border = {
+            top: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+            bottom: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+            left: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+            right: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+          };
+        });
+      });
+
+      const totalInRow = sheet3.addRow([
+        '',
+        '',
+        '',
+        'TOTAL PENERIMAAN KAS',
+        '',
+        totalPemasukan,
+        '',
+      ]);
+      totalInRow.eachCell((cell) => {
+        cell.font = { bold: true };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFF3F4F6' },
+        };
+      });
+      totalInRow.getCell(6).numFmt = '#,##0';
+
+      sheet3.columns.forEach((column) => {
+        let maxLen = 12;
+        column.eachCell?.({ includeEmpty: true }, (cell) => {
+          const val = cell.value ? cell.value.toString() : '';
+          if (val.length > maxLen && val.length < 50) {
+            maxLen = val.length;
+          }
+        });
+        column.width = Math.min(Math.max(maxLen + 3, 10), 40);
+      });
+
+      // Write buffer and trigger browser download
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const dateStr = new Date().toISOString().split('T')[0];
+      link.download = `LPJ_Realita_dan_Pengeluaran_Sie_Penganugerahan_${dateStr}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      setToast({
+        type: 'success',
+        title: 'Berhasil Mengunduh Excel LPJ',
+        message: 'File Excel LPJ resmi (.xlsx) berhasil diunduh dengan format lengkap & rapi.',
+      });
+    } catch (err: any) {
+      console.error('Failed to export LPJ to Excel:', err);
+      setToast({
+        type: 'error',
+        title: 'Gagal Mengunduh Excel',
+        message: err?.message || 'Terjadi kesalahan saat mengekspor file Excel LPJ.',
+      });
+    } finally {
+      setIsExportingLpjExcel(false);
+    }
   };
 
   // Sinkronisasi otomatis mandiri (Self-healing): perbaiki transaksi di Firestore yang tersimpan dengan kategori keliru
@@ -1522,29 +2607,64 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
               <span className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
               <span className="text-xs font-bold text-slate-600">Mode Pratinjau Laporan Pertanggungjawaban (LPJ) Resmi</span>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex flex-wrap items-center gap-2">
               <button
-                onClick={() => window.print()}
-                className="px-4 py-2 bg-[#8a7c4c] hover:bg-[#6f633a] text-white font-extrabold rounded-xl text-xs flex items-center space-x-2 shadow-xs transition cursor-pointer"
+                type="button"
+                onClick={handleDownloadLpjPdf}
+                disabled={isGeneratingPdf}
+                className="px-4 py-2 bg-rose-700 hover:bg-rose-800 disabled:opacity-50 active:scale-95 text-white font-extrabold rounded-xl text-xs flex items-center space-x-2 shadow-xs transition cursor-pointer"
+                title="Unduh langsung berkas file PDF (.pdf) resmi ke HP / komputer"
+              >
+                {isGeneratingPdf ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4" />
+                )}
+                <span>{isGeneratingPdf ? 'Membuat File PDF...' : 'Unduh Berkas PDF (.pdf)'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handlePrintLpjAction}
+                className="px-4 py-2 bg-[#8a7c4c] hover:bg-[#6f633a] active:scale-95 text-white font-extrabold rounded-xl text-xs flex items-center space-x-2 shadow-xs transition cursor-pointer"
+                title="Buka dialog cetak browser atau simpan PDF melalui printer virtual"
               >
                 <Printer className="w-4 h-4" />
-                <span>Cetak / Simpan PDF</span>
+                <span>Cetak Dokumen</span>
               </button>
+
               <button
-                onClick={() => setShowPrintReport(false)}
-                className="px-4 py-2 border border-slate-300 text-slate-700 font-bold rounded-xl text-xs hover:bg-slate-100 transition cursor-pointer"
+                type="button"
+                onClick={handleExportLpjExcel}
+                disabled={isExportingLpjExcel}
+                className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 active:scale-95 text-white font-extrabold rounded-xl text-xs flex items-center space-x-2 shadow-xs transition cursor-pointer"
+                title="Unduh seluruh data LPJ dalam format file Excel (.xlsx)"
               >
-                Kembali ke Aplikasi
+                {isExportingLpjExcel ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <FileSpreadsheet className="w-4 h-4" />
+                )}
+                <span>Unduh Versi Excel (.xlsx)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowPrintReport(false)}
+                className="px-4 py-2 border border-slate-300 text-slate-700 font-bold rounded-xl text-xs hover:bg-slate-100 transition cursor-pointer flex items-center space-x-1.5"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Kembali ke Aplikasi</span>
               </button>
             </div>
           </div>
 
-          {/* Kop Dokumen Resmi Pondok Pesantren Sidogiri */}
-          <div className="text-center border-b-4 border-double border-slate-900 pb-5 pt-2">
-            <div className="flex items-center justify-center space-x-3 mb-2">
-              <div className="w-12 h-12 rounded-full border-2 border-[#8a7c4c] flex items-center justify-center bg-[#fdfbf7] text-[#8a7c4c] font-black text-lg">
-                PPS
-              </div>
+          {/* DOKUMEN LPJ RESMI (Target Cetak & Ekspor PDF) */}
+          <div id="lpj-printable-content" className="space-y-8 bg-white">
+            {/* Kop Dokumen Resmi Pondok Pesantren Sidogiri */}
+            <div className="text-center border-b-4 border-double border-slate-900 pb-5 pt-2">
+              <div className="flex items-center justify-center space-x-4 mb-2">
+                <MiladLogo size="lg" className="w-16 h-16 shrink-0" />
               <div>
                 <h1 className="text-xl sm:text-2xl font-black tracking-wider text-slate-950 uppercase">
                   PONDOK PESANTREN SIDOGIRI
@@ -1553,23 +2673,17 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                   PANITIA MILAD SIDOGIRI & IKHTIBAR MADRASAH MIFTAHUL ULUM
                 </p>
                 <p className="text-[11px] font-bold text-slate-700 uppercase">
-                  SEKSI PENGANUGERAHAN & PENGHARGAAN
+                  SEKSI PENGANUGERAHAN
                 </p>
               </div>
             </div>
-            <p className="text-[10px] text-slate-500 italic">
-              Sekretariat: Gedung Sidogiri Corp Lt. 2, Sidogiri, Kraton, Pasuruan, Jawa Timur 67101
-            </p>
           </div>
 
           {/* Judul Dokumen LPJ */}
           <div className="text-center space-y-1">
             <h2 className="text-base sm:text-lg font-black uppercase text-slate-900 underline underline-offset-4">
-              LAPORAN PERTANGGUNGJAWABAN (LPJ) REALISASI RAPB & PENGELUARAN KAS
+              LAPORAN PERTANGGUNGJAWABAN (LPJ) REALITA & PENGELUARAN SIE PENGANUGRAHAN
             </h2>
-            <p className="text-xs text-slate-600 font-semibold">
-              Malam Penganugerahan Insan Berprestasi & Khidmah Terpilih • Tahun 2026 M. / 1447 H.
-            </p>
           </div>
 
           {/* Ringkasan Kas & Anggaran */}
@@ -1942,6 +3056,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
               </div>
             )}
           </div>
+          </div>
         </div>
       ) : (
         <>
@@ -2002,21 +3117,51 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
 
             <div className="flex flex-wrap items-center gap-2">
               <button
+                type="button"
+                onClick={handleDownloadLpjPdf}
+                disabled={isGeneratingPdf}
+                title="Unduh langsung dokumen LPJ dalam bentuk file PDF resmi (.pdf)"
+                className="flex items-center space-x-1.5 bg-rose-700 hover:bg-rose-800 disabled:opacity-50 active:scale-95 text-white font-bold px-3.5 py-2 rounded-xl text-xs transition shadow-2xs cursor-pointer"
+              >
+                {isGeneratingPdf ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4 text-white" />
+                )}
+                <span>{isGeneratingPdf ? 'Membuat PDF...' : 'Unduh PDF LPJ (.pdf)'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleOpenLpjPreview}
+                title="Buka Lembar Laporan LPJ Resmi Lengkap untuk Ditinjau & Dicetak"
+                className="flex items-center space-x-1.5 bg-[#24211c] hover:bg-[#38342c] active:scale-95 text-white font-bold px-3.5 py-2 rounded-xl text-xs transition shadow-2xs cursor-pointer"
+              >
+                <Printer className="w-4 h-4 text-[#c3b68b]" />
+                <span>Lihat & Cetak Dokumen LPJ</span>
+              </button>
+
+              <button
+                onClick={handleExportLpjExcel}
+                disabled={isExportingLpjExcel}
+                title="Unduh Laporan LPJ Lengkap beserta Seluruh Buku Kas (.xlsx)"
+                className="flex items-center space-x-1.5 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 active:scale-95 text-white font-bold px-3.5 py-2 rounded-xl text-xs transition shadow-2xs cursor-pointer"
+              >
+                {isExportingLpjExcel ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <FileSpreadsheet className="w-4 h-4" />
+                )}
+                <span>Unduh Excel LPJ (.xlsx)</span>
+              </button>
+
+              <button
                 onClick={handleExportFinance}
                 title="Ekspor Seluruh Data Keuangan ke Format CSV"
                 className="flex items-center space-x-1.5 bg-white hover:bg-[#f7f6f2] text-[#24211c] border border-[rgba(36,33,28,0.15)] font-bold px-3.5 py-2 rounded-xl text-xs transition shadow-2xs cursor-pointer"
               >
                 <FileSpreadsheet className="w-4 h-4 text-[#8a7c4c]" />
                 <span>Ekspor CSV</span>
-              </button>
-
-              <button
-                onClick={() => setShowPrintReport(true)}
-                title="Pratinjau & Cetak Laporan LPJ Resmi Lengkap dengan Lampiran Nota"
-                className="flex items-center space-x-1.5 bg-[#24211c] hover:bg-[#38342c] text-white font-bold px-3.5 py-2 rounded-xl text-xs transition shadow-2xs cursor-pointer"
-              >
-                <FileText className="w-4 h-4 text-[#c3b68b]" />
-                <span>Cetak LPJ & Lampiran</span>
               </button>
 
               <button
@@ -2066,7 +3211,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
 
                 <div className="bg-white p-4.5 rounded-2xl border border-[rgba(36,33,28,0.12)] shadow-xs">
                   <div className="flex items-center justify-between text-xs text-slate-500 font-bold uppercase tracking-wider">
-                    <span>Total Anggaran</span>
+                    <span>Total Penggunaan Anggaran</span>
                     <TrendingDown className="w-4 h-4 text-rose-600" />
                   </div>
                   <h3 className="text-xl font-black text-rose-700 mt-2">{formatIDR(totalPengeluaran)}</h3>
@@ -3019,6 +4164,52 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
         </div>
       )}
 
+      {/* MODAL: PRATINJAU FOTO NOTA DARI FORMAT INPUT */}
+      {isFormPhotoPreviewOpen && (
+        <div className="fixed inset-0 z-[70] bg-black/90 backdrop-blur-md flex flex-col justify-between p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200">
+          <div className="w-full max-w-2xl mx-auto flex items-center justify-between text-white pb-3 border-b border-white/20 shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsFormPhotoPreviewOpen(false)}
+              className="px-3.5 py-2 bg-white/15 hover:bg-white/25 active:bg-white/30 text-white rounded-xl text-xs font-extrabold flex items-center space-x-2 transition cursor-pointer shadow-md"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Kembali ke Form</span>
+            </button>
+            <span className="text-xs font-bold text-white/90 truncate px-2">Pratinjau Foto Nota</span>
+            <button
+              type="button"
+              onClick={() => setIsFormPhotoPreviewOpen(false)}
+              className="w-9 h-9 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center transition cursor-pointer shrink-0"
+              title="Tutup Pratinjau"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="my-auto py-4 flex items-center justify-center max-w-2xl w-full mx-auto">
+            {proofPreviewUrl ? (
+              <img
+                src={proofPreviewUrl}
+                alt="Foto Nota Lampiran"
+                className="max-h-[75vh] w-auto max-w-full object-contain rounded-2xl shadow-2xl border border-white/10"
+              />
+            ) : (
+              <p className="text-white text-xs">Foto nota tidak tersedia atau belum diunggah.</p>
+            )}
+          </div>
+          <div className="w-full max-w-2xl mx-auto pt-3 border-t border-white/20 flex items-center justify-center shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsFormPhotoPreviewOpen(false)}
+              className="w-full sm:w-auto px-6 py-2.5 bg-[#8a7c4c] hover:bg-[#6f633a] active:scale-95 text-white rounded-xl text-xs font-black shadow-lg transition flex items-center justify-center space-x-2 cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Kembali ke Form Input Transaksi</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* =========================================================================
           FITUR 1: MODAL INPUT TRANSAKSI PINTAR (AUTOCOMPLETE & SISA ANGGARAN REAL-TIME)
           ========================================================================= */}
@@ -3028,6 +4219,14 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
             {/* Modal Header */}
             <div className="bg-[#fcfbf9] px-5 py-4 border-b border-slate-200 text-slate-900 flex items-center justify-between shrink-0">
               <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="sm:hidden -ml-1 mr-1 p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                  title="Kembali"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                </button>
                 <div className="w-8 h-8 rounded-xl bg-[#8a7c4c]/10 text-[#8a7c4c] flex items-center justify-center font-bold">
                   <Sparkles className="w-4 h-4" />
                 </div>
@@ -3037,12 +4236,25 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                   </h3>
                 </div>
               </div>
-              <button
-                onClick={closeModal}
-                className="text-slate-400 hover:text-slate-700 font-bold p-1 rounded-lg hover:bg-slate-100 transition cursor-pointer"
-              >
-                ✕
-              </button>
+              <div className="flex items-center space-x-1.5">
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="hidden sm:inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold transition cursor-pointer shadow-2xs"
+                  title="Kembali"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Kembali</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="text-slate-400 hover:text-slate-700 font-bold p-1.5 rounded-xl hover:bg-slate-100 transition cursor-pointer"
+                  title="Tutup Form"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             {/* Modal Form */}
@@ -3402,12 +4614,9 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
                       <div className="flex items-center space-x-1">
                         <button
                           type="button"
-                          onClick={() => {
-                            const w = window.open('');
-                            if (w) w.document.write(`<img src="${proofPreviewUrl}" style="max-width:100%;height:auto;"/>`);
-                          }}
-                          className="p-2 text-slate-600 hover:text-slate-900 hover:bg-white rounded-xl transition cursor-pointer"
-                          title="Perbesar Foto"
+                          onClick={() => setIsFormPhotoPreviewOpen(true)}
+                          className="p-2 text-[#8a7c4c] hover:text-[#6f633a] hover:bg-white rounded-xl transition cursor-pointer"
+                          title="Lihat Pratinjau Foto Nota"
                         >
                           <Eye className="w-4 h-4" />
                         </button>
