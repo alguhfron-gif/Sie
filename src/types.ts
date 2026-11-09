@@ -58,6 +58,8 @@ export interface AwardCategory {
   quota: number;
   requirements?: string[];
   criteria?: AwardCategoryCriterion[];
+  fokusTema?: string[];
+  mekanisme?: string[];
 }
 
 export interface GuruIdentityItem {

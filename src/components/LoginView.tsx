@@ -98,8 +98,15 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, accounts }
           {/* Header Brand */}
           <div className="text-center space-y-3">
             <div className="flex justify-center">
-              <div className="p-1">
+              <div className="relative p-1 group">
                 <MiladLogo size="xl" className="w-20 h-20 drop-shadow-md" />
+                <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-[#fcfbf9] border border-[#c3b68b] shadow-xs flex items-center justify-center pointer-events-none">
+                  <img
+                    src="/logo-needle.png"
+                    alt=""
+                    className="w-5 h-5 object-contain animate-needle-float"
+                  />
+                </div>
               </div>
             </div>
 

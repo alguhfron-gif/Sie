@@ -1,5 +1,5 @@
 import React from 'react';
-import { Award, DollarSign, ArrowRight, PlusCircle, FileSpreadsheet, CheckCircle2, FileCheck, CheckSquare, Sparkles, Trophy } from 'lucide-react';
+import { Award, DollarSign, ArrowRight, PlusCircle, FileSpreadsheet, CheckCircle2, FileCheck, CheckSquare, Sparkles, Trophy, Compass } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from 'recharts';
 import { ActiveTab, AwardCategory, Nomination, Transaction, CommitteeTask, UserSession } from '../types';
 import { ContentHeader } from './ContentHeader';
@@ -89,7 +89,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
           <div className="flex items-start sm:items-center space-x-3.5">
-            <MiladLogo size="md" className="w-12 h-12 shrink-0 drop-shadow-xs" />
+            <div className="relative group">
+              <MiladLogo size="md" className="w-12 h-12 shrink-0 drop-shadow-xs" />
+              <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#fcfbf9] border border-[#c3b68b] shadow-xs flex items-center justify-center pointer-events-none">
+                <img
+                  src="/logo-needle.png"
+                  alt=""
+                  className="w-3.5 h-3.5 object-contain animate-needle-float"
+                />
+              </div>
+            </div>
             <div>
               <div className="inline-flex items-center space-x-1.5 text-[11px] font-bold text-[#8a7c4c] tracking-wider uppercase mb-0.5">
                 <Sparkles className="w-3.5 h-3.5" />
@@ -140,6 +149,50 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <span>Catat Kas</span>
               </button>
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* Official Milad Sidogiri Showcase Card - Selaras Warna Aplikasi & Ukuran Pas */}
+      <div className="bg-[#ede9df] border border-[#c3b68b] rounded-2xl p-4 sm:p-5 shadow-2xs relative overflow-hidden group hover:border-[#8a7c4c] transition-all duration-300">
+        {/* Subtle decorative watermark */}
+        <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 opacity-5 pointer-events-none w-48 h-48">
+          <img src="/logo-milad.png" alt="" className="w-full h-full object-contain filter grayscale" />
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 relative z-10">
+          <div className="space-y-1.5 text-center sm:text-left flex-1 min-w-0">
+            <div className="inline-flex items-center space-x-1.5 bg-[#f7f5ee] border border-[#c3b68b]/60 px-2.5 py-0.5 rounded-full text-[11px] font-bold text-[#675c37]">
+              <Compass className="w-3.5 h-3.5 text-[#8a7c4c] animate-spin-slow" />
+              <span>Tema Resmi Milad Sidogiri ke-290 & Ikhtibar MMU ke-89</span>
+            </div>
+            <h3 className="text-base sm:text-lg font-black text-[#24211c] tracking-tight">
+              Malam Penganugerahan Insan Berprestasi & Khidmah Terpilih
+            </h3>
+            <p className="text-xs text-[#675c37] leading-relaxed">
+              Navigasi interaktif dengan kursor kompas dinamis terinspirasi dari portal resmi <strong className="text-[#24211c]">miladsidogiri.id</strong>.
+            </p>
+          </div>
+
+          {/* Logo Abu-abu Seragam yang Pas Ukurannya */}
+          <div className="shrink-0 flex items-center justify-center">
+            <div className="relative p-2.5 rounded-2xl bg-[#f7f5ee] border border-[#c3b68b]/60 shadow-2xs group-hover:scale-105 transition-transform duration-300">
+              <div className="relative w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
+                <img
+                  src="/logo-milad.png"
+                  alt="Logo Resmi Milad Sidogiri"
+                  className="w-full h-full object-contain drop-shadow-xs"
+                />
+                {/* Needle overlay with smooth float */}
+                <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#ede9df] border border-[#c3b68b] shadow-xs flex items-center justify-center pointer-events-none">
+                  <img
+                    src="/logo-needle.png"
+                    alt=""
+                    className="w-4 h-4 object-contain animate-needle-float"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

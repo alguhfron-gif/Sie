@@ -70,6 +70,7 @@ import { AuditReportView } from './components/AuditReportView';
 import { AccountsView } from './components/AccountsView';
 
 import { LoginView } from './components/LoginView';
+import { CompassCursor } from './components/CompassCursor';
 import { ErrorBoundary, ViewErrorBoundary } from './components/ErrorBoundary';
 import {
   registerGlobalSelfHealingInterceptor,
@@ -940,9 +941,14 @@ export default function App() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   useModalBackHandler(isMobileSidebarOpen, () => setIsMobileSidebarOpen(false), 'mobile-sidebar');
 
-  // If user is not logged in, render Login Screen
+  // If user is not logged in, render Login Screen with custom compass cursor
   if (!currentUser) {
-    return <LoginView onLoginSuccess={handleLoginSuccess} accounts={accounts} />;
+    return (
+      <>
+        <CompassCursor />
+        <LoginView onLoginSuccess={handleLoginSuccess} accounts={accounts} />
+      </>
+    );
   }
 
   // User Role Category Filtering sesuai 5 Pilihan Akun
@@ -966,6 +972,9 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#efede7] text-[#24211c] font-sans flex flex-col antialiased selection:bg-[#8a7c4c] selection:text-white relative overflow-x-hidden">
+      {/* Magnetic Compass Cursor from miladsidogiri.id */}
+      <CompassCursor />
+
       {/* Mobile Top Header (Hanya di layar ponsel/tablet kecil untuk buka drawer menu) */}
       <div className="md:hidden sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[rgba(36,33,28,0.12)] px-3 py-2 flex items-center justify-between shadow-2xs print:hidden">
         <div className="flex items-center space-x-2">

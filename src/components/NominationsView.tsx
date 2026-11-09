@@ -230,6 +230,24 @@ export const OFFICIAL_AWARD_RUBRICS: AssessmentRubric[] = [
   },
 ];
 
+// Hydrate saved rubrics from localStorage immediately if customized
+try {
+  if (typeof window !== 'undefined') {
+    const savedRubricsRaw = localStorage.getItem('sie_rubrics_custom');
+    if (savedRubricsRaw) {
+      const parsed = JSON.parse(savedRubricsRaw);
+      if (Array.isArray(parsed)) {
+        parsed.forEach((savedR: AssessmentRubric) => {
+          const target = OFFICIAL_AWARD_RUBRICS.find((r) => r.id === savedR.id);
+          if (target) {
+            Object.assign(target, savedR);
+          }
+        });
+      }
+    }
+  }
+} catch (e) {}
+
 export const GURU_CRITERIA_LIST = [
   { id: 'guru_dedikasi', label: 'a. Memiliki dedikasi yang tinggi pada Agama, Dakwah, Pondok Pesantren Sidogiri dan/atau Madrasah Miftahul Ulum' },
   { id: 'guru_disiplin_tatatertib', label: 'b. Selalu disiplin dan taat pada tata tertib Madrasah dan Pondok Pesantren Sidogiri' },
@@ -486,25 +504,57 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
   const [editRubricQuota, setEditRubricQuota] = useState(3);
   const [editRubricDesc, setEditRubricDesc] = useState('');
   const [editRubricSyarat, setEditRubricSyarat] = useState<string[]>([]);
+  const [editRubricFokusTema, setEditRubricFokusTema] = useState<string[]>([]);
+  const [editRubricMekanisme, setEditRubricMekanisme] = useState<string[]>([]);
   const [editRubricKriteria, setEditRubricKriteria] = useState<{ name: string; weight: number }[]>([]);
+  const [activeEditModalTab, setActiveEditModalTab] = useState<'syarat' | 'fokus' | 'mekanisme' | 'umum'>('syarat');
 
   // Open modal to edit rubric (Admin only)
-  const handleOpenEditRubric = (rubric: AssessmentRubric, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleOpenEditRubric = (
+    rubric: AssessmentRubric,
+    e?: React.MouseEvent,
+    targetSection: 'syarat' | 'fokus' | 'mekanisme' | 'umum' = 'syarat'
+  ) => {
+    if (e) e.stopPropagation();
     if (!isAdmin) return;
     setEditingRubric(rubric);
     setEditRubricTitle(rubric.title);
     setEditRubricBadge(rubric.badgeLabel);
     setEditRubricQuota(rubric.quota);
     setEditRubricDesc(rubric.description);
-    setEditRubricSyarat([...rubric.syarat]);
+    setEditRubricSyarat([...(rubric.syarat || [])]);
+    setEditRubricFokusTema([
+      ...(rubric.fokusTema && rubric.fokusTema.length > 0
+        ? rubric.fokusTema
+        : [
+            'Rekam jejak akhlak terpuji dan kepatuhan pada tata tertib Sidogiri.',
+            'Kontribusi nyata dan loyalitas tanpa pamrih dalam khidmah dakwah.',
+            'Integritas pribadi dan konsistensi dalam mengemban amanah.',
+          ]),
+    ]);
+    setEditRubricMekanisme([
+      ...(rubric.mekanisme && rubric.mekanisme.length > 0
+        ? rubric.mekanisme
+        : [
+            'Pengisian dan penyerahan angket usulan resmi kepada Sie Penganugerahan.',
+            'Batas akhir penyetoran berkas: Sabtu, 29 Jumadats Tsaniyah 1447 H | 20 Desember 2025 M.',
+            'Verifikasi berkas, validasi rekam jejak, dan sidang pleno penjurian.',
+            'Penetapan resmi melalui Surat Keputusan (SK) Pengasuh Pondok Pesantren Sidogiri.',
+          ]),
+    ]);
     setEditRubricKriteria(rubric.kriteria.map((k) => ({ ...k })));
+    setActiveEditModalTab(targetSection);
   };
 
   // Save edited rubric
   const handleSaveRubric = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingRubric) return;
+
+    const cleanSyarat = editRubricSyarat.filter((s) => s.trim().length > 0);
+    const cleanFokus = editRubricFokusTema.filter((s) => s.trim().length > 0);
+    const cleanMekanisme = editRubricMekanisme.filter((s) => s.trim().length > 0);
+    const cleanKriteria = editRubricKriteria.filter((k) => k.name.trim().length > 0);
 
     // Update in local OFFICIAL_AWARD_RUBRICS in-memory
     const idx = OFFICIAL_AWARD_RUBRICS.findIndex((r) => r.id === editingRubric.id);
@@ -515,10 +565,17 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
         badgeLabel: editRubricBadge,
         quota: editRubricQuota,
         description: editRubricDesc,
-        syarat: editRubricSyarat.filter((s) => s.trim().length > 0),
-        kriteria: editRubricKriteria.filter((k) => k.name.trim().length > 0),
+        syarat: cleanSyarat,
+        fokusTema: cleanFokus,
+        mekanisme: cleanMekanisme,
+        kriteria: cleanKriteria,
       };
     }
+
+    // Save custom rubrics to localStorage for persistence across reloads
+    try {
+      localStorage.setItem('sie_rubrics_custom', JSON.stringify(OFFICIAL_AWARD_RUBRICS));
+    } catch (err) {}
 
     // Also sync to AwardCategory in parent state if onUpdateCategory exists
     const matchedCat = categories.find(
@@ -532,8 +589,10 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
         title: editRubricTitle,
         description: editRubricDesc,
         quota: editRubricQuota,
-        requirements: editRubricSyarat.filter((s) => s.trim().length > 0),
-        criteria: editRubricKriteria.filter((k) => k.name.trim().length > 0),
+        requirements: cleanSyarat,
+        criteria: cleanKriteria,
+        fokusTema: cleanFokus,
+        mekanisme: cleanMekanisme,
       });
     }
 
@@ -2187,7 +2246,6 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
         <div className="bg-white border border-[rgba(36,33,28,0.12)] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <Trophy className="w-5 h-5 text-[#8a7c4c]" />
               <h1 className="text-base font-extrabold text-[#24211c]">
                 Daftar Peserta & Nominasi Penganugerahan
               </h1>
@@ -2196,9 +2254,6 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                 <span>{userRoleOption.badge}</span>
               </span>
             </div>
-            <p className="text-xs text-[#7c7b77] mt-1">
-              Manajemen data lengkap peserta, penambahan atribut identitas (NIP/NIK, Jabatan, Kontak, Karya), penilaian, hingga penetapan pemenang.
-            </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 shrink-0">
@@ -2240,9 +2295,9 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
           </span>
         }
       >
-        {/* Active Rubric Resolution & Full-Screen Category Display ala Screenshot */}
+        {/* Active Rubric Resolution & Full-Screen Category Display */}
         {(() => {
-          const activeRubric = OFFICIAL_AWARD_RUBRICS.find((r) => r.id === activeRubricId) || OFFICIAL_AWARD_RUBRICS[0];
+          const activeRubric = visibleAwardRubrics.find((r) => r.id === activeRubricId) || visibleAwardRubrics[0] || OFFICIAL_AWARD_RUBRICS[0];
           const matchedCat = categories.find(
             (c) =>
               c.id === activeRubric.id ||
@@ -2278,9 +2333,6 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
           const displaySyarat = (matchedCat?.requirements && matchedCat.requirements.length > 0)
             ? matchedCat.requirements
             : activeRubric.syarat;
-          const displayKriteria = (matchedCat?.criteria && matchedCat.criteria.length > 0)
-            ? matchedCat.criteria
-            : activeRubric.kriteria;
           const displayIndikator = activeRubric.fokusTema || [
             'Rekam jejak akhlak terpuji dan kepatuhan pada tata tertib Sidogiri.',
             'Kontribusi nyata dan loyalitas tanpa pamrih dalam khidmah dakwah.',
@@ -2292,137 +2344,134 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
             'Verifikasi berkas, validasi rekam jejak, dan sidang pleno penjurian.',
             'Penetapan resmi melalui Surat Keputusan (SK) Pengasuh Pondok Pesantren Sidogiri.',
           ];
-          const displayHadiah = activeRubric.hadiah || [
-            { rank: 'JUARA I', detail: 'Trofi Kehormatan + Piagam Pengasuh PPS + Tali Asih Khidmah' },
-            { rank: 'JUARA II', detail: 'Trofi Kehormatan + Piagam Pengasuh PPS + Tali Asih Khidmah' },
-            { rank: 'JUARA III', detail: 'Trofi Kehormatan + Piagam Pengasuh PPS + Tali Asih Khidmah' },
-          ];
 
           return (
             <div className="space-y-4">
-              {/* Header Sesuai Tangkapan Layar: Judul Besar Kiri & Deskripsi Pengantar Kanan */}
+              {/* Header: Judul Besar Kiri & Deskripsi Pengantar Kanan */}
               <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pt-1">
                 <div>
-                  <h2 className="text-2xl sm:text-3xl font-black text-[#8a7c4c] tracking-tight uppercase">
-                    CABANG PENGANUGERAHAN
+                  <h2 className="text-xl sm:text-2xl font-black text-[#8a7c4c] tracking-tight uppercase flex items-center space-x-2">
+                    <Trophy className="w-5 h-5 text-[#8a7c4c]" />
+                    <span>CABANG PENGANUGERAHAN</span>
                   </h2>
+                  <p className="text-xs text-[#7c7b77] mt-0.5">
+                    Pedoman resmi persyaratan kelayakan, indikator tema, dan mekanisme penganugerahan.
+                  </p>
                 </div>
-                <p className="text-xs text-[#7c7b77] sm:text-right max-w-md leading-relaxed">
-                  Pilih cabang untuk membaca persyaratan, teknis pelaksanaan, kriteria penilaian, dan ketentuannya.
-                </p>
+                <div className="text-right hidden sm:block">
+                  <span className="text-[11px] font-bold text-[#675c37] bg-[#ede9df] px-3 py-1 rounded-full border border-[#c3b68b]/40">
+                    Milad Sidogiri • Tahun 2026 M. / 1447 H.
+                  </span>
+                </div>
               </div>
 
-              {/* Baris Tombol Tab Kategori Horizontal (01, 02, 03, ...) Sesuai Tangkapan Layar */}
-              <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
-                {visibleAwardRubrics.map((rubric) => {
-                  const isActive = rubric.id === activeRubricId;
-                  const matched = categories.find(
-                    (c) =>
-                      c.id === rubric.id ||
-                      c.title.toLowerCase().replace(/\s+/g, '') === rubric.title.toLowerCase().replace(/\s+/g, '')
-                  );
-                  const title = matched?.title || rubric.title;
+              {/* Baris Tombol Tab Kategori Horizontal (01, 02, 03, ...) - Ukuran Sama & Scroll Horizontal */}
+              <div className="relative">
+                <div className="overflow-x-auto touch-scroll-x no-scrollbar flex items-center space-x-2.5 sm:space-x-3 pb-2 pt-1 scroll-smooth">
+                  {visibleAwardRubrics.map((rubric) => {
+                    const isActive = rubric.id === activeRubricId;
+                    const matched = categories.find(
+                      (c) =>
+                        c.id === rubric.id ||
+                        c.title.toLowerCase().replace(/\s+/g, '') === rubric.title.toLowerCase().replace(/\s+/g, '')
+                    );
+                    const title = matched?.title || rubric.title;
 
-                  return (
-                    <button
-                      key={rubric.id}
-                      type="button"
-                      onClick={() => {
-                        setActiveRubricId(rubric.id);
-                        setCategoryId(rubric.id);
-                      }}
-                      className={`flex items-center space-x-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm transition-all duration-150 cursor-pointer select-none font-bold ${
-                        isActive
-                          ? 'bg-[#8a7c4c] text-white shadow-xs ring-1 ring-[#675c37]'
-                          : 'bg-[#efede7] hover:bg-[#e4e0d4] text-[#24211c] border border-[rgba(36,33,28,0.12)]'
-                      }`}
-                    >
-                      <span className={`font-mono text-xs font-black ${isActive ? 'text-[#f2eee3]' : 'text-[#7c7b77]'}`}>
-                        {String(rubric.number).padStart(2, '0')}
-                      </span>
-                      <span>{title}</span>
-                    </button>
-                  );
-                })}
+                    return (
+                      <button
+                        key={rubric.id}
+                        type="button"
+                        onClick={() => {
+                          setActiveRubricId(rubric.id);
+                          setCategoryId(rubric.id);
+                        }}
+                        className={`shrink-0 w-[215px] sm:w-[240px] h-[52px] flex items-center px-3.5 py-2 rounded-2xl text-xs sm:text-[13px] font-bold transition-all duration-200 cursor-pointer select-none text-left shadow-2xs border ${
+                          isActive
+                            ? 'bg-[#8a7c4c] text-white border-[#675c37] shadow-sm ring-2 ring-[#8a7c4c]/30'
+                            : 'bg-[#ede9df] hover:bg-[#e4dfd2] text-[#24211c] border-[#c3b68b]/60 hover:border-[#8a7c4c]/50'
+                        }`}
+                      >
+                        <span
+                          className={`w-7 h-7 rounded-xl flex items-center justify-center font-mono text-xs font-black shrink-0 mr-2.5 transition-colors ${
+                            isActive
+                              ? 'bg-[#675c37] text-[#f2eee3]'
+                              : 'bg-[#f7f5ee] text-[#8a7c4c] border border-[#c3b68b]/60'
+                          }`}
+                        >
+                          {String(rubric.number).padStart(2, '0')}
+                        </span>
+                        <span className="truncate flex-1 tracking-tight">{title}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
-              {/* Layar Penuh Menampilkan Isi Syarat & Ketentuan Sesuai Desain Tangkapan Layar */}
-              <div className="bg-[#f5f2eb] border border-[#dcd7cb] rounded-3xl p-5 sm:p-7 shadow-xs relative overflow-hidden">
-                {/* Aksen kisi-kisi latar halus ala tangkapan layar di pojok kanan atas */}
+              {/* Display Card Utama Berpenampilan Elegan, Rapi & Warna Khas Sidogiri (Bukan Putih Polos) */}
+              <div className="bg-[#f5f2ea] border border-[#c3b68b] rounded-3xl p-5 sm:p-7 shadow-xs relative overflow-hidden">
+                {/* Aksen garis emas di bagian atas card */}
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#8a7c4c]/20 via-[#8a7c4c] to-[#8a7c4c]/20" />
+
+                {/* Aksen watermark motif latar halus di pojok kanan atas */}
                 <div
                   aria-hidden="true"
-                  className="absolute right-0 top-0 w-64 h-64 opacity-25 pointer-events-none [background:radial-gradient(#8a7c4c_1px,transparent_1px)] [background-size:16px_16px]"
+                  className="absolute right-0 top-0 w-72 h-72 opacity-20 pointer-events-none [background:radial-gradient(#8a7c4c_1.2px,transparent_1.2px)] [background-size:16px_16px]"
                 />
 
-                <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
-                  {/* Kolom Kiri (Judul, Sasaran, Deskripsi, Batas Waktu/Kuota, Juara I/II/III, Aksi Admin) */}
-                  <div className="lg:col-span-5 flex flex-col justify-between space-y-5">
-                    <div>
-                      <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#8a7c4c] block mb-1">
-                        SASARAN: {displayBadge}
-                      </span>
-                      <h3 className="text-2xl sm:text-3xl font-extrabold text-[#24211c] leading-tight tracking-tight">
+                <div className="relative space-y-6">
+                  {/* Bagian Atas: Sasaran, Judul, Deskripsi & Metadata Badges */}
+                  <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-5 pb-5 border-b border-[#c3b68b]/40">
+                    <div className="space-y-2 max-w-2xl">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-[#ede9df] text-[#675c37] border border-[#c3b68b]/60 shadow-2xs">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#8a7c4c]" />
+                          <span>SASARAN: {displayBadge}</span>
+                        </span>
+                        <span className="text-[11px] font-bold text-[#675c37] bg-[#ede9df]/80 border border-[#c3b68b]/50 px-2.5 py-0.5 rounded-full">
+                          Cabang #{String(activeRubric.number).padStart(2, '0')}
+                        </span>
+                      </div>
+                      <h3 className="text-2xl sm:text-3xl font-black text-[#24211c] tracking-tight leading-tight">
                         {displayTitle}
                       </h3>
-                      <p className="text-xs sm:text-sm text-[#5c5b57] leading-relaxed mt-2.5">
+                      <p className="text-xs sm:text-sm text-[#4a4843] leading-relaxed font-normal">
                         {displayDesc}
                       </p>
-
-                      {/* Kotak Batas Waktu / Kuota ala Tangkapan Layar */}
-                      <div className="mt-3.5 inline-block border border-[#c3b68b] bg-[#ede9df] px-3.5 py-1.5 rounded-lg text-xs font-bold text-[#675c37]">
-                        Batas Pengusulan: 29 Jumadats Tsaniyah 1447 H • Kuota: {displayQuota} Orang
-                      </div>
                     </div>
 
-                    {/* Garis Pembatas */}
-                    <div className="pt-2 border-t border-[rgba(36,33,28,0.15)]">
-                      {/* Breakdown Penganugerahan / Juara I, II, III */}
-                      <div className="space-y-2.5 text-xs">
-                        {displayHadiah.map((h, i) => (
-                          <div key={i} className="flex items-baseline justify-between gap-3 pb-2 border-b border-[rgba(36,33,28,0.08)] last:border-0 last:pb-0">
-                            <span className="font-extrabold text-[#24211c] uppercase tracking-wide shrink-0">
-                              {h.rank}
-                            </span>
-                            <span className="text-[#5c5b57] text-right font-medium">
-                              {h.detail}
-                            </span>
-                          </div>
-                        ))}
+                    {/* Metadata Badges & Tombol Aksi */}
+                    <div className="flex flex-col sm:flex-row lg:flex-col items-start lg:items-end gap-3 shrink-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-[#ede9df] border border-[#c3b68b]/60 text-xs text-[#24211c] shadow-2xs">
+                          <Trophy className="w-3.5 h-3.5 text-[#8a7c4c]" />
+                          <span className="font-bold text-[11px]">Kuota: <strong className="text-[#8a7c4c]">{displayQuota} Orang</strong></span>
+                        </div>
+                        <div className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-[#ede9df] border border-[#c3b68b]/60 text-xs text-[#24211c] shadow-2xs">
+                          <Users className="w-3.5 h-3.5 text-[#8a7c4c]" />
+                          <span className="font-bold text-[11px]">Terdaftar: <strong className="text-emerald-800">{count} Usulan</strong></span>
+                        </div>
                       </div>
 
-                      {/* Tombol Aksi Admin vs Petugas */}
-                      <div className="pt-4 flex flex-wrap items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2 pt-1">
                         {isAdmin ? (
                           <>
                             <button
                               type="button"
-                              onClick={(e) =>
-                                handleOpenEditRubric(
-                                  {
-                                    ...activeRubric,
-                                    title: displayTitle,
-                                    description: displayDesc,
-                                    quota: displayQuota,
-                                    syarat: displaySyarat,
-                                    kriteria: displayKriteria,
-                                  },
-                                  e
-                                )
-                              }
-                              className="flex items-center space-x-1.5 bg-[#8a7c4c] hover:bg-[#675c37] text-white px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer shadow-2xs"
-                              title="Edit Ketentuan & Bobot Penilaian"
+                              onClick={() => handleOpenAdd(activeCatId)}
+                              className="flex items-center space-x-1.5 bg-[#8a7c4c] hover:bg-[#675c37] text-white px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer shadow-xs active:scale-95"
+                              title="Tambah peserta baru untuk kategori ini"
                             >
-                              <Edit2 className="w-3.5 h-3.5" />
-                              <span>Edit Ketentuan & Bobot</span>
+                              <Plus className="w-3.5 h-3.5" />
+                              <span>+ Tambah Peserta</span>
                             </button>
 
                             <button
                               type="button"
                               onClick={() => setSelectedCategory(selectedCategory === activeCatId ? 'ALL' : activeCatId)}
-                              className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer shadow-2xs border ${
+                              className={`flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer shadow-2xs border ${
                                 selectedCategory === activeCatId
                                   ? 'bg-[#24211c] text-white border-[#24211c]'
-                                  : 'bg-white hover:bg-[#f7f6f2] text-[#24211c] border-[rgba(36,33,28,0.15)]'
+                                  : 'bg-[#ede9df] hover:bg-[#e4dfd2] text-[#24211c] border-[#c3b68b]/60'
                               }`}
                               title="Filter daftar peserta di tabel bawah"
                             >
@@ -2441,12 +2490,24 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
 
                             <button
                               type="button"
-                              onClick={() => handleOpenAdd(activeCatId)}
-                              className="flex items-center space-x-1.5 bg-[#8a7c4c] hover:bg-[#675c37] text-white px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer shadow-2xs"
-                              title="Tambah peserta baru untuk kategori ini"
+                              onClick={(e) =>
+                                handleOpenEditRubric(
+                                  {
+                                    ...activeRubric,
+                                    title: displayTitle,
+                                    description: displayDesc,
+                                    quota: displayQuota,
+                                    syarat: displaySyarat,
+                                    kriteria: activeRubric.kriteria || [],
+                                  },
+                                  e
+                                )
+                              }
+                              className="flex items-center space-x-1.5 bg-[#ede9df] hover:bg-[#e4dfd2] text-[#24211c] border border-[#c3b68b]/60 px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer shadow-2xs"
+                              title="Edit Ketentuan Penilaian"
                             >
-                              <Plus className="w-3.5 h-3.5" />
-                              <span>+ Tambah Peserta Kategori Ini</span>
+                              <Edit2 className="w-3.5 h-3.5 text-[#8a7c4c]" />
+                              <span>Edit</span>
                             </button>
                           </>
                         ) : (
@@ -2454,15 +2515,15 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                             <button
                               type="button"
                               onClick={() => handleOpenAdd(activeCatId)}
-                              className="flex items-center space-x-1.5 bg-[#8a7c4c] hover:bg-[#675c37] text-white px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer shadow-2xs"
+                              className="flex items-center space-x-1.5 bg-[#8a7c4c] hover:bg-[#675c37] text-white px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer shadow-xs active:scale-95"
                               title="Isi Formulir Usulan Calon Penerima Anugerah"
                             >
-                              <Plus className="w-3.5 h-3.5" />
+                              <Plus className="w-4 h-4" />
                               <span>+ Isi Usulan ({displayTitle})</span>
                             </button>
-                            <div className="flex items-center space-x-2 text-xs text-[#7c7b77] bg-white/80 border border-[rgba(36,33,28,0.1)] px-3 py-1.5 rounded-xl font-medium">
+                            <div className="flex items-center space-x-2 text-xs text-[#675c37] bg-[#ede9df] border border-[#c3b68b]/50 px-3 py-2 rounded-xl font-medium">
                               <Lock className="w-3.5 h-3.5 text-[#8a7c4c]" />
-                              <span>Petugas: Mode Usulan & Centang Kriteria</span>
+                              <span>Mode Petugas Pengusul</span>
                             </div>
                           </div>
                         )}
@@ -2470,79 +2531,246 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
                     </div>
                   </div>
 
-                  {/* Bagian Kanan (Grid 4 Blok: Peserta, Sudut Pandang Tema, Format/Kriteria, Mekanisme) */}
-                  <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-6">
-                    {/* Blok 1: PESERTA & KELAYAKAN (Sesuai kolom "PESERTA" di tangkapan layar) */}
-                    <div className="space-y-2.5">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-[#24211c] pb-2 border-b border-[rgba(36,33,28,0.2)]">
-                        PESERTA & KELAYAKAN
-                      </h4>
-                      <ul className="space-y-2 text-xs text-[#5c5b57] leading-relaxed">
-                        {displaySyarat.map((s, i) => (
-                          <li key={i} className="flex items-start space-x-2">
-                            <span className="text-[#8a7c4c] font-black text-sm leading-none mt-0.5">•</span>
-                            <span>{s}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    {/* Blok 2: SUDUT PANDANG TEMA / INDIKATOR (Sesuai kolom "SUDUT PANDANG TEMA" di tangkapan layar) */}
-                    <div className="space-y-2.5">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-[#24211c] pb-2 border-b border-[rgba(36,33,28,0.2)]">
-                        SUDUT PANDANG TEMA
-                      </h4>
-                      <ul className="space-y-2 text-xs text-[#5c5b57] leading-relaxed">
-                        {displayIndikator.map((ind, i) => (
-                          <li key={i} className="flex items-start space-x-2">
-                            <span className="text-[#8a7c4c] font-black text-sm leading-none mt-0.5">•</span>
-                            <span>{ind}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    {/* Blok 3: FORMAT & KETENTUAN PENILAIAN (Sesuai kolom "FORMAT & KETENTUAN" di tangkapan layar) */}
-                    <div className="space-y-2.5">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-[#24211c] pb-2 border-b border-[rgba(36,33,28,0.2)]">
-                        FORMAT & KETENTUAN
-                      </h4>
-                      <div className="space-y-2.5 pt-1 text-xs">
-                        {displayKriteria.map((k, i) => (
-                          <div key={i} className="space-y-1">
-                            <div className="flex items-center justify-between text-[#24211c] font-medium text-xs">
-                              <span>{k.name}</span>
-                              <span className="font-extrabold text-[#8a7c4c] bg-[#ede9df] px-1.5 py-0.5 rounded text-[11px] border border-[#c3b68b]/30">
-                                {k.weight}%
-                              </span>
+                  {/* 3 Pilar Utama: 1. Peserta & Kelayakan, 2. Sudut Pandang Tema, 3. Mekanisme & Penilaian (Warna Sesuai Tema Aplikasi, Bukan Putih) */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch">
+                    {/* Pilar 1: PESERTA & KELAYAKAN */}
+                    <div className="live-col group bg-[#ede9df] hover:bg-[#e8e3d5] border border-[#c3b68b] hover:border-[#8a7c4c] rounded-2xl p-5 shadow-2xs transition-all duration-300 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between space-x-2 pb-3.5 border-b border-[#c3b68b]/50">
+                          <div className="flex items-center space-x-3 min-w-0">
+                            <div className="w-9 h-9 rounded-xl bg-[#8a7c4c] group-hover:bg-[#675c37] text-white shadow-2xs flex items-center justify-center font-bold shrink-0 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
+                              <Users className="w-4 h-4 text-white" />
                             </div>
-                            <div className="w-full bg-[#ded9cb] h-1.5 rounded-full overflow-hidden">
-                              <div
-                                className="bg-[#8a7c4c] h-1.5 rounded-full transition-all duration-300"
-                                style={{ width: `${k.weight}%` }}
-                              />
+                            <div>
+                              <h4 className="text-xs font-black uppercase tracking-wider text-[#24211c] group-hover:text-[#8a7c4c] transition-colors">
+                                PESERTA & KELAYAKAN
+                              </h4>
+                              <p className="text-[10.5px] text-[#675c37] font-semibold">Kualifikasi resmi calon peserta</p>
                             </div>
                           </div>
-                        ))}
-                        <p className="text-[11px] text-[#7c7b77] italic pt-1">
-                          * Standar skor kelulusan minimal penganugerahan: 85/100.
-                        </p>
+                          {isAdmin && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenEditRubric(
+                                  {
+                                    ...activeRubric,
+                                    title: displayTitle,
+                                    description: displayDesc,
+                                    quota: displayQuota,
+                                    syarat: displaySyarat,
+                                    fokusTema: displayIndikator,
+                                    mekanisme: displayMekanisme,
+                                  },
+                                  e,
+                                  'syarat'
+                                );
+                              }}
+                              className="p-1.5 rounded-lg bg-[#f7f5ee] hover:bg-[#8a7c4c] text-[#8a7c4c] hover:text-white border border-[#c3b68b]/60 transition-all text-[10px] font-bold flex items-center space-x-1 cursor-pointer shadow-2xs shrink-0"
+                              title="Edit & Tambah Narasi Peserta & Kelayakan"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                              <span className="hidden sm:inline">Edit</span>
+                            </button>
+                          )}
+                        </div>
+
+                        <ul className="mt-4 space-y-2.5 text-xs text-[#24211c] leading-relaxed">
+                          {displaySyarat.map((s, i) => (
+                            <li key={i} className="flex items-start space-x-3 p-2.5 rounded-xl bg-[#f7f5ee] hover:bg-white border border-[#c3b68b]/35 shadow-2xs transition-all duration-200">
+                              <span className="w-2 h-2 rounded-full bg-[#8a7c4c] shrink-0 mt-1.5 ring-2 ring-[#8a7c4c]/20" />
+                              <span className="font-medium text-[#24211c] leading-relaxed">{s}</span>
+                            </li>
+                          ))}
+                        </ul>
                       </div>
+
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenEditRubric(
+                              {
+                                ...activeRubric,
+                                title: displayTitle,
+                                description: displayDesc,
+                                quota: displayQuota,
+                                syarat: displaySyarat,
+                                fokusTema: displayIndikator,
+                                mekanisme: displayMekanisme,
+                              },
+                              e,
+                              'syarat'
+                            );
+                          }}
+                          className="mt-4 w-full py-2 px-3 rounded-xl bg-[#f7f5ee] hover:bg-[#8a7c4c] text-[#8a7c4c] hover:text-white border border-dashed border-[#8a7c4c]/40 transition-all text-[11px] font-bold flex items-center justify-center space-x-1.5 cursor-pointer shadow-2xs active:scale-98"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>+ Tambah Narasi Peserta</span>
+                        </button>
+                      )}
                     </div>
 
-                    {/* Blok 4: MEKANISME & PENILAIAN (Sesuai kolom "MEKANISME & PENILAIAN" di tangkapan layar) */}
-                    <div className="space-y-2.5">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-[#24211c] pb-2 border-b border-[rgba(36,33,28,0.2)]">
-                        MEKANISME & PENILAIAN
-                      </h4>
-                      <ul className="space-y-2 text-xs text-[#5c5b57] leading-relaxed">
-                        {displayMekanisme.map((m, i) => (
-                          <li key={i} className="flex items-start space-x-2">
-                            <span className="text-[#8a7c4c] font-black text-sm leading-none mt-0.5">•</span>
-                            <span>{m}</span>
-                          </li>
-                        ))}
-                      </ul>
+                    {/* Pilar 2: SUDUT PANDANG TEMA */}
+                    <div className="live-col group bg-[#ede9df] hover:bg-[#e8e3d5] border border-[#c3b68b] hover:border-[#8a7c4c] rounded-2xl p-5 shadow-2xs transition-all duration-300 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between space-x-2 pb-3.5 border-b border-[#c3b68b]/50">
+                          <div className="flex items-center space-x-3 min-w-0">
+                            <div className="w-9 h-9 rounded-xl bg-[#8a7c4c] group-hover:bg-[#675c37] text-white shadow-2xs flex items-center justify-center font-bold shrink-0 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
+                              <Eye className="w-4 h-4 text-white" />
+                            </div>
+                            <div>
+                              <h4 className="text-xs font-black uppercase tracking-wider text-[#24211c] group-hover:text-[#8a7c4c] transition-colors">
+                                SUDUT PANDANG TEMA
+                              </h4>
+                              <p className="text-[10.5px] text-[#675c37] font-semibold">Indikator fokus penganugerahan</p>
+                            </div>
+                          </div>
+                          {isAdmin && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenEditRubric(
+                                  {
+                                    ...activeRubric,
+                                    title: displayTitle,
+                                    description: displayDesc,
+                                    quota: displayQuota,
+                                    syarat: displaySyarat,
+                                    fokusTema: displayIndikator,
+                                    mekanisme: displayMekanisme,
+                                  },
+                                  e,
+                                  'fokus'
+                                );
+                              }}
+                              className="p-1.5 rounded-lg bg-[#f7f5ee] hover:bg-[#8a7c4c] text-[#8a7c4c] hover:text-white border border-[#c3b68b]/60 transition-all text-[10px] font-bold flex items-center space-x-1 cursor-pointer shadow-2xs shrink-0"
+                              title="Edit & Tambah Narasi Sudut Pandang Tema"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                              <span className="hidden sm:inline">Edit</span>
+                            </button>
+                          )}
+                        </div>
+
+                        <ul className="mt-4 space-y-2.5 text-xs text-[#24211c] leading-relaxed">
+                          {displayIndikator.map((ind, i) => (
+                            <li key={i} className="flex items-start space-x-3 p-2.5 rounded-xl bg-[#f7f5ee] hover:bg-white border border-[#c3b68b]/35 shadow-2xs transition-all duration-200">
+                              <span className="w-2 h-2 rounded-full bg-[#8a7c4c] shrink-0 mt-1.5 ring-2 ring-[#8a7c4c]/20" />
+                              <span className="font-medium text-[#24211c] leading-relaxed">{ind}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenEditRubric(
+                              {
+                                ...activeRubric,
+                                title: displayTitle,
+                                description: displayDesc,
+                                quota: displayQuota,
+                                syarat: displaySyarat,
+                                fokusTema: displayIndikator,
+                                mekanisme: displayMekanisme,
+                              },
+                              e,
+                              'fokus'
+                            );
+                          }}
+                          className="mt-4 w-full py-2 px-3 rounded-xl bg-[#f7f5ee] hover:bg-[#8a7c4c] text-[#8a7c4c] hover:text-white border border-dashed border-[#8a7c4c]/40 transition-all text-[11px] font-bold flex items-center justify-center space-x-1.5 cursor-pointer shadow-2xs active:scale-98"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>+ Tambah Narasi Sudut Pandang</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Pilar 3: MEKANISME & PENILAIAN */}
+                    <div className="live-col group bg-[#ede9df] hover:bg-[#e8e3d5] border border-[#c3b68b] hover:border-[#8a7c4c] rounded-2xl p-5 shadow-2xs transition-all duration-300 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between space-x-2 pb-3.5 border-b border-[#c3b68b]/50">
+                          <div className="flex items-center space-x-3 min-w-0">
+                            <div className="w-9 h-9 rounded-xl bg-[#8a7c4c] group-hover:bg-[#675c37] text-white shadow-2xs flex items-center justify-center font-bold shrink-0 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
+                              <FileCheck className="w-4 h-4 text-white" />
+                            </div>
+                            <div>
+                              <h4 className="text-xs font-black uppercase tracking-wider text-[#24211c] group-hover:text-[#8a7c4c] transition-colors">
+                                MEKANISME & PENILAIAN
+                              </h4>
+                              <p className="text-[10.5px] text-[#675c37] font-semibold">Alur seleksi & penetapan resmi</p>
+                            </div>
+                          </div>
+                          {isAdmin && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenEditRubric(
+                                  {
+                                    ...activeRubric,
+                                    title: displayTitle,
+                                    description: displayDesc,
+                                    quota: displayQuota,
+                                    syarat: displaySyarat,
+                                    fokusTema: displayIndikator,
+                                    mekanisme: displayMekanisme,
+                                  },
+                                  e,
+                                  'mekanisme'
+                                );
+                              }}
+                              className="p-1.5 rounded-lg bg-[#f7f5ee] hover:bg-[#8a7c4c] text-[#8a7c4c] hover:text-white border border-[#c3b68b]/60 transition-all text-[10px] font-bold flex items-center space-x-1 cursor-pointer shadow-2xs shrink-0"
+                              title="Edit & Tambah Narasi Mekanisme & Penilaian"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                              <span className="hidden sm:inline">Edit</span>
+                            </button>
+                          )}
+                        </div>
+
+                        <ul className="mt-4 space-y-2.5 text-xs text-[#24211c] leading-relaxed">
+                          {displayMekanisme.map((m, i) => (
+                            <li key={i} className="flex items-start space-x-3 p-2.5 rounded-xl bg-[#f7f5ee] hover:bg-white border border-[#c3b68b]/35 shadow-2xs transition-all duration-200">
+                              <span className="w-2 h-2 rounded-full bg-[#8a7c4c] shrink-0 mt-1.5 ring-2 ring-[#8a7c4c]/20" />
+                              <span className="font-medium text-[#24211c] leading-relaxed">{m}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenEditRubric(
+                              {
+                                ...activeRubric,
+                                title: displayTitle,
+                                description: displayDesc,
+                                quota: displayQuota,
+                                syarat: displaySyarat,
+                                fokusTema: displayIndikator,
+                                mekanisme: displayMekanisme,
+                              },
+                              e,
+                              'mekanisme'
+                            );
+                          }}
+                          className="mt-4 w-full py-2 px-3 rounded-xl bg-[#f7f5ee] hover:bg-[#8a7c4c] text-[#8a7c4c] hover:text-white border border-dashed border-[#8a7c4c]/40 transition-all text-[11px] font-bold flex items-center justify-center space-x-1.5 cursor-pointer shadow-2xs active:scale-98"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>+ Tambah Narasi Mekanisme</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -2557,7 +2785,6 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
         <CollapsibleSection
           sectionId="nomination_list_section"
           title="Daftar Peserta Nominasi & Penganugerahan"
-          icon={<Trophy className="w-4 h-4 text-[#8a7c4c]" />}
           defaultOpen={true}
           badge={
           <div className="flex items-center space-x-2">
@@ -5635,18 +5862,19 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
 
       {/* Modal Edit Syarat & Ketentuan Kategori (Khusus Admin) */}
       {isAdmin && editingRubric && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto animate-fadeIn">
-          <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 my-8">
-            <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-5 sm:p-6 shadow-2xl border border-slate-200 my-6 max-h-[90vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 shrink-0">
               <div className="flex items-center space-x-2.5">
-                <div className="w-8 h-8 rounded-xl bg-[#f2eee3] text-[#8a7c4c] flex items-center justify-center font-bold">
+                <div className="w-9 h-9 rounded-xl bg-[#f2eee3] text-[#8a7c4c] flex items-center justify-center font-bold shrink-0">
                   <Edit2 className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-slate-900">
-                    Edit Ketentuan & Syarat Penilaian
+                  <h3 className="text-base font-extrabold text-[#24211c]">
+                    Edit Narasi & Ketentuan Penilaian
                   </h3>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-[#7c7b77]">
                     Kategori: <span className="font-bold text-[#8a7c4c]">{editingRubric.title}</span>
                   </p>
                 </div>
@@ -5654,192 +5882,386 @@ export const NominationsView: React.FC<NominationsViewProps> = ({
               <button
                 type="button"
                 onClick={() => setEditingRubric(null)}
-                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveRubric} className="mt-4 space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Nama Kategori Penghargaan
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={editRubricTitle}
-                  onChange={(e) => setEditRubricTitle(e.target.value)}
-                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-[#8a7c4c]/40 focus:bg-white focus:outline-none"
-                />
-              </div>
+            {/* Modal Navigation Tabs (Pilar 1, Pilar 2, Pilar 3, Info Umum) */}
+            <div className="flex items-center space-x-1.5 p-1 bg-[#ede9df]/70 rounded-xl mt-3 border border-[#c3b68b]/40 shrink-0 overflow-x-auto touch-scroll-x no-scrollbar">
+              <button
+                type="button"
+                onClick={() => setActiveEditModalTab('syarat')}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+                  activeEditModalTab === 'syarat'
+                    ? 'bg-[#8a7c4c] text-white shadow-xs'
+                    : 'text-[#24211c] hover:bg-white/60'
+                }`}
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>1. Peserta ({editRubricSyarat.length})</span>
+              </button>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Label Sasaran / Badge
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={editRubricBadge}
-                    onChange={(e) => setEditRubricBadge(e.target.value)}
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-[#8a7c4c]/40 focus:bg-white focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Kuota Pemenang
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="50"
-                    required
-                    value={editRubricQuota}
-                    onChange={(e) => setEditRubricQuota(Number(e.target.value))}
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-[#8a7c4c]/40 focus:bg-white focus:outline-none"
-                  />
-                </div>
-              </div>
+              <button
+                type="button"
+                onClick={() => setActiveEditModalTab('fokus')}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+                  activeEditModalTab === 'fokus'
+                    ? 'bg-[#8a7c4c] text-white shadow-xs'
+                    : 'text-[#24211c] hover:bg-white/60'
+                }`}
+              >
+                <Eye className="w-3.5 h-3.5" />
+                <span>2. Sudut Pandang ({editRubricFokusTema.length})</span>
+              </button>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Deskripsi Singkat Kategori
-                </label>
-                <textarea
-                  rows={2}
-                  value={editRubricDesc}
-                  onChange={(e) => setEditRubricDesc(e.target.value)}
-                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-[#8a7c4c]/40 focus:bg-white focus:outline-none"
-                />
-              </div>
+              <button
+                type="button"
+                onClick={() => setActiveEditModalTab('mekanisme')}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+                  activeEditModalTab === 'mekanisme'
+                    ? 'bg-[#8a7c4c] text-white shadow-xs'
+                    : 'text-[#24211c] hover:bg-white/60'
+                }`}
+              >
+                <FileCheck className="w-3.5 h-3.5" />
+                <span>3. Mekanisme ({editRubricMekanisme.length})</span>
+              </button>
 
-              {/* Edit Syarat & Ketentuan (Poin-Poin) */}
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-bold text-slate-700">
-                    Ketentuan & Syarat Kelayakan ({editRubricSyarat.length} Poin)
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setEditRubricSyarat([...editRubricSyarat, ''])}
-                    className="text-[11px] font-bold text-[#8a7c4c] hover:underline flex items-center space-x-1"
-                  >
-                    <Plus className="w-3 h-3" />
-                    <span>Tambah Syarat</span>
-                  </button>
-                </div>
-                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                  {editRubricSyarat.map((item, idx) => (
-                    <div key={idx} className="flex items-center space-x-2">
-                      <span className="w-5 h-5 rounded-full bg-[#f2eee3] text-[#8a7c4c] flex items-center justify-center text-[10px] font-bold shrink-0">
-                        {idx + 1}
-                      </span>
-                      <input
-                        type="text"
-                        value={item}
-                        placeholder={`Poin syarat ${idx + 1}`}
-                        onChange={(e) => {
-                          const updated = [...editRubricSyarat];
-                          updated[idx] = e.target.value;
-                          setEditRubricSyarat(updated);
-                        }}
-                        className="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:ring-2 focus:ring-[#8a7c4c]/40 focus:bg-white focus:outline-none"
-                      />
-                      {editRubricSyarat.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditRubricSyarat(editRubricSyarat.filter((_, i) => i !== idx));
-                          }}
-                          className="p-1 text-slate-400 hover:text-rose-600 transition"
-                          title="Hapus poin syarat"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
+              <button
+                type="button"
+                onClick={() => setActiveEditModalTab('umum')}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+                  activeEditModalTab === 'umum'
+                    ? 'bg-[#8a7c4c] text-white shadow-xs'
+                    : 'text-[#24211c] hover:bg-white/60'
+                }`}
+              >
+                <Scale className="w-3.5 h-3.5" />
+                <span>4. Info & Bobot</span>
+              </button>
+            </div>
+
+            {/* Form Body with Scroll */}
+            <form onSubmit={handleSaveRubric} className="mt-3 flex-1 flex flex-col min-h-0 overflow-hidden">
+              <div className="flex-1 overflow-y-auto pr-1 space-y-4 py-1">
+                {/* TAB 1: PESERTA & KELAYAKAN */}
+                {activeEditModalTab === 'syarat' && (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                      <div>
+                        <h4 className="text-xs font-black uppercase text-[#24211c] flex items-center space-x-1.5">
+                          <Users className="w-3.5 h-3.5 text-[#8a7c4c]" />
+                          <span>Pilar 1: Narasi Peserta & Kelayakan</span>
+                        </h4>
+                        <p className="text-[11px] text-[#7c7b77]">
+                          Tentukan syarat administratif dan kriteria wajib calon penerima anugerah.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setEditRubricSyarat([...editRubricSyarat, ''])}
+                        className="px-2.5 py-1.5 bg-[#8a7c4c] hover:bg-[#675c37] text-white rounded-lg text-xs font-bold flex items-center space-x-1 transition cursor-pointer shadow-2xs"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Tambah Narasi</span>
+                      </button>
                     </div>
-                  ))}
-                </div>
-              </div>
 
-              {/* Edit Kriteria & Bobot Penilaian */}
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-bold text-slate-700">
-                    Kriteria & Bobot Penilaian
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setEditRubricKriteria([...editRubricKriteria, { name: '', weight: 10 }])}
-                    className="text-[11px] font-bold text-[#8a7c4c] hover:underline flex items-center space-x-1"
-                  >
-                    <Plus className="w-3 h-3" />
-                    <span>Tambah Kriteria</span>
-                  </button>
-                </div>
-                <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
-                  {editRubricKriteria.map((krit, idx) => (
-                    <div key={idx} className="flex items-center space-x-2">
+                    <div className="space-y-2.5">
+                      {editRubricSyarat.map((item, idx) => (
+                        <div key={idx} className="flex items-start space-x-2 p-2 bg-[#f7f6f2] rounded-xl border border-[rgba(36,33,28,0.1)]">
+                          <span className="w-6 h-6 rounded-lg bg-[#8a7c4c] text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
+                            {idx + 1}
+                          </span>
+                          <textarea
+                            rows={2}
+                            value={item}
+                            placeholder={`Tulis narasi syarat kelayakan nomor ${idx + 1}...`}
+                            onChange={(e) => {
+                              const updated = [...editRubricSyarat];
+                              updated[idx] = e.target.value;
+                              setEditRubricSyarat(updated);
+                            }}
+                            className="flex-1 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-[#24211c] focus:ring-2 focus:ring-[#8a7c4c]/40 focus:outline-none resize-y"
+                          />
+                          {editRubricSyarat.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditRubricSyarat(editRubricSyarat.filter((_, i) => i !== idx));
+                              }}
+                              className="p-1.5 text-slate-400 hover:text-rose-600 transition cursor-pointer mt-0.5"
+                              title="Hapus narasi ini"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* TAB 2: SUDUT PANDANG TEMA */}
+                {activeEditModalTab === 'fokus' && (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                      <div>
+                        <h4 className="text-xs font-black uppercase text-[#24211c] flex items-center space-x-1.5">
+                          <Eye className="w-3.5 h-3.5 text-[#8a7c4c]" />
+                          <span>Pilar 2: Narasi Sudut Pandang Tema & Indikator</span>
+                        </h4>
+                        <p className="text-[11px] text-[#7c7b77]">
+                          Fokus tema, indikator keteladanan, loyalitas, dan nilai dakwah yang dinilai.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setEditRubricFokusTema([...editRubricFokusTema, ''])}
+                        className="px-2.5 py-1.5 bg-[#8a7c4c] hover:bg-[#675c37] text-white rounded-lg text-xs font-bold flex items-center space-x-1 transition cursor-pointer shadow-2xs"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Tambah Narasi</span>
+                      </button>
+                    </div>
+
+                    <div className="space-y-2.5">
+                      {editRubricFokusTema.map((item, idx) => (
+                        <div key={idx} className="flex items-start space-x-2 p-2 bg-[#f7f6f2] rounded-xl border border-[rgba(36,33,28,0.1)]">
+                          <span className="w-6 h-6 rounded-lg bg-[#8a7c4c] text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
+                            {idx + 1}
+                          </span>
+                          <textarea
+                            rows={2}
+                            value={item}
+                            placeholder={`Tulis narasi sudut pandang tema nomor ${idx + 1}...`}
+                            onChange={(e) => {
+                              const updated = [...editRubricFokusTema];
+                              updated[idx] = e.target.value;
+                              setEditRubricFokusTema(updated);
+                            }}
+                            className="flex-1 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-[#24211c] focus:ring-2 focus:ring-[#8a7c4c]/40 focus:outline-none resize-y"
+                          />
+                          {editRubricFokusTema.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditRubricFokusTema(editRubricFokusTema.filter((_, i) => i !== idx));
+                              }}
+                              className="p-1.5 text-slate-400 hover:text-rose-600 transition cursor-pointer mt-0.5"
+                              title="Hapus narasi ini"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* TAB 3: MEKANISME & PENILAIAN */}
+                {activeEditModalTab === 'mekanisme' && (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                      <div>
+                        <h4 className="text-xs font-black uppercase text-[#24211c] flex items-center space-x-1.5">
+                          <FileCheck className="w-3.5 h-3.5 text-[#8a7c4c]" />
+                          <span>Pilar 3: Narasi Mekanisme & Alur Penganugerahan</span>
+                        </h4>
+                        <p className="text-[11px] text-[#7c7b77]">
+                          Tahapan pengusulan, batas waktu penyetoran berkas, verifikasi berkas, dan penetapan SK.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setEditRubricMekanisme([...editRubricMekanisme, ''])}
+                        className="px-2.5 py-1.5 bg-[#8a7c4c] hover:bg-[#675c37] text-white rounded-lg text-xs font-bold flex items-center space-x-1 transition cursor-pointer shadow-2xs"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Tambah Narasi</span>
+                      </button>
+                    </div>
+
+                    <div className="space-y-2.5">
+                      {editRubricMekanisme.map((item, idx) => (
+                        <div key={idx} className="flex items-start space-x-2 p-2 bg-[#f7f6f2] rounded-xl border border-[rgba(36,33,28,0.1)]">
+                          <span className="w-6 h-6 rounded-lg bg-[#8a7c4c] text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
+                            {idx + 1}
+                          </span>
+                          <textarea
+                            rows={2}
+                            value={item}
+                            placeholder={`Tulis narasi mekanisme nomor ${idx + 1}...`}
+                            onChange={(e) => {
+                              const updated = [...editRubricMekanisme];
+                              updated[idx] = e.target.value;
+                              setEditRubricMekanisme(updated);
+                            }}
+                            className="flex-1 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-[#24211c] focus:ring-2 focus:ring-[#8a7c4c]/40 focus:outline-none resize-y"
+                          />
+                          {editRubricMekanisme.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditRubricMekanisme(editRubricMekanisme.filter((_, i) => i !== idx));
+                              }}
+                              className="p-1.5 text-slate-400 hover:text-rose-600 transition cursor-pointer mt-0.5"
+                              title="Hapus narasi ini"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* TAB 4: INFO UMUM & BOBOT PENILAIAN */}
+                {activeEditModalTab === 'umum' && (
+                  <div className="space-y-3.5">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Nama Kategori Penghargaan
+                      </label>
                       <input
                         type="text"
-                        value={krit.name}
-                        placeholder="Nama kriteria..."
-                        onChange={(e) => {
-                          const updated = [...editRubricKriteria];
-                          updated[idx].name = e.target.value;
-                          setEditRubricKriteria(updated);
-                        }}
-                        className="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:ring-2 focus:ring-[#8a7c4c]/40 focus:bg-white focus:outline-none"
+                        required
+                        value={editRubricTitle}
+                        onChange={(e) => setEditRubricTitle(e.target.value)}
+                        className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-[#8a7c4c]/40 focus:bg-white focus:outline-none"
                       />
-                      <div className="flex items-center space-x-1 shrink-0">
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Label Sasaran / Badge
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={editRubricBadge}
+                          onChange={(e) => setEditRubricBadge(e.target.value)}
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-[#8a7c4c]/40 focus:bg-white focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Kuota Pemenang (Orang)
+                        </label>
                         <input
                           type="number"
-                          min="0"
-                          max="100"
-                          value={krit.weight}
-                          onChange={(e) => {
-                            const updated = [...editRubricKriteria];
-                            updated[idx].weight = Number(e.target.value);
-                            setEditRubricKriteria(updated);
-                          }}
-                          className="w-16 px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-center font-bold text-[#8a7c4c] focus:outline-none"
+                          min="1"
+                          max="50"
+                          required
+                          value={editRubricQuota}
+                          onChange={(e) => setEditRubricQuota(Number(e.target.value))}
+                          className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-[#8a7c4c]/40 focus:bg-white focus:outline-none"
                         />
-                        <span className="text-xs font-bold text-slate-500">%</span>
                       </div>
-                      {editRubricKriteria.length > 1 && (
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Deskripsi Singkat Kategori
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={editRubricDesc}
+                        onChange={(e) => setEditRubricDesc(e.target.value)}
+                        className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-[#8a7c4c]/40 focus:bg-white focus:outline-none"
+                      />
+                    </div>
+
+                    {/* Edit Kriteria & Bobot Penilaian */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="block text-xs font-bold text-slate-700">
+                          Kriteria & Bobot Penilaian Juri
+                        </label>
                         <button
                           type="button"
-                          onClick={() => {
-                            setEditRubricKriteria(editRubricKriteria.filter((_, i) => i !== idx));
-                          }}
-                          className="p-1 text-slate-400 hover:text-rose-600 transition"
-                          title="Hapus kriteria"
+                          onClick={() => setEditRubricKriteria([...editRubricKriteria, { name: '', weight: 10 }])}
+                          className="text-[11px] font-bold text-[#8a7c4c] hover:underline flex items-center space-x-1 cursor-pointer"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Plus className="w-3 h-3" />
+                          <span>Tambah Kriteria</span>
                         </button>
-                      )}
+                      </div>
+                      <div className="space-y-2 max-h-36 overflow-y-auto pr-1">
+                        {editRubricKriteria.map((krit, idx) => (
+                          <div key={idx} className="flex items-center space-x-2">
+                            <input
+                              type="text"
+                              value={krit.name}
+                              placeholder="Nama kriteria..."
+                              onChange={(e) => {
+                                const updated = [...editRubricKriteria];
+                                updated[idx].name = e.target.value;
+                                setEditRubricKriteria(updated);
+                              }}
+                              className="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:ring-2 focus:ring-[#8a7c4c]/40 focus:bg-white focus:outline-none"
+                            />
+                            <div className="flex items-center space-x-1 shrink-0">
+                              <input
+                                type="number"
+                                min="0"
+                                max="100"
+                                value={krit.weight}
+                                onChange={(e) => {
+                                  const updated = [...editRubricKriteria];
+                                  updated[idx].weight = Number(e.target.value);
+                                  setEditRubricKriteria(updated);
+                                }}
+                                className="w-16 px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-center font-bold text-[#8a7c4c] focus:outline-none"
+                              />
+                              <span className="text-xs font-bold text-slate-500">%</span>
+                            </div>
+                            {editRubricKriteria.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditRubricKriteria(editRubricKriteria.filter((_, i) => i !== idx));
+                                }}
+                                className="p-1 text-slate-400 hover:text-rose-600 transition cursor-pointer"
+                                title="Hapus kriteria"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                )}
               </div>
 
-              <div className="pt-3 border-t border-slate-200 flex items-center justify-end space-x-2">
-                <button
-                  type="button"
-                  onClick={() => setEditingRubric(null)}
-                  className="px-4 py-2 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl hover:bg-slate-100 transition cursor-pointer"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-[#8a7c4c] hover:bg-[#675c37] text-white text-xs font-extrabold rounded-xl shadow-sm transition cursor-pointer flex items-center space-x-1.5"
-                >
-                  <Check className="w-4 h-4" />
-                  <span>Simpan Perubahan</span>
-                </button>
+              {/* Modal Footer with Actions */}
+              <div className="pt-3.5 mt-2 border-t border-slate-200 flex items-center justify-between shrink-0">
+                <span className="text-[11px] text-[#7c7b77] italic">
+                  * Perubahan narasi akan otomatis tersimpan & tersinkronisasi.
+                </span>
+                <div className="flex items-center space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingRubric(null)}
+                    className="px-4 py-2 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl hover:bg-slate-100 transition cursor-pointer"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 bg-[#8a7c4c] hover:bg-[#675c37] text-white text-xs font-extrabold rounded-xl shadow-sm transition cursor-pointer flex items-center space-x-1.5"
+                  >
+                    <Check className="w-4 h-4" />
+                    <span>Simpan Perubahan</span>
+                  </button>
+                </div>
               </div>
             </form>
           </div>

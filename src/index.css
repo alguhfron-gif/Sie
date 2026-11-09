@@ -134,6 +134,107 @@ html, body {
   overflow: hidden;
 }
 
+/* ============================================================
+   LIVING INTERFACE SYSTEM (Animasi Hidup & Halus Saat Disentuh Kursor)
+   ============================================================ */
+
+/* 1. Base transition curves on all interactive surfaces */
+.sidogiri-card,
+.admin-box,
+.small-box,
+.live-col,
+.live-card,
+.live-hover,
+.card-living {
+  transition: transform 0.36s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.36s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.28s ease;
+  will-change: transform, box-shadow;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  /* Subtle organic floating elevation when cursor touches card */
+  .sidogiri-card:hover,
+  .admin-box:hover,
+  .small-box:hover,
+  .live-col:hover,
+  .live-card:hover,
+  .live-hover:hover,
+  .card-living:hover {
+    transform: translateY(-3.5px);
+    box-shadow: 0 16px 32px -8px rgba(36, 33, 28, 0.09), 
+                0 4px 14px -2px rgba(138, 124, 76, 0.12);
+    border-color: rgba(138, 124, 76, 0.42);
+  }
+
+  /* Grid child columns (Stat cards, 3 pillars, etc.) */
+  .grid > div:not(.pointer-events-none):not(.no-live) {
+    transition: transform 0.34s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.34s cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+                background-color 0.28s ease;
+  }
+  .grid > div:not(.pointer-events-none):not(.no-live):hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 24px -6px rgba(36, 33, 28, 0.08), 
+                0 3px 10px -2px rgba(138, 124, 76, 0.1);
+  }
+
+  /* Internal Icon Gentle Kinetic Reaction when parent column/card is touched */
+  .grid > div:hover svg:not(.no-live-icon),
+  .live-card:hover svg:not(.no-live-icon),
+  .live-col:hover svg:not(.no-live-icon),
+  .card-living:hover svg:not(.no-live-icon),
+  button:hover svg:not(.no-live-icon) {
+    transform: scale(1.1) rotate(3deg);
+    transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* Horizontal Category Tabs & Buttons */
+  button[class*="shrink-0"]:hover {
+    transform: translateY(-2px);
+  }
+
+  /* Table Rows Lively Subtle Slide */
+  table tbody tr {
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+                background-color 0.2s ease,
+                box-shadow 0.22s ease;
+  }
+  table tbody tr:hover {
+    transform: translateX(4px);
+    background-color: rgba(237, 233, 223, 0.55);
+  }
+
+  /* List items inside pillars & informative cards */
+  ul > li {
+    transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.24s cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 0.2s ease,
+                background-color 0.2s ease;
+  }
+  ul > li:hover {
+    transform: translateX(4px) translateY(-1px);
+    border-color: rgba(138, 124, 76, 0.48) !important;
+    box-shadow: 0 4px 12px -2px rgba(138, 124, 76, 0.12);
+  }
+
+  /* Buttons subtle spring physics */
+  button {
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+                background-color 0.2s ease,
+                border-color 0.2s ease;
+  }
+  button:hover:not(:disabled) {
+    transform: translateY(-1.5px);
+  }
+  button:active:not(:disabled) {
+    transform: scale(0.975);
+  }
+}
+
 .admin-box-success {
   border-top: 3px solid var(--olive);
 }
@@ -270,3 +371,61 @@ html, body {
     print-color-adjust: exact !important;
   }
 }
+
+/* Milad Sidogiri Kinetic Compass & Needle Keyframes */
+@keyframes ndlSweep {
+  0% {
+    opacity: 0;
+    transform: rotate(-215deg) scale(0.65);
+  }
+  30% {
+    opacity: 1;
+  }
+  75% {
+    transform: rotate(18deg) scale(1.04);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
+  }
+}
+
+@keyframes ndlFloat {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  20% {
+    transform: rotate(8deg);
+  }
+  40% {
+    transform: rotate(-6deg);
+  }
+  65% {
+    transform: rotate(4deg);
+  }
+  85% {
+    transform: rotate(-2deg);
+  }
+}
+
+@keyframes spinSlow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-needle-sweep {
+  animation: ndlSweep 1.6s cubic-bezier(0.2, 0.9, 0.3, 1.1) forwards;
+}
+
+.animate-needle-float {
+  animation: ndlFloat 6.5s ease-in-out infinite;
+}
+
+.animate-spin-slow {
+  animation: spinSlow 32s linear infinite;
+}
+

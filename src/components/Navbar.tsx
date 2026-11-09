@@ -206,9 +206,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <span className="font-extrabold text-xs sm:text-base tracking-tight text-[#24211c] whitespace-nowrap">
                       SIE PENGANUGERAHAN
                     </span>
-                    <span className="hidden xl:inline-flex items-center space-x-1 bg-[#f2eee3] text-[#675c37] border border-[#c3b68b]/40 px-2 py-0.5 rounded text-[9px] font-bold">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#8a7c4c] animate-pulse shrink-0 mr-1"></span>
-                      MILAD SIDOGIRI
+                    <span className="hidden xl:inline-flex items-center space-x-1.5 bg-[#f2eee3] text-[#675c37] border border-[#c3b68b]/40 px-2 py-0.5 rounded text-[9px] font-bold">
+                      <img src="/logo-needle.png" alt="" className="w-3.5 h-3.5 object-contain animate-needle-float" />
+                      <span>MILAD SIDOGIRI</span>
                     </span>
                   </div>
                   <span className="text-[10px] text-[#7c7b77] font-medium hidden sm:block">
