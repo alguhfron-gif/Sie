@@ -1,14 +1,22 @@
 import {
   collection,
   doc,
-  addDoc,
-  setDoc,
-  deleteDoc,
-  onSnapshot,
   writeBatch,
   getDocs,
 } from 'firebase/firestore';
-import { db, logFirestoreError, handleFirestoreError, OperationType } from '../firebase';
+import {
+  db,
+  resilientOnSnapshot,
+  ensureFirestoreOnline,
+  isFirestoreWatchHealthy,
+  fetchSnapshotViaRest,
+  resilientFirestoreWrite,
+  resilientSetDoc,
+  resilientDeleteDoc,
+  logFirestoreError,
+  handleFirestoreError,
+  OperationType,
+} from '../firebase';
 import { Transaction, RapbItem } from '../types';
 import { INITIAL_TRANSACTIONS } from '../data/initialData';
 
@@ -36,20 +44,18 @@ export function subscribeTransactions(
 ) {
   const colRef = collection(db, TRANSACTIONS_COLLECTION);
 
-  return onSnapshot(
+  return resilientOnSnapshot(
     colRef,
-    async (snapshot) => {
+    (snapshot) => {
       if (snapshot.empty) {
-        // Seed initial transaction data to Firestore if completely empty
-        try {
-          for (const initTrx of INITIAL_TRANSACTIONS) {
-            const docRef = doc(db, TRANSACTIONS_COLLECTION, initTrx.id);
-            await setDoc(docRef, cleanForFirestore(initTrx));
-          }
-        } catch (e) {
-          console.warn('Failed to seed initial transactions to Firestore:', e);
-        }
         onSuccess(INITIAL_TRANSACTIONS);
+        if (!snapshot.metadata?.fromCache && isFirestoreWatchHealthy()) {
+          void Promise.all(
+            INITIAL_TRANSACTIONS.map((initTrx) =>
+              resilientSetDoc(doc(db, TRANSACTIONS_COLLECTION, initTrx.id), cleanForFirestore(initTrx))
+            )
+          ).catch((e) => console.warn('Failed to seed initial transactions to Firestore:', e));
+        }
         return;
       }
 
@@ -75,7 +81,7 @@ export function subscribeTransactions(
 }
 
 /**
- * Add a new financial transaction to Firestore using addDoc().
+ * Add a new financial transaction to Firestore.
  * Saves date, title/uraian, posCode, qty, unit, amount/nominal, remainingBudget, and proofUrl.
  */
 export async function addTransactionToFirestore(
@@ -110,9 +116,7 @@ export async function addTransactionToFirestore(
   };
 
   try {
-    const writeTask = setDoc(newDocRef, payload);
-    const timeoutTask = new Promise<void>((resolve) => setTimeout(resolve, 3500));
-    await Promise.race([writeTask, timeoutTask]);
+    await resilientSetDoc(newDocRef, payload);
     return created;
   } catch (error) {
     console.warn('Firestore setDoc notice, queued locally:', error);
@@ -128,14 +132,12 @@ export async function updateTransactionInFirestore(updatedTrx: Transaction): Pro
   const firestoreData = cleanForFirestore(updatedTrx);
 
   try {
-    await setDoc(docRef, firestoreData, { merge: true });
+    await resilientSetDoc(docRef, firestoreData, { merge: true });
   } catch (error) {
     console.error('Failed to update transaction in Firestore:', error);
     try {
       handleFirestoreError(error, OperationType.UPDATE, `${TRANSACTIONS_COLLECTION}/${updatedTrx.id}`);
-    } catch {
-      // rethrow
-    }
+    } catch {}
     throw error;
   }
 }
@@ -146,14 +148,12 @@ export async function updateTransactionInFirestore(updatedTrx: Transaction): Pro
 export async function deleteTransactionFromFirestore(id: string): Promise<void> {
   const docRef = doc(db, TRANSACTIONS_COLLECTION, id);
   try {
-    await deleteDoc(docRef);
+    await resilientDeleteDoc(docRef);
   } catch (error) {
     console.error('Failed to delete transaction from Firestore:', error);
     try {
       handleFirestoreError(error, OperationType.DELETE, `${TRANSACTIONS_COLLECTION}/${id}`);
-    } catch {
-      // rethrow
-    }
+    } catch {}
     throw error;
   }
 }
@@ -172,24 +172,27 @@ export function subscribeRapbItems(
 ) {
   const colRef = collection(db, RAPB_COLLECTION);
 
-  return onSnapshot(
+  return resilientOnSnapshot(
     colRef,
-    async (snapshot) => {
+    (snapshot) => {
       if (snapshot.empty) {
-        // If Firestore is empty, check if user had stored items in localStorage to seamlessly migrate
         try {
           const savedLocal = localStorage.getItem('sie_rapb_items');
           if (savedLocal) {
             const parsed = JSON.parse(savedLocal);
             if (Array.isArray(parsed) && parsed.length > 0) {
-              const batch = writeBatch(db);
-              parsed.forEach((item: RapbItem) => {
-                const id = item.id || `rapb-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-                const ref = doc(db, RAPB_COLLECTION, id);
-                batch.set(ref, cleanForFirestore({ ...item, id }));
-              });
-              await batch.commit();
               onSuccess(parsed);
+              if (!snapshot.metadata?.fromCache && isFirestoreWatchHealthy()) {
+                void Promise.all(
+                  parsed.map((item: RapbItem) => {
+                    const id = item.id || `rapb-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+                    const ref = doc(db, RAPB_COLLECTION, id);
+                    return resilientSetDoc(ref, cleanForFirestore({ ...item, id }));
+                  })
+                ).catch((e) =>
+                  console.warn('Migration of localStorage RAPB items to Firestore skipped:', e)
+                );
+              }
               return;
             }
           }
@@ -216,7 +219,7 @@ export function subscribeRapbItems(
       // Also mirror to localStorage for offline cache
       try {
         localStorage.setItem('sie_rapb_items', JSON.stringify(items));
-      } catch (e) {}
+      } catch {}
 
       onSuccess(items);
     },
@@ -244,15 +247,13 @@ export async function addRapbItemToFirestore(
   const docRef = doc(db, RAPB_COLLECTION, docId);
 
   try {
-    await setDoc(docRef, firestoreData);
+    await resilientSetDoc(docRef, firestoreData);
     return created;
   } catch (error) {
     console.error('Failed to add RAPB item to Firestore:', error);
     try {
       handleFirestoreError(error, OperationType.WRITE, `${RAPB_COLLECTION}/${docId}`);
-    } catch {
-      // rethrow
-    }
+    } catch {}
     throw error;
   }
 }
@@ -265,14 +266,12 @@ export async function updateRapbItemInFirestore(updatedItem: RapbItem): Promise<
   const firestoreData = cleanForFirestore(updatedItem);
 
   try {
-    await setDoc(docRef, firestoreData, { merge: true });
+    await resilientSetDoc(docRef, firestoreData, { merge: true });
   } catch (error) {
     console.error('Failed to update RAPB item in Firestore:', error);
     try {
       handleFirestoreError(error, OperationType.UPDATE, `${RAPB_COLLECTION}/${updatedItem.id}`);
-    } catch {
-      // rethrow
-    }
+    } catch {}
     throw error;
   }
 }
@@ -283,14 +282,12 @@ export async function updateRapbItemInFirestore(updatedItem: RapbItem): Promise<
 export async function deleteRapbItemFromFirestore(id: string): Promise<void> {
   const docRef = doc(db, RAPB_COLLECTION, id);
   try {
-    await deleteDoc(docRef);
+    await resilientDeleteDoc(docRef);
   } catch (error) {
     console.error('Failed to delete RAPB item from Firestore:', error);
     try {
       handleFirestoreError(error, OperationType.DELETE, `${RAPB_COLLECTION}/${id}`);
-    } catch {
-      // rethrow
-    }
+    } catch {}
     throw error;
   }
 }
@@ -304,24 +301,32 @@ export async function bulkAddRapbItemsToFirestore(items: RapbItem[]): Promise<vo
   const BATCH_SIZE = 450;
   for (let i = 0; i < items.length; i += BATCH_SIZE) {
     const chunk = items.slice(i, i + BATCH_SIZE);
-    const batch = writeBatch(db);
-
-    chunk.forEach((item) => {
+    const prepared = chunk.map((item) => {
       const docId = item.id || `rapb-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
-      const docRef = doc(db, RAPB_COLLECTION, docId);
-      batch.set(docRef, cleanForFirestore({ ...item, id: docId }));
+      return {
+        docRef: doc(db, RAPB_COLLECTION, docId),
+        data: cleanForFirestore({ ...item, id: docId }),
+      };
     });
 
     try {
-      await batch.commit();
-    } catch (error) {
-      console.error('Failed to commit bulk RAPB batch to Firestore:', error);
-      try {
-        handleFirestoreError(error, OperationType.WRITE, RAPB_COLLECTION);
-      } catch {
-        // rethrow
+      if (isFirestoreWatchHealthy()) {
+        const batch = writeBatch(db);
+        prepared.forEach(({ docRef, data }) => batch.set(docRef, data));
+        await resilientFirestoreWrite(() => batch.commit(), 5000);
+      } else {
+        await Promise.all(prepared.map(({ docRef, data }) => resilientSetDoc(docRef, data)));
       }
-      throw error;
+    } catch (error) {
+      try {
+        await Promise.all(prepared.map(({ docRef, data }) => resilientSetDoc(docRef, data)));
+      } catch (fallbackErr) {
+        console.error('Failed to commit bulk RAPB batch to Firestore:', fallbackErr);
+        try {
+          handleFirestoreError(fallbackErr, OperationType.WRITE, RAPB_COLLECTION);
+        } catch {}
+        throw fallbackErr;
+      }
     }
   }
 }
@@ -331,25 +336,37 @@ export async function bulkAddRapbItemsToFirestore(items: RapbItem[]): Promise<vo
  */
 export async function clearAllRapbItemsFromFirestore(): Promise<void> {
   try {
+    if (!(await ensureFirestoreOnline())) {
+      return;
+    }
     const colRef = collection(db, RAPB_COLLECTION);
-    const snapshot = await getDocs(colRef);
-    if (snapshot.empty) return;
+    const snapshot = isFirestoreWatchHealthy()
+      ? await getDocs(colRef).catch(() => fetchSnapshotViaRest(colRef))
+      : await fetchSnapshotViaRest(colRef);
+    if (!snapshot || snapshot.empty) return;
 
     const BATCH_SIZE = 450;
     const docs = snapshot.docs;
     for (let i = 0; i < docs.length; i += BATCH_SIZE) {
       const chunk = docs.slice(i, i + BATCH_SIZE);
-      const batch = writeBatch(db);
-      chunk.forEach((d) => batch.delete(d.ref));
-      await batch.commit();
+      const refs = chunk.map((d: any) => d.ref || doc(db, RAPB_COLLECTION, d.id));
+      try {
+        if (isFirestoreWatchHealthy()) {
+          const batch = writeBatch(db);
+          refs.forEach((ref: any) => batch.delete(ref));
+          await resilientFirestoreWrite(() => batch.commit(), 5000);
+        } else {
+          await Promise.all(refs.map((ref: any) => resilientDeleteDoc(ref)));
+        }
+      } catch {
+        await Promise.all(refs.map((ref: any) => resilientDeleteDoc(ref)));
+      }
     }
   } catch (error) {
     console.error('Failed to clear all RAPB items from Firestore:', error);
     try {
       handleFirestoreError(error, OperationType.DELETE, RAPB_COLLECTION);
-    } catch {
-      // rethrow
-    }
+    } catch {}
     throw error;
   }
 }

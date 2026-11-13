@@ -1,5 +1,5 @@
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { db, ensureFirestoreOnline, isFirestoreWatchHealthy, fetchSnapshotViaRest, resilientSetDoc } from '../firebase';
 
 const LOCAL_STORAGE_KEY = 'sie_webhook_url';
 const DEFAULT_WEBHOOK_URL = '';
@@ -21,7 +21,7 @@ export async function saveWebhookUrl(url: string): Promise<void> {
 
   try {
     const docRef = doc(db, 'settings', 'webhook');
-    await setDoc(docRef, { url: trimmed, updatedAt: new Date().toISOString() }, { merge: true });
+    await resilientSetDoc(docRef, { url: trimmed, updatedAt: new Date().toISOString() }, { merge: true });
   } catch (err) {
     console.warn('Failed to sync webhook URL to Firestore settings:', err);
   }
@@ -32,9 +32,14 @@ export async function saveWebhookUrl(url: string): Promise<void> {
  */
 export async function fetchWebhookUrlFromFirestore(): Promise<string> {
   try {
+    if (!(await ensureFirestoreOnline())) {
+      return getWebhookUrl();
+    }
     const docRef = doc(db, 'settings', 'webhook');
-    const snap = await getDoc(docRef);
-    if (snap.exists() && snap.data()?.url) {
+    const snap = isFirestoreWatchHealthy()
+      ? await getDoc(docRef).catch(() => fetchSnapshotViaRest(docRef))
+      : await fetchSnapshotViaRest(docRef);
+    if (snap && snap.exists() && snap.data()?.url) {
       const url = snap.data().url;
       localStorage.setItem(LOCAL_STORAGE_KEY, url);
       return url;

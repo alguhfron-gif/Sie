@@ -200,7 +200,9 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
   const adminCount = accounts.filter((a) => a.category === 'admin').length;
   const petugasCount = accounts.filter((a) => a.category === 'petugas').length;
   const onlineCount = accounts.filter(
-    (a) => presenceMap[a.id]?.isOnline || presenceMap[a.name.toLowerCase().trim()]?.isOnline
+    (a) =>
+      presenceMap[a.id]?.status === 'online' ||
+      presenceMap[a.name.toLowerCase().trim()]?.status === 'online'
   ).length;
 
   // Download Format Template Excel untuk Penambahan Akun
@@ -626,8 +628,8 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
       // Data Rows
       accounts.forEach((acc, index) => {
         const presence = presenceMap[acc.id] || presenceMap[acc.name.toLowerCase().trim()];
-        const isOnline = presence?.isOnline;
-        const lastActive = presence?.lastActiveAt ? new Date(presence.lastActiveAt).toLocaleString('id-ID') : '-';
+        const isOnline = presence?.status === 'online';
+        const lastActive = presence?.lastSeen ? new Date(presence.lastSeen).toLocaleString('id-ID') : '-';
         const roleOpt = getRoleOptionById(acc.accountType || (acc.category === 'admin' ? 'panitia' : 'madrasah'));
 
         const row = sheet.addRow({

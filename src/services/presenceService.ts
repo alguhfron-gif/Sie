@@ -1,10 +1,8 @@
 import {
   collection,
   doc,
-  setDoc,
-  onSnapshot,
 } from 'firebase/firestore';
-import { db, logFirestoreError, OperationType } from '../firebase';
+import { db, resilientOnSnapshot, ensureFirestoreOnline, resilientSetDoc, logFirestoreError, OperationType } from '../firebase';
 import { UserSession } from '../types';
 
 export interface UserPresence {
@@ -24,9 +22,10 @@ const PRESENCE_COLLECTION = 'user_presence';
  */
 export async function setUserOnline(user: UserSession): Promise<void> {
   if (!user || !user.id) return;
+  if (!(await ensureFirestoreOnline())) return;
   const docRef = doc(db, PRESENCE_COLLECTION, user.id);
   const nowIso = new Date().toISOString();
-  
+
   const presenceData: UserPresence = {
     id: user.id,
     name: user.name,
@@ -38,7 +37,7 @@ export async function setUserOnline(user: UserSession): Promise<void> {
   };
 
   try {
-    await setDoc(docRef, JSON.parse(JSON.stringify(presenceData)), { merge: true });
+    await resilientSetDoc(docRef, JSON.parse(JSON.stringify(presenceData)), { merge: true });
   } catch (error) {
     console.warn('Failed to update user presence online in Firestore:', error);
     logFirestoreError(error, OperationType.WRITE, `${PRESENCE_COLLECTION}/${user.id}`);
@@ -50,11 +49,12 @@ export async function setUserOnline(user: UserSession): Promise<void> {
  */
 export async function setUserOffline(userId: string): Promise<void> {
   if (!userId) return;
+  if (!(await ensureFirestoreOnline())) return;
   const docRef = doc(db, PRESENCE_COLLECTION, userId);
   const nowIso = new Date().toISOString();
 
   try {
-    await setDoc(docRef, { status: 'offline', lastSeen: nowIso }, { merge: true });
+    await resilientSetDoc(docRef, { status: 'offline', lastSeen: nowIso }, { merge: true });
   } catch (error) {
     console.warn('Failed to update user presence offline in Firestore:', error);
     logFirestoreError(error, OperationType.UPDATE, `${PRESENCE_COLLECTION}/${userId}`);
@@ -70,7 +70,7 @@ export function subscribeUserPresence(
 ) {
   const colRef = collection(db, PRESENCE_COLLECTION);
 
-  return onSnapshot(
+  return resilientOnSnapshot(
     colRef,
     (snapshot) => {
       const items: UserPresence[] = [];

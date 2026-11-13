@@ -1,5 +1,14 @@
-import { doc, setDoc, onSnapshot, getDoc } from 'firebase/firestore';
-import { db, logFirestoreError, OperationType } from '../firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import {
+  db,
+  resilientOnSnapshot,
+  ensureFirestoreOnline,
+  isFirestoreWatchHealthy,
+  fetchSnapshotViaRest,
+  resilientSetDoc,
+  logFirestoreError,
+  OperationType,
+} from '../firebase';
 
 export const DEFAULT_OFFICIAL_LOGO = '/logo-milad.png';
 export const CUSTOM_LOGO_STORAGE_KEY = 'custom_milad_logo';
@@ -114,7 +123,7 @@ export async function saveCustomLogo(logoDataOrUrl: string | null): Promise<void
   // 3. Sync to Cloud Firestore in the settings collection
   try {
     const docRef = doc(db, 'settings', 'milad_logo');
-    await setDoc(
+    await resilientSetDoc(
       docRef,
       {
         logoUrl: finalData,
@@ -133,9 +142,14 @@ export async function saveCustomLogo(logoDataOrUrl: string | null): Promise<void
  */
 export async function fetchInitialCustomLogo(): Promise<string | null> {
   try {
+    if (!(await ensureFirestoreOnline())) {
+      return getLocalCustomLogo();
+    }
     const docRef = doc(db, 'settings', 'milad_logo');
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
+    const docSnap = isFirestoreWatchHealthy()
+      ? await getDoc(docRef).catch(() => fetchSnapshotViaRest(docRef))
+      : await fetchSnapshotViaRest(docRef);
+    if (docSnap && docSnap.exists()) {
       const cloudLogo = docSnap.data()?.logoUrl || null;
       if (cloudLogo) {
         try {
@@ -156,13 +170,11 @@ export async function fetchInitialCustomLogo(): Promise<string | null> {
  */
 export function subscribeCustomLogo(callback: (logoUrl: string | null) => void): () => void {
   try {
-    // Initial direct fetch
-    fetchInitialCustomLogo().then((logo) => {
-      if (logo) callback(logo);
-    });
+    const local = getLocalCustomLogo();
+    if (local) callback(local);
 
     const docRef = doc(db, 'settings', 'milad_logo');
-    const unsubscribe = onSnapshot(
+    const unsubscribe = resilientOnSnapshot(
       docRef,
       (docSnap) => {
         if (docSnap.exists()) {

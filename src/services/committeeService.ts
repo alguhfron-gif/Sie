@@ -1,11 +1,17 @@
 import {
   collection,
   doc,
-  setDoc,
-  deleteDoc,
-  onSnapshot,
 } from 'firebase/firestore';
-import { db, logFirestoreError, handleFirestoreError, OperationType } from '../firebase';
+import {
+  db,
+  resilientOnSnapshot,
+  isFirestoreWatchHealthy,
+  resilientSetDoc,
+  resilientDeleteDoc,
+  logFirestoreError,
+  handleFirestoreError,
+  OperationType,
+} from '../firebase';
 import { CommitteeTask, InventoryItem, RundownItem, CommitteeAccount } from '../types';
 import { INITIAL_TASKS, INITIAL_INVENTORY, INITIAL_RUNDOWN, INITIAL_ACCOUNTS } from '../data/initialData';
 
@@ -23,19 +29,18 @@ export function subscribeCommitteeTasks(
 ) {
   const colRef = collection(db, TASKS_COLLECTION);
 
-  return onSnapshot(
+  return resilientOnSnapshot(
     colRef,
-    async (snapshot) => {
+    (snapshot) => {
       if (snapshot.empty) {
-        try {
-          for (const initTask of INITIAL_TASKS) {
-            const docRef = doc(db, TASKS_COLLECTION, initTask.id);
-            await setDoc(docRef, initTask);
-          }
-        } catch (e) {
-          console.warn('Failed to seed initial tasks to Firestore:', e);
-        }
         onSuccess(INITIAL_TASKS);
+        if (!snapshot.metadata?.fromCache && isFirestoreWatchHealthy()) {
+          void Promise.all(
+            INITIAL_TASKS.map((initTask) =>
+              resilientSetDoc(doc(db, TASKS_COLLECTION, initTask.id), initTask)
+            )
+          ).catch((e) => console.warn('Failed to seed initial tasks to Firestore:', e));
+        }
         return;
       }
 
@@ -68,13 +73,13 @@ export async function addCommitteeTaskToFirestore(
 
   const docRef = doc(db, TASKS_COLLECTION, docId);
   try {
-    await setDoc(docRef, JSON.parse(JSON.stringify(created)));
+    await resilientSetDoc(docRef, JSON.parse(JSON.stringify(created)));
     return created;
   } catch (error) {
     console.error('Failed to add committee task to Firestore:', error);
     try {
       handleFirestoreError(error, OperationType.WRITE, `${TASKS_COLLECTION}/${docId}`);
-    } catch (e) {}
+    } catch {}
     throw error;
   }
 }
@@ -87,12 +92,12 @@ export async function updateCommitteeTaskInFirestore(
   const updateData = typeof taskOrId === 'string' ? partial || {} : taskOrId;
   const docRef = doc(db, TASKS_COLLECTION, taskId);
   try {
-    await setDoc(docRef, JSON.parse(JSON.stringify(updateData)), { merge: true });
+    await resilientSetDoc(docRef, JSON.parse(JSON.stringify(updateData)), { merge: true });
   } catch (error) {
     console.error('Failed to update committee task in Firestore:', error);
     try {
       handleFirestoreError(error, OperationType.UPDATE, `${TASKS_COLLECTION}/${taskId}`);
-    } catch (e) {}
+    } catch {}
     throw error;
   }
 }
@@ -100,12 +105,12 @@ export async function updateCommitteeTaskInFirestore(
 export async function deleteCommitteeTaskFromFirestore(id: string): Promise<void> {
   const docRef = doc(db, TASKS_COLLECTION, id);
   try {
-    await deleteDoc(docRef);
+    await resilientDeleteDoc(docRef);
   } catch (error) {
     console.error('Failed to delete committee task from Firestore:', error);
     try {
       handleFirestoreError(error, OperationType.DELETE, `${TASKS_COLLECTION}/${id}`);
-    } catch (e) {}
+    } catch {}
     throw error;
   }
 }
@@ -119,19 +124,18 @@ export function subscribeInventory(
 ) {
   const colRef = collection(db, INVENTORY_COLLECTION);
 
-  return onSnapshot(
+  return resilientOnSnapshot(
     colRef,
-    async (snapshot) => {
+    (snapshot) => {
       if (snapshot.empty) {
-        try {
-          for (const initInv of INITIAL_INVENTORY) {
-            const docRef = doc(db, INVENTORY_COLLECTION, initInv.id);
-            await setDoc(docRef, initInv);
-          }
-        } catch (e) {
-          console.warn('Failed to seed initial inventory to Firestore:', e);
-        }
         onSuccess(INITIAL_INVENTORY);
+        if (!snapshot.metadata?.fromCache && isFirestoreWatchHealthy()) {
+          void Promise.all(
+            INITIAL_INVENTORY.map((initInv) =>
+              resilientSetDoc(doc(db, INVENTORY_COLLECTION, initInv.id), initInv)
+            )
+          ).catch((e) => console.warn('Failed to seed initial inventory to Firestore:', e));
+        }
         return;
       }
 
@@ -164,13 +168,13 @@ export async function addInventoryToFirestore(
 
   const docRef = doc(db, INVENTORY_COLLECTION, docId);
   try {
-    await setDoc(docRef, JSON.parse(JSON.stringify(created)));
+    await resilientSetDoc(docRef, JSON.parse(JSON.stringify(created)));
     return created;
   } catch (error) {
     console.error('Failed to add inventory to Firestore:', error);
     try {
       handleFirestoreError(error, OperationType.WRITE, `${INVENTORY_COLLECTION}/${docId}`);
-    } catch (e) {}
+    } catch {}
     throw error;
   }
 }
@@ -178,12 +182,12 @@ export async function addInventoryToFirestore(
 export async function updateInventoryInFirestore(updatedInv: InventoryItem): Promise<void> {
   const docRef = doc(db, INVENTORY_COLLECTION, updatedInv.id);
   try {
-    await setDoc(docRef, JSON.parse(JSON.stringify(updatedInv)), { merge: true });
+    await resilientSetDoc(docRef, JSON.parse(JSON.stringify(updatedInv)), { merge: true });
   } catch (error) {
     console.error('Failed to update inventory in Firestore:', error);
     try {
       handleFirestoreError(error, OperationType.UPDATE, `${INVENTORY_COLLECTION}/${updatedInv.id}`);
-    } catch (e) {}
+    } catch {}
     throw error;
   }
 }
@@ -191,12 +195,12 @@ export async function updateInventoryInFirestore(updatedInv: InventoryItem): Pro
 export async function deleteInventoryFromFirestore(id: string): Promise<void> {
   const docRef = doc(db, INVENTORY_COLLECTION, id);
   try {
-    await deleteDoc(docRef);
+    await resilientDeleteDoc(docRef);
   } catch (error) {
     console.error('Failed to delete inventory item from Firestore:', error);
     try {
       handleFirestoreError(error, OperationType.DELETE, `${INVENTORY_COLLECTION}/${id}`);
-    } catch (e) {}
+    } catch {}
     throw error;
   }
 }
@@ -210,19 +214,18 @@ export function subscribeRundown(
 ) {
   const colRef = collection(db, RUNDOWN_COLLECTION);
 
-  return onSnapshot(
+  return resilientOnSnapshot(
     colRef,
-    async (snapshot) => {
+    (snapshot) => {
       if (snapshot.empty) {
-        try {
-          for (const initRd of INITIAL_RUNDOWN) {
-            const docRef = doc(db, RUNDOWN_COLLECTION, initRd.id);
-            await setDoc(docRef, initRd);
-          }
-        } catch (e) {
-          console.warn('Failed to seed initial rundown to Firestore:', e);
-        }
         onSuccess(INITIAL_RUNDOWN);
+        if (!snapshot.metadata?.fromCache && isFirestoreWatchHealthy()) {
+          void Promise.all(
+            INITIAL_RUNDOWN.map((initRd) =>
+              resilientSetDoc(doc(db, RUNDOWN_COLLECTION, initRd.id), initRd)
+            )
+          ).catch((e) => console.warn('Failed to seed initial rundown to Firestore:', e));
+        }
         return;
       }
 
@@ -246,10 +249,11 @@ export function subscribeRundown(
 
 export async function updateRundownInFirestore(updatedRundown: RundownItem[]): Promise<void> {
   try {
-    for (const item of updatedRundown) {
-      const docRef = doc(db, RUNDOWN_COLLECTION, item.id);
-      await setDoc(docRef, JSON.parse(JSON.stringify(item)), { merge: true });
-    }
+    await Promise.all(
+      updatedRundown.map((item) =>
+        resilientSetDoc(doc(db, RUNDOWN_COLLECTION, item.id), JSON.parse(JSON.stringify(item)), { merge: true })
+      )
+    );
   } catch (error) {
     console.error('Failed to update rundown in Firestore:', error);
   }
@@ -264,19 +268,18 @@ export function subscribeCommitteeAccounts(
 ) {
   const colRef = collection(db, ACCOUNTS_COLLECTION);
 
-  return onSnapshot(
+  return resilientOnSnapshot(
     colRef,
-    async (snapshot) => {
+    (snapshot) => {
       if (snapshot.empty) {
-        try {
-          for (const initAcc of INITIAL_ACCOUNTS) {
-            const docRef = doc(db, ACCOUNTS_COLLECTION, initAcc.id);
-            await setDoc(docRef, initAcc);
-          }
-        } catch (e) {
-          console.warn('Failed to seed initial accounts to Firestore:', e);
-        }
         onSuccess(INITIAL_ACCOUNTS);
+        if (!snapshot.metadata?.fromCache && isFirestoreWatchHealthy()) {
+          void Promise.all(
+            INITIAL_ACCOUNTS.map((initAcc) =>
+              resilientSetDoc(doc(db, ACCOUNTS_COLLECTION, initAcc.id), initAcc)
+            )
+          ).catch((e) => console.warn('Failed to seed initial accounts to Firestore:', e));
+        }
         return;
       }
 
@@ -310,13 +313,13 @@ export async function addCommitteeAccountToFirestore(
 
   const docRef = doc(db, ACCOUNTS_COLLECTION, docId);
   try {
-    await setDoc(docRef, JSON.parse(JSON.stringify(created)));
+    await resilientSetDoc(docRef, JSON.parse(JSON.stringify(created)));
     return created;
   } catch (error) {
     console.error('Failed to add committee account to Firestore:', error);
     try {
       handleFirestoreError(error, OperationType.WRITE, `${ACCOUNTS_COLLECTION}/${docId}`);
-    } catch (e) {}
+    } catch {}
     throw error;
   }
 }
@@ -326,12 +329,12 @@ export async function updateCommitteeAccountInFirestore(
 ): Promise<void> {
   const docRef = doc(db, ACCOUNTS_COLLECTION, updatedAcc.id);
   try {
-    await setDoc(docRef, JSON.parse(JSON.stringify(updatedAcc)), { merge: true });
+    await resilientSetDoc(docRef, JSON.parse(JSON.stringify(updatedAcc)), { merge: true });
   } catch (error) {
     console.error('Failed to update committee account in Firestore:', error);
     try {
       handleFirestoreError(error, OperationType.UPDATE, `${ACCOUNTS_COLLECTION}/${updatedAcc.id}`);
-    } catch (e) {}
+    } catch {}
     throw error;
   }
 }
@@ -339,12 +342,12 @@ export async function updateCommitteeAccountInFirestore(
 export async function deleteCommitteeAccountFromFirestore(id: string): Promise<void> {
   const docRef = doc(db, ACCOUNTS_COLLECTION, id);
   try {
-    await deleteDoc(docRef);
+    await resilientDeleteDoc(docRef);
   } catch (error) {
     console.error('Failed to delete committee account from Firestore:', error);
     try {
       handleFirestoreError(error, OperationType.DELETE, `${ACCOUNTS_COLLECTION}/${id}`);
-    } catch (e) {}
+    } catch {}
     throw error;
   }
 }

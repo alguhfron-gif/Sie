@@ -1,12 +1,19 @@
 import {
   collection,
   doc,
-  setDoc,
-  deleteDoc,
-  onSnapshot,
   getDocFromServer
 } from 'firebase/firestore';
-import { db, logFirestoreError, handleFirestoreError, OperationType } from '../firebase';
+import {
+  db,
+  resilientOnSnapshot,
+  ensureFirestoreOnline,
+  isFirestoreWatchHealthy,
+  resilientSetDoc,
+  resilientDeleteDoc,
+  logFirestoreError,
+  handleFirestoreError,
+  OperationType,
+} from '../firebase';
 import { Nomination } from '../types';
 import { INITIAL_NOMINATIONS } from '../data/initialData';
 
@@ -16,8 +23,11 @@ const COLLECTION_NAME = 'nominations';
  * Test initial server connection to Firestore
  */
 export async function testConnection(): Promise<boolean> {
+  if (!(await ensureFirestoreOnline()) || !isFirestoreWatchHealthy()) {
+    return false;
+  }
   try {
-    await getDocFromServer(doc(db, 'test', 'connection'));
+    await getDocFromServer(doc(db, 'settings', 'milad_logo'));
     return true;
   } catch (error) {
     if (error instanceof Error && error.message.includes('offline')) {
@@ -36,20 +46,19 @@ export function subscribeNominations(
   onError?: (error: unknown) => void
 ) {
   const colRef = collection(db, COLLECTION_NAME);
-  
-  return onSnapshot(
+
+  return resilientOnSnapshot(
     colRef,
-    async (snapshot) => {
+    (snapshot) => {
       if (snapshot.empty) {
-        try {
-          for (const initNom of INITIAL_NOMINATIONS) {
-            const docRef = doc(db, COLLECTION_NAME, initNom.id);
-            await setDoc(docRef, initNom);
-          }
-        } catch (e) {
-          console.warn('Failed to seed initial nominations to Firestore:', e);
-        }
         onSuccess(INITIAL_NOMINATIONS);
+        if (!snapshot.metadata?.fromCache && isFirestoreWatchHealthy()) {
+          void Promise.all(
+            INITIAL_NOMINATIONS.map((initNom) =>
+              resilientSetDoc(doc(db, COLLECTION_NAME, initNom.id), initNom)
+            )
+          ).catch((e) => console.warn('Failed to seed initial nominations to Firestore:', e));
+        }
         return;
       }
 
@@ -82,7 +91,7 @@ export async function addNominationToFirestore(
 ): Promise<Nomination> {
   const docId = customId || `nom-${Date.now()}`;
   const createdAt = new Date().toISOString().split('T')[0];
-  
+
   const created: Nomination = {
     ...newNom,
     id: docId,
@@ -92,15 +101,13 @@ export async function addNominationToFirestore(
   const firestoreData = JSON.parse(JSON.stringify(created));
   const docRef = doc(db, COLLECTION_NAME, docId);
   try {
-    await setDoc(docRef, firestoreData);
+    await resilientSetDoc(docRef, firestoreData);
     return created;
   } catch (error) {
     console.error("Failed to add nomination to Firestore:", error);
     try {
       handleFirestoreError(error, OperationType.WRITE, `${COLLECTION_NAME}/${docId}`);
-    } catch (e) {
-      // rethrow or pass along
-    }
+    } catch {}
     throw error;
   }
 }
@@ -112,14 +119,12 @@ export async function updateNominationInFirestore(updatedNom: Nomination): Promi
   const docRef = doc(db, COLLECTION_NAME, updatedNom.id);
   const firestoreData = JSON.parse(JSON.stringify(updatedNom));
   try {
-    await setDoc(docRef, firestoreData, { merge: true });
+    await resilientSetDoc(docRef, firestoreData, { merge: true });
   } catch (error) {
     console.error("Failed to update nomination in Firestore:", error);
     try {
       handleFirestoreError(error, OperationType.UPDATE, `${COLLECTION_NAME}/${updatedNom.id}`);
-    } catch (e) {
-      // rethrow
-    }
+    } catch {}
     throw error;
   }
 }
@@ -130,14 +135,12 @@ export async function updateNominationInFirestore(updatedNom: Nomination): Promi
 export async function deleteNominationFromFirestore(id: string): Promise<void> {
   const docRef = doc(db, COLLECTION_NAME, id);
   try {
-    await deleteDoc(docRef);
+    await resilientDeleteDoc(docRef);
   } catch (error) {
     console.error("Failed to delete nomination from Firestore:", error);
     try {
       handleFirestoreError(error, OperationType.DELETE, `${COLLECTION_NAME}/${id}`);
-    } catch (e) {
-      // rethrow
-    }
+    } catch {}
     throw error;
   }
 }

@@ -49,30 +49,7 @@ export const AuditReportView: React.FC<AuditReportViewProps> = ({
   const [isExporting, setIsExporting] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // If not admin, access is strictly forbidden
-  if (!isAdmin) {
-    return (
-      <div className="min-h-[70vh] flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white border border-rose-200 rounded-3xl p-6 sm:p-8 text-center space-y-4 shadow-sm">
-          <div className="w-16 h-16 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center mx-auto border border-rose-200">
-            <ShieldAlert className="w-8 h-8" />
-          </div>
-          <h2 className="text-xl font-black text-[#24211c]">Akses Terbatas: Khusus Panitia (Admin)</h2>
-          <p className="text-xs text-[#7c7b77] leading-relaxed">
-            Halaman Statistik &amp; Laporan Monitoring Pengisian Nominasi ini hanya dapat diakses oleh Administrator/Panitia Inti Penganugerahan untuk keperluan audit kepatuhan pengisian data.
-          </p>
-          <button
-            onClick={() => setActiveTab('nominasi')}
-            className="w-full py-2.5 bg-[#8a7c4c] hover:bg-[#675c37] text-white font-bold rounded-xl text-xs transition cursor-pointer shadow-xs"
-          >
-            Kembali ke Formulir Nominasi
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Audit data mapping for each account
+  // Audit data mapping for each account (placed above early return to satisfy Rules of Hooks)
   const auditList = useMemo(() => {
     return accounts.map((acc) => {
       const accRoleOpt = getRoleOptionById(acc.accountType || (acc.category === 'admin' ? 'panitia' : 'madrasah'));
@@ -160,6 +137,29 @@ export const AuditReportView: React.FC<AuditReportViewProps> = ({
       return true;
     });
   }, [auditList, statusFilter, roleFilter, searchQuery]);
+
+  // If not admin, access is strictly forbidden
+  if (!isAdmin) {
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white border border-rose-200 rounded-3xl p-6 sm:p-8 text-center space-y-4 shadow-sm">
+          <div className="w-16 h-16 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center mx-auto border border-rose-200">
+            <ShieldAlert className="w-8 h-8" />
+          </div>
+          <h2 className="text-xl font-black text-[#24211c]">Akses Terbatas: Khusus Panitia (Admin)</h2>
+          <p className="text-xs text-[#7c7b77] leading-relaxed">
+            Halaman Statistik &amp; Laporan Monitoring Pengisian Nominasi ini hanya dapat diakses oleh Administrator/Panitia Inti Penganugerahan untuk keperluan audit kepatuhan pengisian data.
+          </p>
+          <button
+            onClick={() => setActiveTab('nominasi')}
+            className="w-full py-2.5 bg-[#8a7c4c] hover:bg-[#675c37] text-white font-bold rounded-xl text-xs transition cursor-pointer shadow-xs"
+          >
+            Kembali ke Formulir Nominasi
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // Handle Export Audit Report to Excel
   const handleExportAuditExcel = async () => {

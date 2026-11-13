@@ -160,6 +160,11 @@ export function sanitizeNomination(raw: any, index: number = 0): Nomination {
 }
 
 const VALID_TRANSACTION_CATEGORIES: TransactionCategory[] = [
+  'SEKSI PENGANUGERAHAN',
+  'PENGANUGERAHAN (25.200)',
+  'HADIAH LOMBA (25.300)',
+  'JUARAWAN MMU DAN DAERAH (25.400)',
+  'LAIN-LAIN (25.500)',
   'Sponsor & Donasi',
   'Kas Organisasi',
   'Trofi & Plakat',
@@ -179,7 +184,7 @@ export function sanitizeTransaction(raw: any, index: number = 0): Transaction {
       id: `trx-auto-${Date.now()}-${index}`,
       date: new Date().toISOString().split('T')[0],
       title: 'Transaksi Pulih',
-      category: 'Lain-lain',
+      category: 'SEKSI PENGANUGERAHAN',
       type: 'pengeluaran',
       amount: 0,
       notes: 'Dipulihkan otomatis oleh sistem.',
@@ -190,9 +195,11 @@ export function sanitizeTransaction(raw: any, index: number = 0): Transaction {
     ? raw.amount 
     : parseFloat(String(raw.amount || 0).replace(/[^0-9.-]+/g, '')) || 0;
 
-  const validCategory: TransactionCategory = VALID_TRANSACTION_CATEGORIES.includes(raw.category)
-    ? raw.category
-    : 'Lain-lain';
+  const rawCategory = typeof raw.category === 'string' ? raw.category.trim() : '';
+  const validCategory: TransactionCategory =
+    rawCategory.length > 0
+      ? rawCategory
+      : VALID_TRANSACTION_CATEGORIES[0];
 
   const validType: TransactionType = raw.type === 'pemasukan' ? 'pemasukan' : 'pengeluaran';
 
@@ -212,6 +219,7 @@ export function sanitizeTransaction(raw: any, index: number = 0): Transaction {
     unit: raw.unit ? String(raw.unit) : undefined,
     unitPrice: typeof raw.unitPrice === 'number' && !isNaN(raw.unitPrice) ? raw.unitPrice : (raw.unitPrice ? Number(raw.unitPrice) || undefined : undefined),
     recipient: raw.recipient ? String(raw.recipient) : undefined,
+    remainingBudget: typeof raw.remainingBudget === 'number' && !isNaN(raw.remainingBudget) ? raw.remainingBudget : undefined,
   };
 }
 

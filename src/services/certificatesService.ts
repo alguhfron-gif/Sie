@@ -1,11 +1,16 @@
 import {
   collection,
   doc,
-  setDoc,
-  deleteDoc,
-  onSnapshot,
 } from 'firebase/firestore';
-import { db, logFirestoreError, handleFirestoreError, OperationType } from '../firebase';
+import {
+  db,
+  resilientOnSnapshot,
+  resilientSetDoc,
+  resilientDeleteDoc,
+  logFirestoreError,
+  handleFirestoreError,
+  OperationType,
+} from '../firebase';
 
 export interface CertificateRecord {
   id: string;
@@ -30,7 +35,7 @@ export function subscribeCertificates(
 ) {
   const colRef = collection(db, CERTIFICATES_COLLECTION);
 
-  return onSnapshot(
+  return resilientOnSnapshot(
     colRef,
     (snapshot) => {
       const items: CertificateRecord[] = [];
@@ -67,13 +72,13 @@ export async function addCertificateRecordToFirestore(
 
   const docRef = doc(db, CERTIFICATES_COLLECTION, docId);
   try {
-    await setDoc(docRef, JSON.parse(JSON.stringify(record)));
+    await resilientSetDoc(docRef, JSON.parse(JSON.stringify(record)));
     return record;
   } catch (error) {
     console.error('Failed to log certificate record to Firestore:', error);
     try {
       handleFirestoreError(error, OperationType.WRITE, `${CERTIFICATES_COLLECTION}/${docId}`);
-    } catch (e) {}
+    } catch {}
     throw error;
   }
 }
@@ -84,12 +89,12 @@ export async function addCertificateRecordToFirestore(
 export async function deleteCertificateRecordFromFirestore(id: string): Promise<void> {
   const docRef = doc(db, CERTIFICATES_COLLECTION, id);
   try {
-    await deleteDoc(docRef);
+    await resilientDeleteDoc(docRef);
   } catch (error) {
     console.error('Failed to delete certificate record from Firestore:', error);
     try {
       handleFirestoreError(error, OperationType.DELETE, `${CERTIFICATES_COLLECTION}/${id}`);
-    } catch (e) {}
+    } catch {}
     throw error;
   }
 }

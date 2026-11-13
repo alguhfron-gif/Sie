@@ -1,11 +1,17 @@
 import {
   collection,
   doc,
-  setDoc,
-  deleteDoc,
-  onSnapshot,
 } from 'firebase/firestore';
-import { db, logFirestoreError, handleFirestoreError, OperationType } from '../firebase';
+import {
+  db,
+  resilientOnSnapshot,
+  isFirestoreWatchHealthy,
+  resilientSetDoc,
+  resilientDeleteDoc,
+  logFirestoreError,
+  handleFirestoreError,
+  OperationType,
+} from '../firebase';
 import { OfficialDocument, RegulationRule } from '../types';
 import { INITIAL_DOCUMENTS, INITIAL_REGULATIONS } from '../data/initialData';
 
@@ -21,19 +27,18 @@ export function subscribeOfficialDocuments(
 ) {
   const colRef = collection(db, DOCUMENTS_COLLECTION);
 
-  return onSnapshot(
+  return resilientOnSnapshot(
     colRef,
-    async (snapshot) => {
+    (snapshot) => {
       if (snapshot.empty) {
-        try {
-          for (const initDoc of INITIAL_DOCUMENTS) {
-            const docRef = doc(db, DOCUMENTS_COLLECTION, initDoc.id);
-            await setDoc(docRef, initDoc);
-          }
-        } catch (e) {
-          console.warn('Failed to seed initial official documents to Firestore:', e);
-        }
         onSuccess(INITIAL_DOCUMENTS);
+        if (!snapshot.metadata?.fromCache && isFirestoreWatchHealthy()) {
+          void Promise.all(
+            INITIAL_DOCUMENTS.map((initDoc) =>
+              resilientSetDoc(doc(db, DOCUMENTS_COLLECTION, initDoc.id), initDoc)
+            )
+          ).catch((e) => console.warn('Failed to seed initial official documents to Firestore:', e));
+        }
         return;
       }
 
@@ -76,13 +81,13 @@ export async function addOfficialDocumentToFirestore(
 
   const docRef = doc(db, DOCUMENTS_COLLECTION, docId);
   try {
-    await setDoc(docRef, JSON.parse(JSON.stringify(created)));
+    await resilientSetDoc(docRef, JSON.parse(JSON.stringify(created)));
     return created;
   } catch (error) {
     console.error('Failed to add official document to Firestore:', error);
     try {
       handleFirestoreError(error, OperationType.WRITE, `${DOCUMENTS_COLLECTION}/${docId}`);
-    } catch (e) {}
+    } catch {}
     throw error;
   }
 }
@@ -92,12 +97,12 @@ export async function updateOfficialDocumentInFirestore(
 ): Promise<void> {
   const docRef = doc(db, DOCUMENTS_COLLECTION, updatedDoc.id);
   try {
-    await setDoc(docRef, JSON.parse(JSON.stringify(updatedDoc)), { merge: true });
+    await resilientSetDoc(docRef, JSON.parse(JSON.stringify(updatedDoc)), { merge: true });
   } catch (error) {
     console.error('Failed to update official document in Firestore:', error);
     try {
       handleFirestoreError(error, OperationType.UPDATE, `${DOCUMENTS_COLLECTION}/${updatedDoc.id}`);
-    } catch (e) {}
+    } catch {}
     throw error;
   }
 }
@@ -105,12 +110,12 @@ export async function updateOfficialDocumentInFirestore(
 export async function deleteOfficialDocumentFromFirestore(id: string): Promise<void> {
   const docRef = doc(db, DOCUMENTS_COLLECTION, id);
   try {
-    await deleteDoc(docRef);
+    await resilientDeleteDoc(docRef);
   } catch (error) {
     console.error('Failed to delete official document from Firestore:', error);
     try {
       handleFirestoreError(error, OperationType.DELETE, `${DOCUMENTS_COLLECTION}/${id}`);
-    } catch (e) {}
+    } catch {}
     throw error;
   }
 }
@@ -124,19 +129,18 @@ export function subscribeRegulations(
 ) {
   const colRef = collection(db, REGULATIONS_COLLECTION);
 
-  return onSnapshot(
+  return resilientOnSnapshot(
     colRef,
-    async (snapshot) => {
+    (snapshot) => {
       if (snapshot.empty) {
-        try {
-          for (const initReg of INITIAL_REGULATIONS) {
-            const docRef = doc(db, REGULATIONS_COLLECTION, initReg.id);
-            await setDoc(docRef, initReg);
-          }
-        } catch (e) {
-          console.warn('Failed to seed initial regulations to Firestore:', e);
-        }
         onSuccess(INITIAL_REGULATIONS);
+        if (!snapshot.metadata?.fromCache && isFirestoreWatchHealthy()) {
+          void Promise.all(
+            INITIAL_REGULATIONS.map((initReg) =>
+              resilientSetDoc(doc(db, REGULATIONS_COLLECTION, initReg.id), initReg)
+            )
+          ).catch((e) => console.warn('Failed to seed initial regulations to Firestore:', e));
+        }
         return;
       }
 
@@ -180,13 +184,13 @@ export async function addRegulationToFirestore(
 
   const docRef = doc(db, REGULATIONS_COLLECTION, docId);
   try {
-    await setDoc(docRef, JSON.parse(JSON.stringify(created)));
+    await resilientSetDoc(docRef, JSON.parse(JSON.stringify(created)));
     return created;
   } catch (error) {
     console.error('Failed to add regulation to Firestore:', error);
     try {
       handleFirestoreError(error, OperationType.WRITE, `${REGULATIONS_COLLECTION}/${docId}`);
-    } catch (e) {}
+    } catch {}
     throw error;
   }
 }
@@ -196,12 +200,12 @@ export async function updateRegulationInFirestore(
 ): Promise<void> {
   const docRef = doc(db, REGULATIONS_COLLECTION, updatedReg.id);
   try {
-    await setDoc(docRef, JSON.parse(JSON.stringify(updatedReg)), { merge: true });
+    await resilientSetDoc(docRef, JSON.parse(JSON.stringify(updatedReg)), { merge: true });
   } catch (error) {
     console.error('Failed to update regulation in Firestore:', error);
     try {
       handleFirestoreError(error, OperationType.UPDATE, `${REGULATIONS_COLLECTION}/${updatedReg.id}`);
-    } catch (e) {}
+    } catch {}
     throw error;
   }
 }
@@ -209,12 +213,12 @@ export async function updateRegulationInFirestore(
 export async function deleteRegulationFromFirestore(id: string): Promise<void> {
   const docRef = doc(db, REGULATIONS_COLLECTION, id);
   try {
-    await deleteDoc(docRef);
+    await resilientDeleteDoc(docRef);
   } catch (error) {
     console.error('Failed to delete regulation from Firestore:', error);
     try {
       handleFirestoreError(error, OperationType.DELETE, `${REGULATIONS_COLLECTION}/${id}`);
-    } catch (e) {}
+    } catch {}
     throw error;
   }
 }

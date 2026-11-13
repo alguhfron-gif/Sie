@@ -291,7 +291,6 @@ export default function App() {
 
   const handleLoginSuccess = (user: UserSession) => {
     setCurrentUser(user);
-    setUserOnline(user).catch(() => {});
     const isLoggingInPetugas = user.category === 'petugas' || (user.role && user.role.toUpperCase().includes('PETUGAS'));
     if (isLoggingInPetugas) {
       setActiveTab('nominasi');
@@ -500,8 +499,11 @@ export default function App() {
   const [openAddTransactionDirectly, setOpenAddTransactionDirectly] = useState(false);
   const [isWebhookModalOpen, setIsWebhookModalOpen] = useState(false);
 
+  const isAuthenticated = Boolean(currentUser);
+
   // Subscribe to Cloud Firestore Nominations Real-time Updates with Auto-Sanitization
   useEffect(() => {
+    if (!isAuthenticated) return;
     const unsubscribe = subscribeNominations(
       (firestoreItems) => {
         if (firestoreItems && firestoreItems.length >= 0) {
@@ -513,10 +515,11 @@ export default function App() {
       }
     );
     return () => unsubscribe();
-  }, []);
+  }, [isAuthenticated]);
 
   // Subscribe to Cloud Firestore Transactions Real-time Updates with Auto-Sanitization
   useEffect(() => {
+    if (!isAuthenticated) return;
     const unsubscribe = subscribeTransactions(
       (firestoreItems) => {
         if (firestoreItems && firestoreItems.length >= 0) {
@@ -528,10 +531,11 @@ export default function App() {
       }
     );
     return () => unsubscribe();
-  }, []);
+  }, [isAuthenticated]);
 
   // Subscribe to Cloud Firestore RAPB Items Real-time Updates
   useEffect(() => {
+    if (!isAuthenticated) return;
     const unsubscribe = subscribeRapbItems(
       (firestoreItems) => {
         if (firestoreItems && Array.isArray(firestoreItems)) {
@@ -543,10 +547,11 @@ export default function App() {
       }
     );
     return () => unsubscribe();
-  }, []);
+  }, [isAuthenticated]);
 
   // Subscribe to Cloud Firestore Committee Tasks Real-time Updates with Auto-Sanitization
   useEffect(() => {
+    if (!isAuthenticated) return;
     const unsubscribe = subscribeCommitteeTasks(
       (firestoreItems) => {
         if (firestoreItems && firestoreItems.length >= 0) {
@@ -558,10 +563,11 @@ export default function App() {
       }
     );
     return () => unsubscribe();
-  }, []);
+  }, [isAuthenticated]);
 
   // Subscribe to Cloud Firestore Inventory Real-time Updates with Auto-Sanitization
   useEffect(() => {
+    if (!isAuthenticated) return;
     const unsubscribe = subscribeInventory(
       (firestoreItems) => {
         if (firestoreItems && firestoreItems.length >= 0) {
@@ -573,10 +579,11 @@ export default function App() {
       }
     );
     return () => unsubscribe();
-  }, []);
+  }, [isAuthenticated]);
 
   // Subscribe to Cloud Firestore Rundown Real-time Updates
   useEffect(() => {
+    if (!isAuthenticated) return;
     const unsubscribe = subscribeRundown(
       (firestoreItems) => {
         if (firestoreItems && firestoreItems.length >= 0) {
@@ -588,9 +595,9 @@ export default function App() {
       }
     );
     return () => unsubscribe();
-  }, []);
+  }, [isAuthenticated]);
 
-  // Subscribe to Cloud Firestore Committee Accounts Real-time Updates
+  // Subscribe to Cloud Firestore Committee Accounts Real-time Updates (needed on LoginView)
   useEffect(() => {
     const unsubscribe = subscribeCommitteeAccounts(
       (firestoreItems) => {
@@ -607,6 +614,7 @@ export default function App() {
 
   // Subscribe to Cloud Firestore Official Documents Real-time Updates with Auto-Sanitization
   useEffect(() => {
+    if (!isAuthenticated) return;
     const unsubscribe = subscribeOfficialDocuments(
       (firestoreItems) => {
         if (firestoreItems && firestoreItems.length >= 0) {
@@ -618,10 +626,11 @@ export default function App() {
       }
     );
     return () => unsubscribe();
-  }, []);
+  }, [isAuthenticated]);
 
   // Subscribe to Cloud Firestore Regulations Real-time Updates with Auto-Sanitization
   useEffect(() => {
+    if (!isAuthenticated) return;
     const unsubscribe = subscribeRegulations(
       (firestoreItems) => {
         if (firestoreItems && firestoreItems.length >= 0) {
@@ -633,7 +642,7 @@ export default function App() {
       }
     );
     return () => unsubscribe();
-  }, []);
+  }, [isAuthenticated]);
 
   // Subscribe to Cloud Firestore Milad Logo Real-time Updates across all devices
   useEffect(() => {
@@ -643,6 +652,7 @@ export default function App() {
 
   // Subscribe to Cloud Firestore Certificates Real-time Updates
   useEffect(() => {
+    if (!isAuthenticated) return;
     const unsubscribe = subscribeCertificates(
       (firestoreItems) => {
         if (firestoreItems && firestoreItems.length >= 0) {
@@ -654,7 +664,7 @@ export default function App() {
       }
     );
     return () => unsubscribe();
-  }, []);
+  }, [isAuthenticated]);
 
 
   // Sync state to LocalStorage
@@ -751,10 +761,14 @@ export default function App() {
     }
   };
 
-  // Transaction Handlers with Firestore Real-time Integration
+  // Transaction Handlers with Firestore Real-time Integration & Optimistic Local State
   const handleAddTransaction = async (newTrx: Omit<Transaction, 'id'>) => {
     try {
       const created = await addTransactionToFirestore(newTrx);
+      setTransactions((prev) => [
+        sanitizeTransaction(created),
+        ...prev.filter((t) => t.id !== created.id),
+      ]);
       return created;
     } catch (err) {
       console.error('Firestore sync failed on add transaction:', err);
@@ -763,6 +777,9 @@ export default function App() {
   };
 
   const handleUpdateTransaction = async (updatedTrx: Transaction) => {
+    setTransactions((prev) =>
+      prev.map((t) => (t.id === updatedTrx.id ? sanitizeTransaction(updatedTrx) : t))
+    );
     try {
       await updateTransactionInFirestore(updatedTrx);
     } catch (err) {
@@ -771,6 +788,7 @@ export default function App() {
   };
 
   const handleDeleteTransaction = async (id: string) => {
+    setTransactions((prev) => prev.filter((t) => t.id !== id));
     try {
       await deleteTransactionFromFirestore(id);
     } catch (err) {
@@ -941,6 +959,25 @@ export default function App() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   useModalBackHandler(isMobileSidebarOpen, () => setIsMobileSidebarOpen(false), 'mobile-sidebar');
 
+  // User Role Category Filtering sesuai 5 Pilihan Akun (placed before early return to satisfy Rules of Hooks)
+  const allowedCategoryIds = React.useMemo(() => {
+    return getAllowedCategoryIdsForUser(currentUser);
+  }, [currentUser]);
+
+  const userVisibleCategories = React.useMemo(() => {
+    if (!currentUser || currentUser.category === 'admin') return categories;
+    return categories.filter((c) => allowedCategoryIds.includes(c.id));
+  }, [categories, allowedCategoryIds, currentUser]);
+
+  const userVisibleNominations = React.useMemo(() => {
+    if (!currentUser || currentUser.category === 'admin') return nominations;
+    return nominations.filter((n) => {
+      if (allowedCategoryIds.includes(n.categoryId)) return true;
+      const cat = categories.find((c) => c.id === n.categoryId);
+      return cat ? allowedCategoryIds.includes(cat.id) : false;
+    });
+  }, [nominations, allowedCategoryIds, categories, currentUser]);
+
   // If user is not logged in, render Login Screen with custom compass cursor
   if (!currentUser) {
     return (
@@ -950,25 +987,6 @@ export default function App() {
       </>
     );
   }
-
-  // User Role Category Filtering sesuai 5 Pilihan Akun
-  const allowedCategoryIds = React.useMemo(() => {
-    return getAllowedCategoryIdsForUser(currentUser);
-  }, [currentUser]);
-
-  const userVisibleCategories = React.useMemo(() => {
-    if (currentUser?.category === 'admin') return categories;
-    return categories.filter((c) => allowedCategoryIds.includes(c.id));
-  }, [categories, allowedCategoryIds, currentUser]);
-
-  const userVisibleNominations = React.useMemo(() => {
-    if (currentUser?.category === 'admin') return nominations;
-    return nominations.filter((n) => {
-      if (allowedCategoryIds.includes(n.categoryId)) return true;
-      const cat = categories.find((c) => c.id === n.categoryId);
-      return cat ? allowedCategoryIds.includes(cat.id) : false;
-    });
-  }, [nominations, allowedCategoryIds, categories, currentUser]);
 
   return (
     <div className="min-h-screen bg-[#efede7] text-[#24211c] font-sans flex flex-col antialiased selection:bg-[#8a7c4c] selection:text-white relative overflow-x-hidden">
