@@ -1,9 +1,8 @@
-import { doc, getDoc } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
 import {
   db,
   resilientOnSnapshot,
   ensureFirestoreOnline,
-  isFirestoreWatchHealthy,
   fetchSnapshotViaRest,
   resilientSetDoc,
   logFirestoreError,
@@ -146,9 +145,7 @@ export async function fetchInitialCustomLogo(): Promise<string | null> {
       return getLocalCustomLogo();
     }
     const docRef = doc(db, 'settings', 'milad_logo');
-    const docSnap = isFirestoreWatchHealthy()
-      ? await getDoc(docRef).catch(() => fetchSnapshotViaRest(docRef))
-      : await fetchSnapshotViaRest(docRef);
+    const docSnap = await fetchSnapshotViaRest(docRef);
     if (docSnap && docSnap.exists()) {
       const cloudLogo = docSnap.data()?.logoUrl || null;
       if (cloudLogo) {

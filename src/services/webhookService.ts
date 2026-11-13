@@ -1,5 +1,5 @@
-import { doc, getDoc } from 'firebase/firestore';
-import { db, ensureFirestoreOnline, isFirestoreWatchHealthy, fetchSnapshotViaRest, resilientSetDoc } from '../firebase';
+import { doc } from 'firebase/firestore';
+import { db, ensureFirestoreOnline, fetchSnapshotViaRest, resilientSetDoc } from '../firebase';
 
 const LOCAL_STORAGE_KEY = 'sie_webhook_url';
 const DEFAULT_WEBHOOK_URL = '';
@@ -36,9 +36,7 @@ export async function fetchWebhookUrlFromFirestore(): Promise<string> {
       return getWebhookUrl();
     }
     const docRef = doc(db, 'settings', 'webhook');
-    const snap = isFirestoreWatchHealthy()
-      ? await getDoc(docRef).catch(() => fetchSnapshotViaRest(docRef))
-      : await fetchSnapshotViaRest(docRef);
+    const snap = await fetchSnapshotViaRest(docRef);
     if (snap && snap.exists() && snap.data()?.url) {
       const url = snap.data().url;
       localStorage.setItem(LOCAL_STORAGE_KEY, url);

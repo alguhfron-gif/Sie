@@ -1,7 +1,6 @@
 import {
   collection,
   doc,
-  getDocFromServer
 } from 'firebase/firestore';
 import {
   db,
@@ -23,18 +22,7 @@ const COLLECTION_NAME = 'nominations';
  * Test initial server connection to Firestore
  */
 export async function testConnection(): Promise<boolean> {
-  if (!(await ensureFirestoreOnline()) || !isFirestoreWatchHealthy()) {
-    return false;
-  }
-  try {
-    await getDocFromServer(doc(db, 'settings', 'milad_logo'));
-    return true;
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('offline')) {
-      console.warn("Firestore client appears offline or misconfigured.");
-    }
-    return false;
-  }
+  return ensureFirestoreOnline();
 }
 
 /**
